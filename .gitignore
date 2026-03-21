@@ -1,0 +1,6 @@
+# Build artifacts
+*.elf
+*.3ds
+*.3dsx
+*.smdh
+build/
