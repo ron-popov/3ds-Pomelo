@@ -17,7 +17,7 @@
 #define BTN_SELECTED 1
 #define BTN_NOT_SELECTED 0
 
-#define BTNCOUNT 12
+#define BTNCOUNT 2
 
 struct GuiButton{
 	int rectX;
@@ -153,7 +153,7 @@ void drawButtons(struct GuiButton *screenButtons, int count) {
 }
 
 //---------------------------------------------------------------------------------
-int main(int argc, char* argv[]) {
+int NOTmain(int argc, char* argv[]) {
 //---------------------------------------------------------------------------------
 	// Init libs
 	gfxInitDefault();
@@ -194,19 +194,39 @@ int main(int argc, char* argv[]) {
 	char textCredits[] = "Credits";
 	char textExit[] = "Exit";
 
+	// struct GuiButton screenButtons[BTNCOUNT] = {
+	// 	{4, finalYpos + 2, BOTTOM_SCREEN_WIDTH - 18, 26, 1, 0, 0, {text1}},
+	// 	{4, finalYpos + 32, BOTTOM_SCREEN_WIDTH - 18, 26, 0, 0, 0, {text2}},
+	// 	{4, finalYpos + 62, BOTTOM_SCREEN_WIDTH - 18, 26, 0, 0, 0, {text3}},
+	// 	{4, finalYpos + 92, BOTTOM_SCREEN_WIDTH - 18, 26, 0, 0, 0, {text4}},
+	// 	{4, finalYpos + 122, BOTTOM_SCREEN_WIDTH - 18, 26, 0, 0, 0, {text4}},
+	// 	{4, finalYpos + 152, BOTTOM_SCREEN_WIDTH - 18, 26, 0, 0, 0, {text4}},
+	// 	{4, finalYpos + 182, BOTTOM_SCREEN_WIDTH - 18, 26, 0, 0, 0, {text4}},
+	// 	{4, finalYpos + 212, BOTTOM_SCREEN_WIDTH - 18, 26, 0, 0, 0, {text4}},
+	// 	{4, finalYpos + 242, BOTTOM_SCREEN_WIDTH - 18, 26, 0, 0, 0, {text4}},
+	// 	{4, finalYpos + 272, BOTTOM_SCREEN_WIDTH - 18, 26, 0, 0, 0, {text4}},
+	// 	{4, finalYpos + 302, BOTTOM_SCREEN_WIDTH - 18, 26, 0, 0, 0, {textCredits}},
+	// 	{4, finalYpos + 332, BOTTOM_SCREEN_WIDTH - 18, 26, 0, 0, 0, {textExit}}
+	// };
+
+	// struct GuiButton screenButtons[BTNCOUNT] = {
+	// 	{4, finalYpos, BOTTOM_SCREEN_WIDTH - 18, 26, 1, 0, 0, {text1}},
+	// 	{4, finalYpos, BOTTOM_SCREEN_WIDTH - 18, 26, 0, 0, 0, {text2}},
+	// 	{4, finalYpos, BOTTOM_SCREEN_WIDTH - 18, 26, 0, 0, 0, {text3}},
+	// 	{4, finalYpos, BOTTOM_SCREEN_WIDTH - 18, 26, 0, 0, 0, {text4}},
+	// 	{4, finalYpos, BOTTOM_SCREEN_WIDTH - 18, 26, 0, 0, 0, {text4}},
+	// 	{4, finalYpos, BOTTOM_SCREEN_WIDTH - 18, 26, 0, 0, 0, {text4}},
+	// 	{4, finalYpos, BOTTOM_SCREEN_WIDTH - 18, 26, 0, 0, 0, {text4}},
+	// 	{4, finalYpos, BOTTOM_SCREEN_WIDTH - 18, 26, 0, 0, 0, {text4}},
+	// 	{4, finalYpos, BOTTOM_SCREEN_WIDTH - 18, 26, 0, 0, 0, {text4}},
+	// 	{4, finalYpos, BOTTOM_SCREEN_WIDTH - 18, 26, 0, 0, 0, {text4}},
+	// 	{4, finalYpos, BOTTOM_SCREEN_WIDTH - 18, 26, 0, 0, 0, {textCredits}},
+	// 	{4, finalYpos, BOTTOM_SCREEN_WIDTH - 18, 26, 0, 0, 0, {textExit}}
+	// };
+
 	struct GuiButton screenButtons[BTNCOUNT] = {
-		{4, finalYpos + 2, BOTTOM_SCREEN_WIDTH - 18, 46, 1, 0, 0, {text1}},
-		{4, finalYpos + 52, BOTTOM_SCREEN_WIDTH - 18, 46, 0, 0, 0, {text2}},
-		{4, finalYpos + 102, BOTTOM_SCREEN_WIDTH - 18, 46, 0, 0, 0, {text3}},
-		{4, finalYpos + 152, BOTTOM_SCREEN_WIDTH - 18, 46, 0, 0, 0, {text4}},
-		{4, finalYpos + 202, BOTTOM_SCREEN_WIDTH - 18, 46, 0, 0, 0, {text4}},
-		{4, finalYpos + 252, BOTTOM_SCREEN_WIDTH - 18, 46, 0, 0, 0, {text4}},
-		{4, finalYpos + 302, BOTTOM_SCREEN_WIDTH - 18, 46, 0, 0, 0, {text4}},
-		{4, finalYpos + 352, BOTTOM_SCREEN_WIDTH - 18, 46, 0, 0, 0, {text4}},
-		{4, finalYpos + 402, BOTTOM_SCREEN_WIDTH - 18, 46, 0, 0, 0, {text4}},
-		{4, finalYpos + 452, BOTTOM_SCREEN_WIDTH - 18, 46, 0, 0, 0, {text4}},
-		{4, finalYpos + 502, BOTTOM_SCREEN_WIDTH - 18, 46, 0, 0, 0, {textCredits}},
-		{4, finalYpos + 552, BOTTOM_SCREEN_WIDTH - 18, 46, 0, 0, 0, {textExit}}
+		{4, finalYpos, BOTTOM_SCREEN_WIDTH - 18, 26, 1, 0, 0, {text1}},
+		{4, finalYpos, BOTTOM_SCREEN_WIDTH - 18, 26, 0, 0, 0, {text2}},
 	};
 
 	// Main loop
@@ -226,11 +246,13 @@ int main(int argc, char* argv[]) {
 			break; // break in order to return to hbmenu
 
 		if (kDown & KEY_TOUCH) {
+			// This is for scrolling
 			olderScreenPos = oldScreenPos;
 			oldScreenPos = screenPos;
 
 			hidTouchRead(&screenPos);
 
+			// This is scrolling support
 			if(currentTouch == 0) {
 				currentTouch = 1;
 				yBuf = yBuf - (difPosY - toGainPosY);
