@@ -1,5 +1,5 @@
-# 3ds-app-test
-simple 3DS Homebrew made with libctru and citro2d.
+# Custom Homemenu
+Custom Homemenu made with libctru and citro2d.
 
 ## Build
 
@@ -10,12 +10,5 @@ I also plan to migrate to C++ to take advantage of the class system.
 To test the app, you can do the following on Linux:
 ```sh
 # build
-git clone https://github.com/Ooggle/3ds-app-test && cd 3ds-app-test
 make
-
-# upload the app using 3dslink
-$DEVKITPRO/tools/bin/3dslink -a {IP} 3ds-app-test.3dsx
 ```
-
-Screenshot from lastest build:   
-![screen](screen.png)
