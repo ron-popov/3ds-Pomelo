@@ -32,7 +32,7 @@ int main(int argc, char* argv[]) {
     // Initialize "application manager" service - it is used to fetch the list of installed titles
     temp_res = amInit();
     if (temp_res != 0) {
-        printf("amInit Result %#016x\n", temp_res);
+        printf("amInit Result %ld\n", temp_res);
     } 
 
     // Get the list of installed titles, from the "application manager"
@@ -40,7 +40,7 @@ int main(int argc, char* argv[]) {
     u32 title_count_nand = 0; 
     temp_res = AM_GetTitleCount(MEDIATYPE_NAND, &title_count_nand);
     if (temp_res != 0) {
-        printf("Result 0x%#016x\n", temp_res);
+        printf("Result 0x%ld\n", temp_res);
     }
 
     printf("Title Count in NAND %d\n", (int)title_count_nand);
@@ -49,7 +49,7 @@ int main(int argc, char* argv[]) {
     u32 title_count_sdcard = 0;
     temp_res = AM_GetTitleCount(MEDIATYPE_SD, &title_count_sdcard);
     if (temp_res != 0) {
-        printf("Result 0x%#016x\n", temp_res);
+        printf("Result 0x%ld\n", temp_res);
     }
 
     printf("Title Count in SDCARD %d\n", (int)title_count_sdcard);
@@ -58,16 +58,25 @@ int main(int argc, char* argv[]) {
     u32 title_count_gamecard = 0;
     temp_res = AM_GetTitleCount(MEDIATYPE_GAME_CARD, &title_count_gamecard);
     if (temp_res != 0) {
-        printf("Result 0x%#016x\n", temp_res);
+        printf("Result 0x%ld\n", temp_res);
     }
 
     printf("Title Count in GAMECARD %d\n", (int)title_count_gamecard);
 
 
     // Fetch info for each installed title
-    // u32 titles_found_nand = 0;
-    // temp_res = AM_GetTitleList
+    u32 titles_found_nand = 0;
+    u64* title_ids = new u64[128];
+    temp_res = AM_GetTitleList(&titles_found_nand, MEDIATYPE_NAND, 128, title_ids);
+    if (temp_res != 0) {
+        printf("AM_GetTitleList Result 0x%ld\n", temp_res);
+    }
 
+    printf("Found %lu title ids in NAND\n", titles_found_nand);
+
+    for(u32 i = 0; i < titles_found_nand; i++){
+        printf("%02lu title %#018llx\n", i, title_ids[i]);
+    }
 
 
 	while(aptMainLoop()) {
