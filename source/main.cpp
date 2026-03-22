@@ -1,3 +1,4 @@
+#include <3ds.h>
 #include <citro2d.h>
 
 #include <string.h>
@@ -23,14 +24,62 @@ int main(int argc, char* argv[]) {
 
 	// Create screens
 	C3D_RenderTarget* bottom = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
+    Result temp_res;
+
 
     printf("rpopov custom homemenu!\n");
 
-    printf("blabla\n");
+    // Initialize "application manager" service - it is used to fetch the list of installed titles
+    temp_res = amInit();
+    if (temp_res != 0) {
+        printf("amInit Result %#016x\n", temp_res);
+    } 
 
-	while(true) {
-        continue;
+    // Get the list of installed titles, from the "application manager"
+    // installed in NAND
+    u32 title_count_nand = 0; 
+    temp_res = AM_GetTitleCount(MEDIATYPE_NAND, &title_count_nand);
+    if (temp_res != 0) {
+        printf("Result 0x%#016x\n", temp_res);
     }
+
+    printf("Title Count in NAND %d\n", (int)title_count_nand);
+
+    // installed in SDCARD
+    u32 title_count_sdcard = 0;
+    temp_res = AM_GetTitleCount(MEDIATYPE_SD, &title_count_sdcard);
+    if (temp_res != 0) {
+        printf("Result 0x%#016x\n", temp_res);
+    }
+
+    printf("Title Count in SDCARD %d\n", (int)title_count_sdcard);
+
+    // installed in GAMECARD
+    u32 title_count_gamecard = 0;
+    temp_res = AM_GetTitleCount(MEDIATYPE_GAME_CARD, &title_count_gamecard);
+    if (temp_res != 0) {
+        printf("Result 0x%#016x\n", temp_res);
+    }
+
+    printf("Title Count in GAMECARD %d\n", (int)title_count_gamecard);
+
+
+    // Fetch info for each installed title
+    // u32 titles_found_nand = 0;
+    // temp_res = AM_GetTitleList
+
+
+
+	while(aptMainLoop()) {
+        hidScanInput();
+        u32 kDown = hidKeysHeld();
+        
+        // TODO: This causes a weird error in mikage, keep this and debug sometime
+        if(kDown & KEY_START)
+			break; // break in order to return to hbmenu
+    }
+
+    amExit();
 
 	// Deinit libs
 	C2D_Fini();
