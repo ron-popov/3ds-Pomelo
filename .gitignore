@@ -4,3 +4,4 @@
 *.3dsx
 *.smdh
 build/
+aes_keys.txt
