@@ -32,15 +32,8 @@ typedef struct {
     // ... icon data follows
 } SMDH; // struct size must be 0x36c0 - mikage doesn't allow to read partial sections
 
-typedef struct {
-    char file_name[8];
-    u8 file_offset[4];
-    u8 file_size[4];    
-} ExeFS;
-
 bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nameLen) {
     SMDH smdh;
-    ExeFS exefs;
     
     // Build the archive path (mediaType + titleId)
     u32 archPath[3] = {
@@ -50,50 +43,30 @@ bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nam
     };
     FS_Path archivePath = { PATH_BINARY, sizeof(archPath), archPath };
 
-    printf("Opening Archive\n");
-    
     FS_Archive archive;
     Result res = FSUSER_OpenArchive(&archive, ARCHIVE_SAVEDATA_AND_CONTENT, archivePath);
     if (R_FAILED(res)) return false;
 
-    // svcSleepThread(4888000000); // 4000.888ms
 
-    printf("Opened Archive\n");
-    printf("Opening file in archive\n");
-
-    // svcSleepThread(4888000000); // 4000.888ms
+    // This is a comment from mikage
+    // a new path:
+        // * Word 0: NCCH (0) or save data (1)
+        // * Word 1: TMD content index or NCSD partition index
+        // * Word 2: 0 for romfs (and for save data), 1 for exefs code section, 2 for exefs non-code section
+        // * Words 3+4: ExeFS section name
 
     // Open the SMDH (stored as exefs:/icon)
-    // u32 filePathData[5] = { 0x101 };
+    // Build the file path (file that inside the archive)
     u32 filePathData[5] = {0};
-    filePathData[0] = 0x00;        // is_save_data
-    filePathData[1] = 0x00;        // content_id (in mikage), also known as NCSDPartitionId
-    filePathData[2] = 0x02;        // sub_file_type, used by the function NCCHOpenExeFSSection
-    filePathData[3] = 0x6e6f6369;        // name of the section to read (this spells "icon")
-    // filePathData[3] = 0x6f676f6c;        // name of the section to read (this spells "logo")
-    // filePathData[3] = 0x6e6e6e6e;        // name of the section to read (testing)
-    filePathData[4] = 0x00000000;        // name of the section to read (part2)
+    filePathData[0] = 0x00;             // is_save_data
+    filePathData[1] = 0x00;             // content_id (in mikage), also known as NCSDPartitionId
+    filePathData[2] = 0x02;             // sub_file_type, used by the function NCCHOpenExeFSSection
+    filePathData[3] = 0x6e6f6369;       // name of the section to read (this spells "icon")
+    filePathData[4] = 0x00000000;       // name of the section to read (part2)
 
-    // This is comments from mikage
-    // // Forward this call to ArchiveProgramDataFromTitleId::OpenFile using
-    // // a new path:
-    //     // * Word 0: NCCH (0) or save data (1)
-    //     // * Word 1: TMD content index or NCSD partition index
-    //     // * Word 2: 0 for romfs (and for save data), 1 for exefs code section, 2 for exefs non-code section
-    //     // * Words 3+4: ExeFS section name
-    // HLE::BinaryPathType new_file_path;
-    // new_file_path.resize(20);
-    // // First word is zero (=NCCH access)
-    // // Second word is zero (=first content)
-    // // The remaining data is copied verbatimly
-
-    // FS_Path filePath = fsMakePath(PATH_BINARY, "");
     FS_Path filePath = { PATH_BINARY, sizeof(filePathData), filePathData };
 
     Handle fileHandle;
-    printf("filepath.size %ld\n", filePath.size);
-
-    // svcSleepThread(4888000000); // 4000.888ms
 
     res = FSUSER_OpenFile(&fileHandle, archive, filePath, FS_OPEN_READ, 0);
     if (R_FAILED(res)) {
@@ -101,41 +74,29 @@ bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nam
         return false;
     }
 
-    printf("Opened file in archive\n");
-
-    // svcSleepThread(9999999999999999); // sleep for ~4 seconds
-
-
     // Read the SMDH data
     u32 bytesRead;
     res = FSFILE_Read(fileHandle, &bytesRead, 0, &smdh, sizeof(SMDH));
     FSFILE_Close(fileHandle);
     FSUSER_CloseArchive(archive);
 
-    // if (R_FAILED(res) || bytesRead != sizeof(SMDH)) return false;
     if (R_FAILED(res)) {
         return false;
     }
 
-    // printf("ExeFS first filename %s\n", exefs.file_name);
-
-    printf("First 4 bytes are %#016lx\n", smdh.magic);
-
-    // // Validate SMDH magic ("SMDH")
-    // if (smdh.magic != 0x48444D53) {
-    //     printf("File magic does not match SMDH\n");
-    //     return false;
-    // }
-
-    printf("File magic is correct\n");
+    // Validate SMDH magic ("SMDH")
+    if (smdh.magic != 0x48444D53) {
+        printf("File magic does not match SMDH\n");
+        return false;
+    }
 
     // Pick language (use English = 1, or CFG_LANGUAGE_EN)
     u8 lang = 1; // CFG_LANGUAGE_EN
     
     // The short description is a UTF-16 string (0x40 u16 chars)
     // Convert to UTF-8 for easier use
-    // utf16_to_utf8((uint8_t*)nameOut, smdh.titles[lang].shortDescription, nameLen - 1);
-    // nameOut[nameLen - 1] = '\0';
+    utf16_to_utf8((uint8_t*)nameOut, smdh.titles[lang].shortDescription, nameLen - 1);
+    nameOut[nameLen - 1] = '\0';
 
     return true;
 }
@@ -155,7 +116,6 @@ int main(int argc, char* argv[]) {
 	C3D_RenderTarget* bottom = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
     Result temp_res;
 
-
     printf("rpopov custom homemenu!\n");
 
     // Initialize "application manager" service - it is used to fetch the list of installed titles
@@ -164,26 +124,7 @@ int main(int argc, char* argv[]) {
         printf("amInit Result %ld\n", temp_res);
     } 
 
-    // // Get the list of installed titles, from the "application manager"
-    // // installed in NAND
-    // u32 title_count_nand = 0; 
-    // temp_res = AM_GetTitleCount(MEDIATYPE_NAND, &title_count_nand);
-    // if (temp_res != 0) {
-    //     printf("Result 0x%lx\n", temp_res);
-    // }
-
-    // printf("Title Count in NAND %d\n", (int)title_count_nand);
-
-    // // installed in SDCARD
-    // u32 title_count_sdcard = 0;
-    // temp_res = AM_GetTitleCount(MEDIATYPE_SD, &title_count_sdcard);
-    // if (temp_res != 0) {
-    //     printf("Result 0x%lx\n", temp_res);
-    // }
-
-    // printf("Title Count in SDCARD %d\n", (int)title_count_sdcard);
-
-    // installed in GAMECARD
+    // Title count installed in GAMECARD
     u32 title_count_gamecard = 0;
     temp_res = AM_GetTitleCount(MEDIATYPE_GAME_CARD, &title_count_gamecard);
     if (temp_res != 0) {
@@ -203,36 +144,26 @@ int main(int argc, char* argv[]) {
     printf("Gamecard has title id %#018llx\n", gamecard_title_id[0]);
 
 
+
+    // Get gamecard title name
     char* title_name_gamecard = new char[MAX_TITLE_NAME];
-    bool title_name_gamecard_result = getTitleName(gamecard_title_id[0], MEDIATYPE_GAME_CARD, title_name_gamecard, MAX_TITLE_NAME);
-    if (title_name_gamecard_result) {
+    temp_res = getTitleName(gamecard_title_id[0], MEDIATYPE_GAME_CARD, title_name_gamecard, MAX_TITLE_NAME);
+    if (temp_res) {
         printf("title %#018llx - %s\n", gamecard_title_id[0], title_name_gamecard);
     } else {
         printf("title %#018llx - failed to get name\n", gamecard_title_id[0]);
     }
 
-    // // Fetch info for each installed title
-    // u32 titles_found_nand = 0;
-    // u64* title_ids = new u64[128];
-    // temp_res = AM_GetTitleList(&titles_found_nand, MEDIATYPE_NAND, 128, title_ids);
-    // if (temp_res != 0) {
-    //     printf("AM_GetTitleList Result 0x%lx\n", temp_res);
-    // }
-
-    // printf("Found %lu title ids in NAND\n", titles_found_nand);
-
-
-    // for(u32 i = 0; i < titles_found_nand; i++){
-    //     // bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nameLen)
-    //     char* title_name = new char[MAX_TITLE_NAME];
-    //     bool title_name_result = getTitleName(title_ids[i], MEDIATYPE_NAND, title_name, MAX_TITLE_NAME);
-    //     if (title_name_result) {
-    //         printf("%02lu title %#018llx - %s\n", i, title_ids[i], title_name);
-    //     } else {
-    //         printf("%02lu title %#018llx - failed to get name\n", i, title_ids[i]);
-    //     }
-    // }
-
+    // Get homemenu title (hardcoded tid) title name
+    // u64 homemenu_tid = 0x0004003000008F02; // us
+    u64 homemenu_tid = 0x0004003000009802; // eu
+    char* title_name_homemenu = new char[MAX_TITLE_NAME];
+    temp_res = getTitleName(homemenu_tid, MEDIATYPE_NAND, title_name_homemenu, MAX_TITLE_NAME);
+    if (temp_res) {
+        printf("title %#018llx - %s\n", homemenu_tid, title_name_homemenu);
+    } else {
+        printf("title %#018llx - failed to get name\n", homemenu_tid);
+    }
 
 	while(aptMainLoop()) {
         hidScanInput();
