@@ -177,6 +177,8 @@ int main(int argc, char* argv[]) {
 
 
     for(u32 i = 0; i < 10; i++){
+        svcSleepThread(4888000000); // sleep for ~4 seconds
+        
         char title_name[MAX_TITLE_NAME];
         temp_res = getTitleName(title_ids[i], MEDIATYPE_NAND, title_name, MAX_TITLE_NAME);
         if (temp_res) {
