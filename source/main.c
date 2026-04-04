@@ -135,7 +135,7 @@ int main(int argc, char* argv[]) {
 
     // Get gamecard title id
     u32 title_found_gamecard = 0;
-    u64* gamecard_title_id = new u64[1];
+    u64 gamecard_title_id[1];
     temp_res = AM_GetTitleList(&title_found_gamecard, MEDIATYPE_GAME_CARD, 1, gamecard_title_id);
     if (temp_res != 0) {
         printf("AM_GetTitleList GAMECARD Result 0x%lx\n", temp_res);
@@ -146,7 +146,7 @@ int main(int argc, char* argv[]) {
 
 
     // Get gamecard title name
-    char* title_name_gamecard = new char[MAX_TITLE_NAME];
+    char title_name_gamecard[MAX_TITLE_NAME];
     temp_res = getTitleName(gamecard_title_id[0], MEDIATYPE_GAME_CARD, title_name_gamecard, MAX_TITLE_NAME);
     if (temp_res) {
         printf("title %#018llx - %s\n", gamecard_title_id[0], title_name_gamecard);
@@ -157,13 +157,35 @@ int main(int argc, char* argv[]) {
     // Get homemenu title (hardcoded tid) title name
     // u64 homemenu_tid = 0x0004003000008F02; // us
     u64 homemenu_tid = 0x0004003000009802; // eu
-    char* title_name_homemenu = new char[MAX_TITLE_NAME];
+    char title_name_homemenu[MAX_TITLE_NAME];
     temp_res = getTitleName(homemenu_tid, MEDIATYPE_NAND, title_name_homemenu, MAX_TITLE_NAME);
     if (temp_res) {
         printf("title %#018llx - %s\n", homemenu_tid, title_name_homemenu);
     } else {
         printf("title %#018llx - failed to get name\n", homemenu_tid);
     }
+
+    // Fetch info for each installed title
+    u32 titles_found_nand = 0;
+    u64 title_ids[128];
+    temp_res = AM_GetTitleList(&titles_found_nand, MEDIATYPE_NAND, 128, title_ids);
+    if (temp_res != 0) {
+        printf("AM_GetTitleList Result 0x%lx\n", temp_res);
+    }
+
+    printf("Found %lu title ids in NAND\n", titles_found_nand);
+
+
+    for(u32 i = 0; i < 10; i++){
+        char title_name[MAX_TITLE_NAME];
+        temp_res = getTitleName(title_ids[i], MEDIATYPE_NAND, title_name, MAX_TITLE_NAME);
+        if (temp_res) {
+            printf("%02lu title %#018llx - %s\n", i, title_ids[i], title_name);
+        } else {
+            printf("%02lu title %#018llx - failed to get name\n", i, title_ids[i]);
+        }
+    }
+
 
 	while(aptMainLoop()) {
         hidScanInput();
