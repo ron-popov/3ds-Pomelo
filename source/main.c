@@ -15,6 +15,19 @@
 
 #define MAX_TITLE_NAME 255
 
+
+
+void print_error_code_verbose(char* desc, Result res) {
+    printf("%s Result 0x%lx\n", desc, res);
+    printf("  Module  : %lu\n", R_MODULE(res));
+    printf("  Level   : %lu\n", R_LEVEL(res));
+    printf("  Summary : %lu\n", R_SUMMARY(res));
+    printf("  Desc    : %lu\n", R_DESCRIPTION(res));
+}
+
+
+
+
 typedef struct {
     u16 shortDescription[0x40];  // The title name (UTF-16)
     u16 longDescription[0x80];   // Subtitle / longer description
@@ -43,10 +56,16 @@ bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nam
     };
     FS_Path archivePath = { PATH_BINARY, sizeof(archPath), archPath };
 
+    printf("About to run FSUSER_OpenArchive\n");
+
     FS_Archive archive;
     Result res = FSUSER_OpenArchive(&archive, ARCHIVE_SAVEDATA_AND_CONTENT, archivePath);
-    if (R_FAILED(res)) return false;
+    if (R_FAILED(res)) {
+        print_error_code_verbose("FSUSER_OpenArchive", res);
+        return false;
+    }
 
+    printf("Ran FSUSER_OpenArchive\n");
 
     // This is a comment from mikage
     // a new path:
@@ -68,11 +87,16 @@ bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nam
 
     Handle fileHandle;
 
+    printf("About to run FSUSER_OpenFile\n");
+
     res = FSUSER_OpenFile(&fileHandle, archive, filePath, FS_OPEN_READ, 0);
     if (R_FAILED(res)) {
+        print_error_code_verbose("FSUSER_OpenFile",  res);
         FSUSER_CloseArchive(archive);
         return false;
     }
+
+    printf("Ran FSUSER_OpenFile\n");
 
     // Read the SMDH data
     u32 bytesRead;
@@ -103,8 +127,8 @@ bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nam
 
 
 
+
 int main(int argc, char* argv[]) {
-//---------------------------------------------------------------------------------
 	// Init libs
 	gfxInitDefault();
 	C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
@@ -113,7 +137,7 @@ int main(int argc, char* argv[]) {
 	consoleInit(GFX_TOP, NULL);
 
 	// Create screens
-	C3D_RenderTarget* bottom = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
+	// C3D_RenderTarget* bottom = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
     Result temp_res;
 
     printf("rpopov custom homemenu!\n");
@@ -121,14 +145,14 @@ int main(int argc, char* argv[]) {
     // Initialize "application manager" service - it is used to fetch the list of installed titles
     temp_res = amInit();
     if (temp_res != 0) {
-        printf("amInit Result %ld\n", temp_res);
+        print_error_code_verbose("amInit", temp_res);
     } 
 
     // Title count installed in GAMECARD
     u32 title_count_gamecard = 0;
     temp_res = AM_GetTitleCount(MEDIATYPE_GAME_CARD, &title_count_gamecard);
     if (temp_res != 0) {
-        printf("Result 0x%lx\n", temp_res);
+        print_error_code_verbose("AM_GetTitleCount", temp_res);
     }
 
     printf("Title Count in GAMECARD %d\n", (int)title_count_gamecard);
@@ -138,7 +162,7 @@ int main(int argc, char* argv[]) {
     u64 gamecard_title_id[1];
     temp_res = AM_GetTitleList(&title_found_gamecard, MEDIATYPE_GAME_CARD, 1, gamecard_title_id);
     if (temp_res != 0) {
-        printf("AM_GetTitleList GAMECARD Result 0x%lx\n", temp_res);
+        print_error_code_verbose("AM_GetTitleList GAMECARD", temp_res);
     }
 
     printf("Gamecard has title id %#018llx\n", gamecard_title_id[0]);
@@ -154,39 +178,39 @@ int main(int argc, char* argv[]) {
         printf("title %#018llx - failed to get name\n", gamecard_title_id[0]);
     }
 
-    // Get homemenu title (hardcoded tid) title name
-    // u64 homemenu_tid = 0x0004003000008F02; // us
-    u64 homemenu_tid = 0x0004003000009802; // eu
-    char title_name_homemenu[MAX_TITLE_NAME];
-    temp_res = getTitleName(homemenu_tid, MEDIATYPE_NAND, title_name_homemenu, MAX_TITLE_NAME);
-    if (temp_res) {
-        printf("title %#018llx - %s\n", homemenu_tid, title_name_homemenu);
-    } else {
-        printf("title %#018llx - failed to get name\n", homemenu_tid);
-    }
+    // // Get homemenu title (hardcoded tid) title name
+    // // u64 homemenu_tid = 0x0004003000008F02; // us
+    // u64 homemenu_tid = 0x0004003000009802; // eu
+    // char title_name_homemenu[MAX_TITLE_NAME];
+    // temp_res = getTitleName(homemenu_tid, MEDIATYPE_NAND, title_name_homemenu, MAX_TITLE_NAME);
+    // if (temp_res) {
+    //     printf("title %#018llx - %s\n", homemenu_tid, title_name_homemenu);
+    // } else {
+    //     printf("title %#018llx - failed to get name\n", homemenu_tid);
+    // }
 
-    // Fetch info for each installed title
-    u32 titles_found_nand = 0;
-    u64 title_ids[128];
-    temp_res = AM_GetTitleList(&titles_found_nand, MEDIATYPE_NAND, 128, title_ids);
-    if (temp_res != 0) {
-        printf("AM_GetTitleList Result 0x%lx\n", temp_res);
-    }
+    // // Fetch info for each installed title
+    // u32 titles_found_nand = 0;
+    // u64 title_ids[128];
+    // temp_res = AM_GetTitleList(&titles_found_nand, MEDIATYPE_NAND, 128, title_ids);
+    // if (temp_res != 0) {
+    //     printf("AM_GetTitleList Result 0x%lx\n", temp_res);
+    // }
 
-    printf("Found %lu title ids in NAND\n", titles_found_nand);
+    // printf("Found %lu title ids in NAND\n", titles_found_nand);
 
 
-    for(u32 i = 0; i < 10; i++){
-        svcSleepThread(4888000000); // sleep for ~4 seconds
-        
-        char title_name[MAX_TITLE_NAME];
-        temp_res = getTitleName(title_ids[i], MEDIATYPE_NAND, title_name, MAX_TITLE_NAME);
-        if (temp_res) {
-            printf("%02lu title %#018llx - %s\n", i, title_ids[i], title_name);
-        } else {
-            printf("%02lu title %#018llx - failed to get name\n", i, title_ids[i]);
-        }
-    }
+    // for(u32 i = 0; i < 10; i++){
+    //     svcSleepThread(4888000000); // sleep for ~4 seconds
+
+    //     char title_name[MAX_TITLE_NAME];
+    //     temp_res = getTitleName(title_ids[i], MEDIATYPE_NAND, title_name, MAX_TITLE_NAME);
+    //     if (temp_res) {
+    //         printf("%02lu title %#018llx - %s\n", i, title_ids[i], title_name);
+    //     } else {
+    //         printf("%02lu title %#018llx - failed to get name\n", i, title_ids[i]);
+    //     }
+    // }
 
 
 	while(aptMainLoop()) {
