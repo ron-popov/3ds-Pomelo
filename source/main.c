@@ -15,7 +15,7 @@
 
 #define MAX_TITLE_NAME 255
 
-
+#define TITLE_ID_SYSTEM_MODULE_AM_EU 0x0004013000001502
 
 void print_error_code_verbose(char* desc, Result res) {
     printf("%s Result 0x%lx\n", desc, res);
@@ -142,61 +142,80 @@ int main(int argc, char* argv[]) {
 
     printf("rpopov custom homemenu!\n");
 
-    printf("initializing the PMApp system module handle\n");
+    // Get handle to PM system module
+    {
+        printf("initializing the PMApp system module handle\n");
 
-    // Initialize "Process Application Manager" system module
-    // It is useful for launching more titles / system modules
-    temp_res = pmAppInit();
-    if (temp_res != 0) {
-        print_error_code_verbose("pmappInit", temp_res);
-    } 
+        // Initialize "Process Application Manager" system module
+        // It is useful for launching more titles / system modules
+        temp_res = pmAppInit();
+        if (temp_res != 0) {
+            print_error_code_verbose("pmappInit", temp_res);
+        } 
 
-    printf("initialized the PMApp system module handle\n");
-
-
-
-    // The kernel supports at most 64 processes simultaneously
-    u32  pids[64];
-    s32  count = 0;
-
-    // printf("First process pid (before) : %#016lx\n", pids[0]);
-
-    Result ret = svcGetProcessList(&count, pids, 64);
-    if (R_FAILED(ret)) {
-        print_error_code_verbose("svcGetProcessList", temp_res);
+        printf("initialized the PMApp system module handle\n");        
     }
 
-    printf("Total processes: %ld\n", (long)count);
-    // printf("First process pid (after) : %#08lx\n", pids[0]);
+    // Get all running processes using SVCGetProcessList
+    {
+        // The kernel supports at most 64 processes simultaneously
+        u32  pids[64];
+        s32  count = 0;
 
-    for (s32 i = 0; i < 10; i++) {
+        // printf("First process pid (before) : %#016lx\n", pids[0]);
 
-        printf("Pid %d is %#08lx\n", i, pids[i]);
+        temp_res = svcGetProcessList(&count, pids, 64);
+        if (R_FAILED(temp_res)) {
+            print_error_code_verbose("svcGetProcessList", temp_res);
+        }
+
+        printf("Total processes: %ld\n", (long)count);        
     }
 
     // Run the "am" system module title, before getting it's handle
+    {
+        printf("Launching AM system module\n");
+
+        const FS_ProgramInfo amProgramInfo = {
+            .programId = TITLE_ID_SYSTEM_MODULE_AM_EU, 
+            .mediaType = MEDIATYPE_NAND
+        };
+
+        temp_res = PMAPP_LaunchTitle(&amProgramInfo, 0x00);
+        if (R_FAILED(temp_res)) {
+            print_error_code_verbose("launch application manager", temp_res);
+        }
+
+        printf("Launched AM system module\n");
+    }
 
 
-    // printf("initializing the AM system module handle\n");
+    // Get handle to AM system module
+    {
+        printf("initializing the AM system module handle\n");
 
-    // // Initialize "application manager" system module - it is used to fetch the list of installed titles
-    // temp_res = amInit();
-    // if (temp_res != 0) {
-    //     print_error_code_verbose("amInit", temp_res);
-    // } 
+        // Initialize "application manager" system module - it is used to fetch the list of installed titles
+        temp_res = amInit();
+        if (temp_res != 0) {
+            print_error_code_verbose("amInit", temp_res);
+        } 
 
-    // printf("initialized the am service handle\n");
+        printf("initialized the am service handle\n");        
+    }
 
-    // printf("getting titles installed in nand\n");
+    // // Get number of title installed in NAND using AM module
+    // {
+    //     printf("getting titles installed in nand\n");
 
-    // // Title count installed in NAND
-    // u32 title_count_nand = 0;
-    // temp_res = AM_GetTitleCount(MEDIATYPE_NAND, &title_count_nand);
-    // if (temp_res != 0) {
-    //     print_error_code_verbose("AM_GetTitleCount", temp_res);
+    //     // Title count installed in NAND
+    //     u32 title_count_nand = 0;
+    //     temp_res = AM_GetTitleCount(MEDIATYPE_NAND, &title_count_nand);
+    //     if (temp_res != 0) {
+    //         print_error_code_verbose("AM_GetTitleCount", temp_res);
+    //     }
+
+    //     printf("Title Count in NAND %d\n", (int)title_count_nand);        
     // }
-
-    // printf("Title Count in NAND %d\n", (int)title_count_nand);
 
     // // Get gamecard title id
     // u32 title_found_gamecard = 0;
