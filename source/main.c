@@ -246,6 +246,14 @@ int main(int argc, char* argv[]) {
 
     }
 
+    {
+        // Initialize "application manager" system module - it is used to fetch the list of installed titles
+        temp_res = aptInit();
+        if (temp_res != 0) {
+            print_error_code_verbose("aptInit", temp_res);
+        }
+    }
+
     // Get number of title installed in NAND using AM module
     {
         printf("getting titles installed in nand\n");
@@ -333,13 +341,13 @@ int main(int argc, char* argv[]) {
         printf("Launching selected game in 4 seconds...\n");
         svcSleepThread(4888000000); // sleep for ~4 seconds
 
-        // // Get gamecard title id
-        // u32 title_found_gamecard = 0;
-        // u64 gamecard_title_id[1];
-        // temp_res = AM_GetTitleList(&title_found_gamecard, MEDIATYPE_GAME_CARD, 1, gamecard_title_id);
-        // if (temp_res != 0) {
-        //     print_error_code_verbose("AM_GetTitleList GAMECARD", temp_res);
-        // }
+        // Get gamecard title id
+        u32 title_found_gamecard = 0;
+        u64 gamecard_title_id[1];
+        temp_res = AM_GetTitleList(&title_found_gamecard, MEDIATYPE_GAME_CARD, 1, gamecard_title_id);
+        if (temp_res != 0) {
+            print_error_code_verbose("AM_GetTitleList GAMECARD", temp_res);
+        }
 
         // // Launch title using PS
         // {
@@ -355,18 +363,22 @@ int main(int argc, char* argv[]) {
         //     }            
         // }
 
-        // Launch title using NS
-        {
-            u32 launch_flags = LAUNCH_FLAG_IS_REGULAR_APPLICATION | LAUNCH_FLAG_LOAD_TITLE_DEPENDENCIES;
-            u32 out_proc_id = 0;
-            u64 TITLE_ID_GAMECARD = 0x00 // Trying to load the title_id 0 tells NS to load the gamecard
-            temp_res = NS_LaunchTitle(0, launch_flags, &out_proc_id);
-            if (R_FAILED(temp_res)) {
-                print_error_code_verbose("launch selected game (using NS)", temp_res);
-            }
-        }
+        // // Launch title using NS
+        // {
+        //     u32 launch_flags = LAUNCH_FLAG_IS_REGULAR_APPLICATION | LAUNCH_FLAG_LOAD_TITLE_DEPENDENCIES;
+        //     u32 out_proc_id = 0;
+        //     u64 TITLE_ID_GAMECARD = 0x00 // Trying to load the title_id 0 tells NS to load the gamecard
+        //     temp_res = NS_LaunchTitle(0, launch_flags, &out_proc_id);
+        //     if (R_FAILED(temp_res)) {
+        //         print_error_code_verbose("launch selected game (using NS)", temp_res);
+        //     }
+        // }
 
-        // Result NS_LaunchTitle(u64 titleid, u32 launch_flags, u32 *procid)
+        // Launch title using APT
+        {
+            // It doesn't return any value
+            aptSetChainloader(gamecard_title_id[0], MEDIATYPE_GAME_CARD);
+        }
     }
 
 
