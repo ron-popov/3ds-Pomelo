@@ -48,13 +48,18 @@ typedef struct {
 bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nameLen) {
     SMDH smdh;
     
-    // Build the archive path (mediaType + titleId)
-    u32 archPath[3] = {
-        (u32)mediaType,
-        (u32)(titleId >> 32),
-        (u32)(titleId & 0xFFFFFFFF)
+    // // Build the archive path (mediaType + titleId)
+    // u32 archPath[3] = {
+    //     (u32)mediaType,
+    //     (u32)((titleId >> 32) & 0xFFFFFFFF),
+    //     (u32)(titleId & 0xFFFFFFFF)
+    // };
+
+    const FS_ProgramInfo archiveProgramInfo = {
+        .programId = titleId, 
+        .mediaType = mediaType
     };
-    FS_Path archivePath = { PATH_BINARY, sizeof(archPath), archPath };
+    FS_Path archivePath = { PATH_BINARY, sizeof(archiveProgramInfo), (void*)&archiveProgramInfo };
 
     // printf("About to run FSUSER_OpenArchive\n");
 
@@ -227,22 +232,27 @@ int main(int argc, char* argv[]) {
         }
 
         printf("Gamecard has title id %#018llx\n", gamecard_title_id[0]);
+
+        // Get gamecard title name
+        char title_name_gamecard[MAX_TITLE_NAME];
+        temp_res = getTitleName(gamecard_title_id[0], MEDIATYPE_GAME_CARD, title_name_gamecard, MAX_TITLE_NAME);
+        if (temp_res) {
+            printf("title %#018llx - %s\n", gamecard_title_id[0], title_name_gamecard);
+        } else {
+            printf("title %#018llx - failed to get name\n", gamecard_title_id[0]);
+        }
     }
 
 
 
-    // // Get gamecard title name
-    // char title_name_gamecard[MAX_TITLE_NAME];
-    // temp_res = getTitleName(gamecard_title_id[0], MEDIATYPE_GAME_CARD, title_name_gamecard, MAX_TITLE_NAME);
-    // if (temp_res) {
-    //     printf("title %#018llx - %s\n", gamecard_title_id[0], title_name_gamecard);
-    // } else {
-    //     printf("title %#018llx - failed to get name\n", gamecard_title_id[0]);
-    // }
+
 
     // Get homemenu title (hardcoded tid) title name
-    // u64 homemenu_tid = 0x0004003000008F02; // us
-    u64 homemenu_tid = 0x0004003000009802; // eu
+    // u64 homemenu_tid = 0x0004003000008F02; // us homemenu
+    // u64 homemenu_tid = 0x0004003000009802; // eu homemenu
+    // u64 homemenu_tid = 0x0004003000009902; // eu camera
+    u64 homemenu_tid = 0x0004001000022000; // eu system settings
+    // u64 homemenu_tid = 0x0004003000007777; // fake tid
     char title_name_homemenu[MAX_TITLE_NAME];
     temp_res = getTitleName(homemenu_tid, MEDIATYPE_NAND, title_name_homemenu, MAX_TITLE_NAME);
     if (temp_res) {
