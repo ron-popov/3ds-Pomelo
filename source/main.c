@@ -305,7 +305,7 @@ int main(int argc, char* argv[]) {
                 continue;
             }
 
-            char title_name[MAX_TITLE_NAME];
+            char title_name[MAX_TITLE_NAME] = {0};
             temp_res = getTitleName(title_ids[i], MEDIATYPE_NAND, title_name, MAX_TITLE_NAME);
             if (temp_res) {
                 printf("%02lu title %#018llx - %s\n", i, title_ids[i], title_name);
