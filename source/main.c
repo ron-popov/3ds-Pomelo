@@ -130,7 +130,32 @@ bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nam
     return true;
 }
 
+bool shouldDisplayTitle(u64 title_id) {
+    u32 title_id_upper = (u32)((title_id >> 32) & 0xFFFFFFFF);
 
+    switch (title_id_upper) {
+        case 0x00040010: // System Applications
+            return true;
+        case 0x0004001b: // System data archives
+            return false;
+        case 0x00040030: // System Applets
+            return false;
+        case 0x0004009B: // Shared data archives
+            return false;
+        case 0x000400DB: // System data archives
+            return false;
+        case 0x00040130: // System modules
+            return false;
+        case 0x00040138: // System Firmware
+            return false;
+        case 0x00040001: // Download play titles
+            return true;
+        case 0x0004800F: // DSi System Data Archives
+            return false;
+        default:
+            return true;
+    }
+}
 
 
 int main(int argc, char* argv[]) {
@@ -237,52 +262,61 @@ int main(int argc, char* argv[]) {
         char title_name_gamecard[MAX_TITLE_NAME];
         temp_res = getTitleName(gamecard_title_id[0], MEDIATYPE_GAME_CARD, title_name_gamecard, MAX_TITLE_NAME);
         if (temp_res) {
-            printf("title %#018llx - %s\n", gamecard_title_id[0], title_name_gamecard);
+            printf("Gamecard title %#018llx - %s\n", gamecard_title_id[0], title_name_gamecard);
         } else {
-            printf("title %#018llx - failed to get name\n", gamecard_title_id[0]);
+            printf("Gamecard title %#018llx - failed to get name\n", gamecard_title_id[0]);
+        }
+    }
+
+
+    // Get homemenu title (hardcoded tid) title name
+    {
+        // u64 homemenu_tid = 0x0004003000008F02; // us homemenu
+        // u64 homemenu_tid = 0x0004003000009802; // eu homemenu
+        // u64 homemenu_tid = 0x0004003000009902; // eu camera
+        u64 homemenu_tid = 0x0004001000022000; // eu system settings
+        // u64 homemenu_tid = 0x0004003000007777; // fake tid
+        char title_name_homemenu[MAX_TITLE_NAME];
+        temp_res = getTitleName(homemenu_tid, MEDIATYPE_NAND, title_name_homemenu, MAX_TITLE_NAME);
+        if (temp_res) {
+            printf("title %#018llx - %s\n", homemenu_tid, title_name_homemenu);
+        } else {
+            printf("title %#018llx - failed to get name\n", homemenu_tid);
+        }        
+    }
+
+    // Fetch name of each installed title
+    {
+        // Get list of installed titles
+        u32 titles_found_nand = 0;
+        u64 title_ids[128];
+        temp_res = AM_GetTitleList(&titles_found_nand, MEDIATYPE_NAND, 128, title_ids);
+        if (temp_res != 0) {
+            printf("AM_GetTitleList Result 0x%lx\n", temp_res);
+        }
+
+        printf("Found %lu title ids in NAND\n", titles_found_nand);
+
+        // Get name of each title
+        for(u32 i = 0; i < titles_found_nand; i++){
+            // svcSleepThread(4888000000); // sleep for ~4 seconds
+
+            if (!shouldDisplayTitle(title_ids[i])){
+                continue;
+            }
+
+            char title_name[MAX_TITLE_NAME];
+            temp_res = getTitleName(title_ids[i], MEDIATYPE_NAND, title_name, MAX_TITLE_NAME);
+            if (temp_res) {
+                printf("%02lu title %#018llx - %s\n", i, title_ids[i], title_name);
+            } else {
+                printf("%02lu title %#018llx - failed to get name\n", i, title_ids[i]);
+            }
         }
     }
 
 
 
-
-
-    // Get homemenu title (hardcoded tid) title name
-    // u64 homemenu_tid = 0x0004003000008F02; // us homemenu
-    // u64 homemenu_tid = 0x0004003000009802; // eu homemenu
-    // u64 homemenu_tid = 0x0004003000009902; // eu camera
-    u64 homemenu_tid = 0x0004001000022000; // eu system settings
-    // u64 homemenu_tid = 0x0004003000007777; // fake tid
-    char title_name_homemenu[MAX_TITLE_NAME];
-    temp_res = getTitleName(homemenu_tid, MEDIATYPE_NAND, title_name_homemenu, MAX_TITLE_NAME);
-    if (temp_res) {
-        printf("title %#018llx - %s\n", homemenu_tid, title_name_homemenu);
-    } else {
-        printf("title %#018llx - failed to get name\n", homemenu_tid);
-    }
-
-    // // Fetch info for each installed title
-    // u32 titles_found_nand = 0;
-    // u64 title_ids[128];
-    // temp_res = AM_GetTitleList(&titles_found_nand, MEDIATYPE_NAND, 128, title_ids);
-    // if (temp_res != 0) {
-    //     printf("AM_GetTitleList Result 0x%lx\n", temp_res);
-    // }
-
-    // printf("Found %lu title ids in NAND\n", titles_found_nand);
-
-
-    // for(u32 i = 0; i < 10; i++){
-    //     svcSleepThread(4888000000); // sleep for ~4 seconds
-
-    //     char title_name[MAX_TITLE_NAME];
-    //     temp_res = getTitleName(title_ids[i], MEDIATYPE_NAND, title_name, MAX_TITLE_NAME);
-    //     if (temp_res) {
-    //         printf("%02lu title %#018llx - %s\n", i, title_ids[i], title_name);
-    //     } else {
-    //         printf("%02lu title %#018llx - failed to get name\n", i, title_ids[i]);
-    //     }
-    // }
 
 
 	while(aptMainLoop()) {
