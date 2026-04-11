@@ -17,6 +17,9 @@
 
 #define TITLE_ID_SYSTEM_MODULE_AM_EU 0x0004013000001502
 
+#define LAUNCH_FLAG_IS_REGULAR_APPLICATION 0x01
+#define LAUNCH_FLAG_LOAD_TITLE_DEPENDENCIES 0x08
+
 void print_error_code_verbose(char* desc, Result res) {
     printf("%s Result 0x%lx\n", desc, res);
     printf("  Module  : %lu\n", R_MODULE(res));
@@ -233,6 +236,16 @@ int main(int argc, char* argv[]) {
         // printf("initialized the am service handle\n");        
     }
 
+    // Get handle to NS system module
+    {
+        // Initialize "application manager" system module - it is used to fetch the list of installed titles
+        temp_res = nsInit();
+        if (temp_res != 0) {
+            print_error_code_verbose("nsInit", temp_res);
+        } 
+
+    }
+
     // Get number of title installed in NAND using AM module
     {
         printf("getting titles installed in nand\n");
@@ -269,21 +282,21 @@ int main(int argc, char* argv[]) {
     }
 
 
-    // Get homemenu title (hardcoded tid) title name
-    {
-        // u64 homemenu_tid = 0x0004003000008F02; // us homemenu
-        // u64 homemenu_tid = 0x0004003000009802; // eu homemenu
-        // u64 homemenu_tid = 0x0004003000009902; // eu camera
-        u64 homemenu_tid = 0x0004001000022000; // eu system settings
-        // u64 homemenu_tid = 0x0004003000007777; // fake tid
-        char title_name_homemenu[MAX_TITLE_NAME];
-        temp_res = getTitleName(homemenu_tid, MEDIATYPE_NAND, title_name_homemenu, MAX_TITLE_NAME);
-        if (temp_res) {
-            printf("title %#018llx - %s\n", homemenu_tid, title_name_homemenu);
-        } else {
-            printf("title %#018llx - failed to get name\n", homemenu_tid);
-        }        
-    }
+    // // Get homemenu title (hardcoded tid) title name
+    // {
+    //     // u64 homemenu_tid = 0x0004003000008F02; // us homemenu
+    //     // u64 homemenu_tid = 0x0004003000009802; // eu homemenu
+    //     // u64 homemenu_tid = 0x0004003000009902; // eu camera
+    //     u64 homemenu_tid = 0x0004001000022000; // eu system settings
+    //     // u64 homemenu_tid = 0x0004003000007777; // fake tid
+    //     char title_name_homemenu[MAX_TITLE_NAME];
+    //     temp_res = getTitleName(homemenu_tid, MEDIATYPE_NAND, title_name_homemenu, MAX_TITLE_NAME);
+    //     if (temp_res) {
+    //         printf("title %#018llx - %s\n", homemenu_tid, title_name_homemenu);
+    //     } else {
+    //         printf("title %#018llx - failed to get name\n", homemenu_tid);
+    //     }        
+    // }
 
     // Fetch name of each installed title
     {
@@ -313,6 +326,47 @@ int main(int argc, char* argv[]) {
                 printf("%02lu title %#018llx - failed to get name\n", i, title_ids[i]);
             }
         }
+    }
+
+    // Sleep and then launch title in gamecard
+    {
+        printf("Launching selected game in 4 seconds...\n");
+        svcSleepThread(4888000000); // sleep for ~4 seconds
+
+        // // Get gamecard title id
+        // u32 title_found_gamecard = 0;
+        // u64 gamecard_title_id[1];
+        // temp_res = AM_GetTitleList(&title_found_gamecard, MEDIATYPE_GAME_CARD, 1, gamecard_title_id);
+        // if (temp_res != 0) {
+        //     print_error_code_verbose("AM_GetTitleList GAMECARD", temp_res);
+        // }
+
+        // // Launch title using PS
+        // {
+        //     const FS_ProgramInfo selected_game = {
+        //         .programId = gamecard_title_id[0], 
+        //         .mediaType = MEDIATYPE_GAME_CARD
+        //     };
+
+        //     u32 launch_flags = LAUNCH_FLAG_IS_REGULAR_APPLICATION | LAUNCH_FLAG_LOAD_TITLE_DEPENDENCIES;
+        //     temp_res = PMAPP_LaunchTitle(&selected_game, launch_flags);
+        //     if (R_FAILED(temp_res)) {
+        //         print_error_code_verbose("launch selected game (using PS)", temp_res);
+        //     }            
+        // }
+
+        // Launch title using NS
+        {
+            u32 launch_flags = LAUNCH_FLAG_IS_REGULAR_APPLICATION | LAUNCH_FLAG_LOAD_TITLE_DEPENDENCIES;
+            u32 out_proc_id = 0;
+            u64 TITLE_ID_GAMECARD = 0x00 // Trying to load the title_id 0 tells NS to load the gamecard
+            temp_res = NS_LaunchTitle(0, launch_flags, &out_proc_id);
+            if (R_FAILED(temp_res)) {
+                print_error_code_verbose("launch selected game (using NS)", temp_res);
+            }
+        }
+
+        // Result NS_LaunchTitle(u64 titleid, u32 launch_flags, u32 *procid)
     }
 
 
