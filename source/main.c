@@ -56,7 +56,7 @@ bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nam
     };
     FS_Path archivePath = { PATH_BINARY, sizeof(archPath), archPath };
 
-    printf("About to run FSUSER_OpenArchive\n");
+    // printf("About to run FSUSER_OpenArchive\n");
 
     FS_Archive archive;
     Result res = FSUSER_OpenArchive(&archive, ARCHIVE_SAVEDATA_AND_CONTENT, archivePath);
@@ -65,7 +65,7 @@ bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nam
         return false;
     }
 
-    printf("Ran FSUSER_OpenArchive\n");
+    // printf("Ran FSUSER_OpenArchive\n");
 
     // This is a comment from mikage
     // a new path:
@@ -87,7 +87,7 @@ bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nam
 
     Handle fileHandle;
 
-    printf("About to run FSUSER_OpenFile\n");
+    // printf("About to run FSUSER_OpenFile\n");
 
     res = FSUSER_OpenFile(&fileHandle, archive, filePath, FS_OPEN_READ, 0);
     if (R_FAILED(res)) {
@@ -96,7 +96,7 @@ bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nam
         return false;
     }
 
-    printf("Ran FSUSER_OpenFile\n");
+    // printf("Ran FSUSER_OpenFile\n");
 
     // Read the SMDH data
     u32 bytesRead;
@@ -144,7 +144,7 @@ int main(int argc, char* argv[]) {
 
     // Get handle to PM system module
     {
-        printf("initializing the PMApp system module handle\n");
+        // printf("initializing the PMApp system module handle\n");
 
         // Initialize "Process Application Manager" system module
         // It is useful for launching more titles / system modules
@@ -153,7 +153,7 @@ int main(int argc, char* argv[]) {
             print_error_code_verbose("pmappInit", temp_res);
         } 
 
-        printf("initialized the PMApp system module handle\n");        
+        // printf("initialized the PMApp system module handle\n");        
     }
 
     // Get all running processes using SVCGetProcessList
@@ -169,12 +169,12 @@ int main(int argc, char* argv[]) {
             print_error_code_verbose("svcGetProcessList", temp_res);
         }
 
-        printf("Total processes: %ld\n", (long)count);        
+        // printf("Total processes: %ld\n", (long)count);        
     }
 
     // Run the "am" system module title, before getting it's handle
     {
-        printf("Launching AM system module\n");
+        // printf("Launching AM system module\n");
 
         const FS_ProgramInfo amProgramInfo = {
             .programId = TITLE_ID_SYSTEM_MODULE_AM_EU, 
@@ -186,13 +186,13 @@ int main(int argc, char* argv[]) {
             print_error_code_verbose("launch application manager", temp_res);
         }
 
-        printf("Launched AM system module\n");
+        // printf("Launched AM system module\n");
     }
 
 
     // Get handle to AM system module
     {
-        printf("initializing the AM system module handle\n");
+        // printf("initializing the AM system module handle\n");
 
         // Initialize "application manager" system module - it is used to fetch the list of installed titles
         temp_res = amInit();
@@ -200,32 +200,34 @@ int main(int argc, char* argv[]) {
             print_error_code_verbose("amInit", temp_res);
         } 
 
-        printf("initialized the am service handle\n");        
+        // printf("initialized the am service handle\n");        
     }
 
-    // // Get number of title installed in NAND using AM module
-    // {
-    //     printf("getting titles installed in nand\n");
+    // Get number of title installed in NAND using AM module
+    {
+        printf("getting titles installed in nand\n");
 
-    //     // Title count installed in NAND
-    //     u32 title_count_nand = 0;
-    //     temp_res = AM_GetTitleCount(MEDIATYPE_NAND, &title_count_nand);
-    //     if (temp_res != 0) {
-    //         print_error_code_verbose("AM_GetTitleCount", temp_res);
-    //     }
+        // Title count installed in NAND
+        u32 title_count_nand = 0;
+        temp_res = AM_GetTitleCount(MEDIATYPE_NAND, &title_count_nand);
+        if (temp_res != 0) {
+            print_error_code_verbose("AM_GetTitleCount", temp_res);
+        }
 
-    //     printf("Title Count in NAND %d\n", (int)title_count_nand);        
-    // }
+        printf("Title Count in NAND %d\n", (int)title_count_nand);        
+    }
 
-    // // Get gamecard title id
-    // u32 title_found_gamecard = 0;
-    // u64 gamecard_title_id[1];
-    // temp_res = AM_GetTitleList(&title_found_gamecard, MEDIATYPE_GAME_CARD, 1, gamecard_title_id);
-    // if (temp_res != 0) {
-    //     print_error_code_verbose("AM_GetTitleList GAMECARD", temp_res);
-    // }
+    {        
+        // Get gamecard title id
+        u32 title_found_gamecard = 0;
+        u64 gamecard_title_id[1];
+        temp_res = AM_GetTitleList(&title_found_gamecard, MEDIATYPE_GAME_CARD, 1, gamecard_title_id);
+        if (temp_res != 0) {
+            print_error_code_verbose("AM_GetTitleList GAMECARD", temp_res);
+        }
 
-    // printf("Gamecard has title id %#018llx\n", gamecard_title_id[0]);
+        printf("Gamecard has title id %#018llx\n", gamecard_title_id[0]);
+    }
 
 
 
@@ -238,16 +240,16 @@ int main(int argc, char* argv[]) {
     //     printf("title %#018llx - failed to get name\n", gamecard_title_id[0]);
     // }
 
-    // // Get homemenu title (hardcoded tid) title name
-    // // u64 homemenu_tid = 0x0004003000008F02; // us
-    // u64 homemenu_tid = 0x0004003000009802; // eu
-    // char title_name_homemenu[MAX_TITLE_NAME];
-    // temp_res = getTitleName(homemenu_tid, MEDIATYPE_NAND, title_name_homemenu, MAX_TITLE_NAME);
-    // if (temp_res) {
-    //     printf("title %#018llx - %s\n", homemenu_tid, title_name_homemenu);
-    // } else {
-    //     printf("title %#018llx - failed to get name\n", homemenu_tid);
-    // }
+    // Get homemenu title (hardcoded tid) title name
+    // u64 homemenu_tid = 0x0004003000008F02; // us
+    u64 homemenu_tid = 0x0004003000009802; // eu
+    char title_name_homemenu[MAX_TITLE_NAME];
+    temp_res = getTitleName(homemenu_tid, MEDIATYPE_NAND, title_name_homemenu, MAX_TITLE_NAME);
+    if (temp_res) {
+        printf("title %#018llx - %s\n", homemenu_tid, title_name_homemenu);
+    } else {
+        printf("title %#018llx - failed to get name\n", homemenu_tid);
+    }
 
     // // Fetch info for each installed title
     // u32 titles_found_nand = 0;
