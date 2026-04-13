@@ -4,6 +4,5 @@
 *.3dsx
 *.smdh
 *.ncch
-template.cia
 build/
 aes_keys.txt
