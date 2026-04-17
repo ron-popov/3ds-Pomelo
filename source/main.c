@@ -20,6 +20,9 @@
 #define LAUNCH_FLAG_IS_REGULAR_APPLICATION 0x01
 #define LAUNCH_FLAG_LOAD_TITLE_DEPENDENCIES 0x08
 
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#define MAX(a,b) (((a)>(b))?(a):(b))
+
 void print_error_code_verbose(char* desc, Result res) {
     printf("%s Result 0x%lx\n", desc, res);
     printf("  Module  : %lu\n", R_MODULE(res));
@@ -47,6 +50,12 @@ typedef struct {
     u8 icon_graphics[0x1680]; // not used, only for filler purposes
     // ... icon data follows
 } SMDH; // struct size must be 0x36c0 - mikage doesn't allow to read partial sections
+
+typedef struct {
+    u64 titleId;
+    FS_MediaType mediaType;
+    char name[MAX_TITLE_NAME];
+} titleGame;
 
 bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nameLen) {
     SMDH smdh;
@@ -163,49 +172,40 @@ bool shouldDisplayTitle(u64 title_id) {
 
 int main(int argc, char* argv[]) {
 	// Init libs
-	gfxInitDefault();
-	C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
-	C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
-	C2D_Prepare();
-	consoleInit(GFX_TOP, NULL);
+	// C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
+	// C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
+	// C2D_Prepare();
+
+    PrintConsole topScreen, bottomScreen;
+
+    gfxInitDefault();
+	consoleInit(GFX_TOP, &topScreen);
+    consoleInit(GFX_BOTTOM, &bottomScreen);
+
+    consoleSelect(&topScreen);
 
 	// Create screens
 	// C3D_RenderTarget* bottom = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
+
     Result temp_res;
+    titleGame games[16];
+    u8 games_counter = 0;
 
     printf("rpopov custom homemenu!\n");
 
     // Get handle to PM system module
+    // PM is used to initialize the AM module
     {
-        // printf("initializing the PMApp system module handle\n");
-
         // Initialize "Process Application Manager" system module
         // It is useful for launching more titles / system modules
         temp_res = pmAppInit();
         if (temp_res != 0) {
             print_error_code_verbose("pmappInit", temp_res);
         } 
-
-        // printf("initialized the PMApp system module handle\n");        
-    }
-
-    // Get all running processes using SVCGetProcessList
-    {
-        // The kernel supports at most 64 processes simultaneously
-        u32  pids[64];
-        s32  count = 0;
-
-        // printf("First process pid (before) : %#016lx\n", pids[0]);
-
-        temp_res = svcGetProcessList(&count, pids, 64);
-        if (R_FAILED(temp_res)) {
-            print_error_code_verbose("svcGetProcessList", temp_res);
-        }
-
-        // printf("Total processes: %ld\n", (long)count);        
     }
 
     // Run the "am" system module title, before getting it's handle
+    // It is used to iterate the installed titles
     {
         // printf("Launching AM system module\n");
 
@@ -236,31 +236,8 @@ int main(int argc, char* argv[]) {
         // printf("initialized the am service handle\n");        
     }
 
-    // Get handle to NS system module
+    // Iterate over gamecard games - single one
     {
-        // Initialize "application manager" system module - it is used to fetch the list of installed titles
-        temp_res = nsInit();
-        if (temp_res != 0) {
-            print_error_code_verbose("nsInit", temp_res);
-        } 
-
-    }
-
-    // Get number of title installed in NAND using AM module
-    {
-        printf("getting titles installed in nand\n");
-
-        // Title count installed in NAND
-        u32 title_count_nand = 0;
-        temp_res = AM_GetTitleCount(MEDIATYPE_NAND, &title_count_nand);
-        if (temp_res != 0) {
-            print_error_code_verbose("AM_GetTitleCount", temp_res);
-        }
-
-        printf("Title Count in NAND %d\n", (int)title_count_nand);        
-    }
-
-    {        
         // Get gamecard title id
         u32 title_found_gamecard = 0;
         u64 gamecard_title_id[1];
@@ -269,36 +246,34 @@ int main(int argc, char* argv[]) {
             print_error_code_verbose("AM_GetTitleList GAMECARD", temp_res);
         }
 
-        printf("Gamecard has title id %#018llx\n", gamecard_title_id[0]);
+        titleGame gamecardTitleGame = {
+            .titleId = 0x00,
+            .mediaType = MEDIATYPE_GAME_CARD,
+            .name = "Gamecard - No Game Inserted"
+        };
 
-        // Get gamecard title name
-        char title_name_gamecard[MAX_TITLE_NAME];
-        temp_res = getTitleName(gamecard_title_id[0], MEDIATYPE_GAME_CARD, title_name_gamecard, MAX_TITLE_NAME);
-        if (temp_res) {
-            printf("Gamecard title %#018llx - %s\n", gamecard_title_id[0], title_name_gamecard);
-        } else {
-            printf("Gamecard title %#018llx - failed to get name\n", gamecard_title_id[0]);
+        if (title_found_gamecard) {
+            // printf("Gamecard has title id %#018llx\n", gamecard_title_id[0]);
+
+            // Get gamecard title name
+            char title_name_gamecard[MAX_TITLE_NAME];
+            temp_res = getTitleName(gamecard_title_id[0], MEDIATYPE_GAME_CARD, title_name_gamecard, MAX_TITLE_NAME);
+
+            if (temp_res) {
+                // printf("Gamecard title %#018llx - %s\n", gamecard_title_id[0], title_name_gamecard);
+
+                gamecardTitleGame.titleId = gamecard_title_id[0];
+                strncpy(gamecardTitleGame.name, title_name_gamecard, MAX_TITLE_NAME);
+            } else {
+                printf("Gamecard title %#018llx - failed to get name\n", gamecard_title_id[0]);
+            }
         }
+
+        games[games_counter] = gamecardTitleGame;
+        games_counter++;
     }
 
-
-    // // Get homemenu title (hardcoded tid) title name
-    // {
-    //     // u64 homemenu_tid = 0x0004003000008F02; // us homemenu
-    //     // u64 homemenu_tid = 0x0004003000009802; // eu homemenu
-    //     // u64 homemenu_tid = 0x0004003000009902; // eu camera
-    //     u64 homemenu_tid = 0x0004001000022000; // eu system settings
-    //     // u64 homemenu_tid = 0x0004003000007777; // fake tid
-    //     char title_name_homemenu[MAX_TITLE_NAME];
-    //     temp_res = getTitleName(homemenu_tid, MEDIATYPE_NAND, title_name_homemenu, MAX_TITLE_NAME);
-    //     if (temp_res) {
-    //         printf("title %#018llx - %s\n", homemenu_tid, title_name_homemenu);
-    //     } else {
-    //         printf("title %#018llx - failed to get name\n", homemenu_tid);
-    //     }        
-    // }
-
-    // Fetch name of each installed title
+    // Iterate over nand titles and fetch name of each installed title
     {
         // Get list of installed titles
         u32 titles_found_nand = 0;
@@ -312,7 +287,7 @@ int main(int argc, char* argv[]) {
 
         // Get name of each title
         for(u32 i = 0; i < titles_found_nand; i++){
-            // svcSleepThread(4888000000); // sleep for ~4 seconds
+
 
             if (!shouldDisplayTitle(title_ids[i])){
                 continue;
@@ -321,79 +296,75 @@ int main(int argc, char* argv[]) {
             char title_name[MAX_TITLE_NAME] = {0};
             temp_res = getTitleName(title_ids[i], MEDIATYPE_NAND, title_name, MAX_TITLE_NAME);
             if (temp_res) {
-                printf("%02lu title %#018llx - %s\n", i, title_ids[i], title_name);
+                // printf("%02lu title %#018llx - %s\n", i, title_ids[i], title_name);
+                titleGame nandTitleGame = {
+                    .titleId = title_ids[i],
+                    .mediaType = MEDIATYPE_NAND,
+                    .name = ""
+                };
+
+                strncpy(nandTitleGame.name, title_name, MAX_TITLE_NAME);
+
+                games[games_counter] = nandTitleGame;
+                games_counter++;
+
             } else {
                 printf("%02lu title %#018llx - failed to get name\n", i, title_ids[i]);
             }
         }
     }
 
-    // Sleep and then launch title in gamecard
-    {
-        printf("Launching selected game in 4 seconds...\n");
-        svcSleepThread(4888000000); // sleep for ~4 seconds
-
-        // Get gamecard title id
-        u32 title_found_gamecard = 0;
-        u64 gamecard_title_id[1];
-        temp_res = AM_GetTitleList(&title_found_gamecard, MEDIATYPE_GAME_CARD, 1, gamecard_title_id);
-        if (temp_res != 0) {
-            print_error_code_verbose("AM_GetTitleList GAMECARD", temp_res);
-        }
-
-        // // Launch title using PS
-        // {
-        //     const FS_ProgramInfo selected_game = {
-        //         .programId = gamecard_title_id[0], 
-        //         .mediaType = MEDIATYPE_GAME_CARD
-        //     };
-
-        //     u32 launch_flags = LAUNCH_FLAG_IS_REGULAR_APPLICATION | LAUNCH_FLAG_LOAD_TITLE_DEPENDENCIES;
-        //     temp_res = PMAPP_LaunchTitle(&selected_game, launch_flags);
-        //     if (R_FAILED(temp_res)) {
-        //         print_error_code_verbose("launch selected game (using PS)", temp_res);
-        //     }            
-        // }
-
-        // // Launch title using NS
-        // {
-        //     u32 launch_flags = LAUNCH_FLAG_IS_REGULAR_APPLICATION | LAUNCH_FLAG_LOAD_TITLE_DEPENDENCIES;
-        //     u32 out_proc_id = 0;
-        //     u64 TITLE_ID_GAMECARD = 0x00 // Trying to load the title_id 0 tells NS to load the gamecard
-        //     temp_res = NS_LaunchTitle(0, launch_flags, &out_proc_id);
-        //     if (R_FAILED(temp_res)) {
-        //         print_error_code_verbose("launch selected game (using NS)", temp_res);
-        //     }
-        // }
 
 
-        // Launch title using APT
-        {
-            printf("Launching game now\n");
+    consoleSelect(&bottomScreen);
 
-            // It doesn't return any value
-            aptSetChainloader(gamecard_title_id[0], MEDIATYPE_GAME_CARD);
-        }
-    }
-
-
-
-
+    int selected_game_index = 1;
+    bool is_first_run = true;
 
 	while(aptMainLoop()) {
         hidScanInput();
-        u32 kDown = hidKeysHeld();
+        u32 kDown = hidKeysDown();
         
-        // TODO: This causes a weird error in mikage, keep this and debug sometime
-        if(kDown & KEY_B)
-			break; // break in order to return to hbmenu
+        if (kDown || is_first_run) {
+            is_first_run = false;
+
+            // Handle kDown
+            switch (kDown) {
+                case KEY_B:
+                    selected_game_index++;
+                    selected_game_index = MIN(selected_game_index, games_counter - 1);
+                    break;
+                case KEY_X:
+                    selected_game_index--;
+                    selected_game_index = MAX(selected_game_index, 0);
+                    break;
+            }
+
+            consoleClear();
+            for (int i = 0; i < (sizeof(games) / sizeof(titleGame)); i++) {
+                titleGame game = games[i];
+                if (game.name[0] == 0) {
+                    // No more games to display
+                    break;
+                }
+
+
+                if (i == selected_game_index) {
+                    printf("* %s\n", game.name);
+                } else {
+                    printf("  %s\n", game.name);
+                }                
+            }
+        }
     }
 
-    amExit();
-
 	// Deinit libs
-	C2D_Fini();
-	C3D_Fini();
+	// C2D_Fini();
+	// C3D_Fini();
 	gfxExit();
 	return 0;
+
+    // TODO: Reaching here causes a weird error in mikage, keep this and debug sometime
+    // This is because svc index 0x51 - svcUnbindInterrupt, is not implemented
+
 }
