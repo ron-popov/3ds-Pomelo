@@ -169,13 +169,11 @@ bool shouldDisplayTitle(u64 title_id) {
     }
 }
 
+void launchTitleGame(titleGame *titleGameToLaunch) {
+    return;
+}
 
 int main(int argc, char* argv[]) {
-	// Init libs
-	// C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
-	// C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
-	// C2D_Prepare();
-
     PrintConsole topScreen, bottomScreen;
 
     gfxInitDefault();
@@ -183,9 +181,6 @@ int main(int argc, char* argv[]) {
     consoleInit(GFX_BOTTOM, &bottomScreen);
 
     consoleSelect(&topScreen);
-
-	// Create screens
-	// C3D_RenderTarget* bottom = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
 
     Result temp_res;
     titleGame games[16];
@@ -330,13 +325,19 @@ int main(int argc, char* argv[]) {
 
             // Handle kDown
             switch (kDown) {
-                case KEY_B:
+                case KEY_B: // Go down in menu
                     selected_game_index++;
                     selected_game_index = MIN(selected_game_index, games_counter - 1);
                     break;
-                case KEY_X:
+                case KEY_X: // Go up in menu
                     selected_game_index--;
                     selected_game_index = MAX(selected_game_index, 0);
+                    break;
+                case KEY_START: // Launch selected game
+                    consoleSelect(&topScreen);
+                    printf("Launching title id %#018llx\n", games[selected_game_index].titleId);
+                    consoleSelect(&bottomScreen);
+                    launchTitleGame(&games[selected_game_index]);
                     break;
             }
 
@@ -358,10 +359,6 @@ int main(int argc, char* argv[]) {
         }
     }
 
-	// Deinit libs
-	// C2D_Fini();
-	// C3D_Fini();
-	gfxExit();
 	return 0;
 
     // TODO: Reaching here causes a weird error in mikage, keep this and debug sometime
