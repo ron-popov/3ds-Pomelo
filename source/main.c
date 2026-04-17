@@ -246,14 +246,6 @@ int main(int argc, char* argv[]) {
 
     }
 
-    {
-        // Initialize "application manager" system module - it is used to fetch the list of installed titles
-        temp_res = aptInit();
-        if (temp_res != 0) {
-            print_error_code_verbose("aptInit", temp_res);
-        }
-    }
-
     // Get number of title installed in NAND using AM module
     {
         printf("getting titles installed in nand\n");
@@ -374,8 +366,11 @@ int main(int argc, char* argv[]) {
         //     }
         // }
 
+
         // Launch title using APT
         {
+            printf("Launching game now\n");
+
             // It doesn't return any value
             aptSetChainloader(gamecard_title_id[0], MEDIATYPE_GAME_CARD);
         }
