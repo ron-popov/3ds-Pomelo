@@ -340,6 +340,15 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    // Check gamecard update section
+    {
+        temp_res = NS_CardUpdateInitialize();
+        if (R_FAILED(temp_res)) {
+            print_error_code_verbose("CardUpdateInitialize", temp_res);
+        }
+
+    }
+
     consoleSelect(&bottomScreen);
 
     int selected_game_index = 1;
@@ -377,15 +386,25 @@ int main(int argc, char* argv[]) {
                     if (R_FAILED(temp_res)) {
                         consoleSelect(&topScreen);
                         print_error_code_verbose("APT_PrepareToStartApplication", temp_res);
+                        printf("Continuing even tho error\n");
                         consoleSelect(&bottomScreen);
-                        break;
+                        // break;
                     } else {
                         consoleSelect(&topScreen);
                         printf("Successfully ran  APT_PrepareToStartApplication\n");
                         consoleSelect(&bottomScreen);
                     }
 
+                    // 0x00235E4C
+                    // u8 *parameter = (u8*)0x00235E4C;
+
                     u8 parameter[0x300] = {0};
+                    // parameter[0x00] = 0x00;
+                    // parameter[0x01] = 0x23;
+                    // parameter[0x02] = 0x5e;
+                    // parameter[0x03] = 0x4c;
+
+                    
                     u8 hmac[0x01] = {0};
                     temp_res = APT_StartApplication(0x300, 0x00, true, &parameter, &hmac);
                     if (R_FAILED(temp_res)) {
@@ -396,6 +415,7 @@ int main(int argc, char* argv[]) {
                     } else {
                         consoleSelect(&topScreen);
                         printf("Successfully ran  APT_StartApplication\n");
+
                         consoleSelect(&bottomScreen);
                     }
 

@@ -1,3 +1,6 @@
+#include <stdlib.h>
+#include <stdio.h>
+
 #include "custom_ipc_calls.h"
 
 Result APT_PrepareToStartApplication(FS_ProgramInfo* programInfo, u8 launchFlags)
@@ -37,4 +40,52 @@ Result APT_StartApplication(u32 parameterSize, u32 hmacSize, u32 paused, void* p
 	cmdbuf[7]=(u32)hmac;
 
 	return aptSendCommand(cmdbuf);
+}
+
+Result NS_CardUpdateInitialize() {
+	// svcCreateMemoryBlock(&swkbdSharedMemHandle, (u32)swkbdSharedMem, sharedMemSize, MEMPERM_READ|MEMPERM_WRITE, MEMPERM_READ|MEMPERM_WRITE);
+	// using CardUpdateInitialize = IPC::IPCCommand<0x7>::add_uint32::add_handle<IPC::HandleType::SharedMemoryBlock>::response;
+
+	u32 sharedMemSize = 0x100;
+	char* sharedMem = malloc(sharedMemSize);
+	Handle sharedMemHandle;
+
+	// Result shared_mem_result = svcCreateMemoryBlock(&sharedMemHandle, (u32)sharedMem, 
+	// 	sharedMemSize, MEMPERM_READ|MEMPERM_WRITE, MEMPERM_READ|MEMPERM_WRITE);
+
+	Result shared_mem_result = svcCreateMemoryBlock(&sharedMemHandle, (u32)sharedMem, 
+		sharedMemSize, MEMPERM_READ, MEMPERM_READ);
+
+	if (R_FAILED(shared_mem_result)) {
+		printf("Failed creating shared memory block\n");
+		return shared_mem_result;
+	}
+
+	// Get handle to ns service
+	Handle nsHandle;
+	Result ns_handle_result = srvGetServiceHandle(&nsHandle, "ns:s");
+
+	if (R_FAILED(ns_handle_result)) {
+		printf("Failed getting handle to NS\n");
+		return ns_handle_result;
+	}
+
+	Result ret = 0;
+	u32 *cmdbuf = getThreadCommandBuffer();
+
+	cmdbuf[0] = 0x00070042;
+	cmdbuf[1] = sharedMemSize;
+	cmdbuf[2] = 0;
+	cmdbuf[3] = sharedMemHandle;
+
+	ret = svcSendSyncRequest(nsHandle);
+
+	nsExit();
+
+	if(R_FAILED(ret)) {
+		return ret;
+	} else {
+		return (Result)cmdbuf[1];	
+	}
+	
 }
