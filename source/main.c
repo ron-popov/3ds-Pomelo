@@ -197,6 +197,15 @@ int main(int argc, char* argv[]) {
         } 
     }
 
+    // Get handle to NS system module
+    // NS is used to initialize all sorts of modules the homemenu is supposed to launch
+    {
+        temp_res = nsInit();
+        if (temp_res != 0) {
+            print_error_code_verbose("nsInit", temp_res);
+        } 
+    }
+
     // Run the "am" system module title, before getting it's handle
     // It is used to iterate the installed titles
     {
@@ -307,7 +316,29 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    // Launch a bunch of titles required for the homescreen
+    // I took this list from the real home menu
+    {
+        u64 titleIdsToLaunch[] = {
+            0x4013000001d02, 0x4013000001802, 0x4013000001a02, 0x4013000001502, 0x4013000001c02, 
+            0x4013000002702, 0x4013000001602, 0x4013000002002, 0x4013000003302, 0x4013000002d02, 
+            0x4013000002e02, 0x4013000002902, 0x4013000002f02, 0x4013000002602, 0x4013000002402, 
+            0x4013000003202, 0x4013000003402, 0x4013000003502, 0x4013000002b02, 0x4013000002c02, 
+            0x4013000002802
+        };
 
+        // Result NS_LaunchTitle(u64 titleid, u32 launch_flags, u32 *procid)
+
+        for (int i = 0; i < sizeof(titleIdsToLaunch) / sizeof(u64); i++) {
+            u32 proc_id_out = 0;
+            temp_res = NS_LaunchTitle(titleIdsToLaunch[i], 0x00, &proc_id_out);
+            if (R_FAILED(temp_res)) {
+                char *error_message = (char*)malloc(256);
+                sprintf(error_message, "launch required title (%#018llx)", titleIdsToLaunch[i]);
+                print_error_code_verbose(error_message, temp_res);
+            }
+        }
+    }
 
     consoleSelect(&bottomScreen);
 
