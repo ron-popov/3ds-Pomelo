@@ -344,14 +344,28 @@ int main(int argc, char* argv[]) {
 
                     temp_res = APT_PrepareToStartApplication(&selectedGameProgramInfo, 0x00);
                     if (R_FAILED(temp_res)) {
+                        consoleSelect(&topScreen);
                         print_error_code_verbose("APT_PrepareToStartApplication", temp_res);
+                        consoleSelect(&bottomScreen);
+                        break;
+                    } else {
+                        consoleSelect(&topScreen);
+                        printf("Successfully ran  APT_PrepareToStartApplication\n");
+                        consoleSelect(&bottomScreen);
                     }
 
                     u8 parameter[0x300] = {0};
                     u8 hmac[0x01] = {0};
                     temp_res = APT_StartApplication(0x300, 0x00, true, &parameter, &hmac);
                     if (R_FAILED(temp_res)) {
+                        consoleSelect(&topScreen);
                         print_error_code_verbose("APT_StartApplication", temp_res);
+                        consoleSelect(&bottomScreen);
+                        break;
+                    } else {
+                        consoleSelect(&topScreen);
+                        printf("Successfully ran  APT_StartApplication\n");
+                        consoleSelect(&bottomScreen);
                     }
 
                     break;

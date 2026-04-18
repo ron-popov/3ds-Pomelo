@@ -29,8 +29,12 @@ Result APT_StartApplication(u32 parameterSize, u32 hmacSize, u32 paused, void* p
 	cmdbuf[1]=parameterSize;
 	cmdbuf[2]=hmacSize;
 	cmdbuf[3]=paused;
-	cmdbuf[4]=(u32)parameter;
-	cmdbuf[5]=(u32)hmac;
+
+	cmdbuf[4]=IPC_Desc_StaticBuffer(parameterSize,0x00);
+	cmdbuf[5]=(u32)parameter;
+
+	cmdbuf[6]=IPC_Desc_StaticBuffer(hmacSize,0x01);
+	cmdbuf[7]=(u32)hmac;
 
 	return aptSendCommand(cmdbuf);
 }
