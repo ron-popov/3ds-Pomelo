@@ -7,6 +7,8 @@
 #include <string.h>
 #include <wchar.h>
 
+#include "custom_ipc_calls.h"
+
 #define SCREEN_WIDTH 400
 #define SCREEN_HEIGHT 240
 
@@ -167,10 +169,6 @@ bool shouldDisplayTitle(u64 title_id) {
         default:
             return true;
     }
-}
-
-void launchTitleGame(titleGame *titleGameToLaunch) {
-    return;
 }
 
 int main(int argc, char* argv[]) {
@@ -337,7 +335,25 @@ int main(int argc, char* argv[]) {
                     consoleSelect(&topScreen);
                     printf("Launching title id %#018llx\n", games[selected_game_index].titleId);
                     consoleSelect(&bottomScreen);
-                    launchTitleGame(&games[selected_game_index]);
+
+                    titleGame *selectedTitleGame = &games[selected_game_index];
+                    FS_ProgramInfo selectedGameProgramInfo = {
+                        .programId = selectedTitleGame->titleId, 
+                        .mediaType = selectedTitleGame->mediaType
+                    };
+
+                    temp_res = APT_PrepareToStartApplication(&selectedGameProgramInfo, 0x00);
+                    if (R_FAILED(temp_res)) {
+                        print_error_code_verbose("APT_PrepareToStartApplication", temp_res);
+                    }
+
+                    u8 parameter[0x300] = {0};
+                    u8 hmac[0x01] = {0};
+                    temp_res = APT_StartApplication(0x300, 0x00, true, &parameter, &hmac);
+                    if (R_FAILED(temp_res)) {
+                        print_error_code_verbose("APT_StartApplication", temp_res);
+                    }
+
                     break;
             }
 
