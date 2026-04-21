@@ -89,3 +89,32 @@ Result NS_CardUpdateInitialize() {
 	}
 	
 }
+
+
+Result CUSTOM_APT_Initialize(NS_APPID appId, u32 attr, Handle* signalEvent, Handle* resumeEvent)
+{
+	u32 cmdbuf[16];
+	cmdbuf[0]=IPC_MakeHeader(0x2,2,0); // 0x20080
+	cmdbuf[1]=appId;
+	cmdbuf[2]=attr;
+
+	Result ret = aptSendCommand(cmdbuf);
+	if (R_SUCCEEDED(ret))
+	{
+		if(signalEvent) *signalEvent=cmdbuf[3];
+		if(resumeEvent) *resumeEvent=cmdbuf[4];
+	}
+
+	return ret;
+}
+
+
+
+Result CUSTOM_APT_Enable(u32 attr)
+{
+	u32 cmdbuf[16];
+	cmdbuf[0]=IPC_MakeHeader(0x3,1,0); // 0x30040
+	cmdbuf[1]=attr;
+
+	return aptSendCommand(cmdbuf);
+}

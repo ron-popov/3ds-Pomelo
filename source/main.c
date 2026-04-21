@@ -8,6 +8,7 @@
 #include <wchar.h>
 
 #include "custom_ipc_calls.h"
+#include "custom_apt.h"
 
 #define SCREEN_WIDTH 400
 #define SCREEN_HEIGHT 240
@@ -32,9 +33,6 @@ void print_error_code_verbose(char* desc, Result res) {
     printf("  Summary : %lu\n", R_SUMMARY(res));
     printf("  Desc    : %lu\n", R_DESCRIPTION(res));
 }
-
-
-
 
 typedef struct {
     u16 shortDescription[0x40];  // The title name (UTF-16)
@@ -169,6 +167,17 @@ bool shouldDisplayTitle(u64 title_id) {
         default:
             return true;
     }
+}
+
+void __appInit(void)
+{
+    // Initialize services
+    srvInit();
+    homemenuAptInit();
+    hidInit();
+
+    fsInit();
+    archiveMountSdmc();
 }
 
 int main(int argc, char* argv[]) {
@@ -340,14 +349,14 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // Check gamecard update section
-    {
-        temp_res = NS_CardUpdateInitialize();
-        if (R_FAILED(temp_res)) {
-            print_error_code_verbose("CardUpdateInitialize", temp_res);
-        }
+    // // Check gamecard update section
+    // {
+    //     temp_res = NS_CardUpdateInitialize();
+    //     if (R_FAILED(temp_res)) {
+    //         print_error_code_verbose("CardUpdateInitialize", temp_res);
+    //     }
 
-    }
+    // }
 
     consoleSelect(&bottomScreen);
 
@@ -376,55 +385,55 @@ int main(int argc, char* argv[]) {
                     printf("Launching title id %#018llx\n", games[selected_game_index].titleId);
                     consoleSelect(&bottomScreen);
 
-                    titleGame *selectedTitleGame = &games[selected_game_index];
-                    FS_ProgramInfo selectedGameProgramInfo = {
-                        .programId = selectedTitleGame->titleId,
-                        .mediaType = selectedTitleGame->mediaType
-                    };
+                    // titleGame *selectedTitleGame = &games[selected_game_index];
+                    // FS_ProgramInfo selectedGameProgramInfo = {
+                    //     .programId = selectedTitleGame->titleId,
+                    //     .mediaType = selectedTitleGame->mediaType
+                    // };
 
-                    // Query whether an application is already registered/running
-                    bool registered = 0;
-                    APT_IsRegistered(APPID_APPLICATION, &registered);
-                    consoleSelect(&topScreen);
-                    printf("Is App Registered %d\n", registered);
-                    consoleSelect(&bottomScreen);
+                    // // Query whether an application is already registered/running
+                    // bool registered = 0;
+                    // APT_IsRegistered(APPID_APPLICATION, &registered);
+                    // consoleSelect(&topScreen);
+                    // printf("Is App Registered %d\n", registered);
+                    // consoleSelect(&bottomScreen);
 
-                    temp_res = APT_PrepareToStartApplication(&selectedGameProgramInfo, 0x00);
-                    if (R_FAILED(temp_res)) {
-                        consoleSelect(&topScreen);
-                        print_error_code_verbose("APT_PrepareToStartApplication", temp_res);
-                        printf("Continuing even tho error\n");
-                        consoleSelect(&bottomScreen);
-                        // break;
-                    } else {
-                        consoleSelect(&topScreen);
-                        printf("Successfully ran  APT_PrepareToStartApplication\n");
-                        consoleSelect(&bottomScreen);
-                    }
+                    // temp_res = APT_PrepareToStartApplication(&selectedGameProgramInfo, 0x00);
+                    // if (R_FAILED(temp_res)) {
+                    //     consoleSelect(&topScreen);
+                    //     print_error_code_verbose("APT_PrepareToStartApplication", temp_res);
+                    //     printf("Continuing even tho error\n");
+                    //     consoleSelect(&bottomScreen);
+                    //     // break;
+                    // } else {
+                    //     consoleSelect(&topScreen);
+                    //     printf("Successfully ran  APT_PrepareToStartApplication\n");
+                    //     consoleSelect(&bottomScreen);
+                    // }
 
-                    // 0x00235E4C
-                    // u8 *parameter = (u8*)0x00235E4C;
+                    // // 0x00235E4C
+                    // // u8 *parameter = (u8*)0x00235E4C;
 
-                    u8 parameter[0x300] = {0};
-                    // parameter[0x00] = 0x00;
-                    // parameter[0x01] = 0x23;
-                    // parameter[0x02] = 0x5e;
-                    // parameter[0x03] = 0x4c;
+                    // u8 parameter[0x300] = {0};
+                    // // parameter[0x00] = 0x00;
+                    // // parameter[0x01] = 0x23;
+                    // // parameter[0x02] = 0x5e;
+                    // // parameter[0x03] = 0x4c;
 
                     
-                    u8 hmac[0x01] = {0};
-                    temp_res = APT_StartApplication(0x300, 0x00, true, &parameter, &hmac);
-                    if (R_FAILED(temp_res)) {
-                        consoleSelect(&topScreen);
-                        print_error_code_verbose("APT_StartApplication", temp_res);
-                        consoleSelect(&bottomScreen);
-                        break;
-                    } else {
-                        consoleSelect(&topScreen);
-                        printf("Successfully ran  APT_StartApplication\n");
+                    // u8 hmac[0x01] = {0};
+                    // temp_res = APT_StartApplication(0x300, 0x00, true, &parameter, &hmac);
+                    // if (R_FAILED(temp_res)) {
+                    //     consoleSelect(&topScreen);
+                    //     print_error_code_verbose("APT_StartApplication", temp_res);
+                    //     consoleSelect(&bottomScreen);
+                    //     break;
+                    // } else {
+                    //     consoleSelect(&topScreen);
+                    //     printf("Successfully ran  APT_StartApplication\n");
 
-                        consoleSelect(&bottomScreen);
-                    }
+                    //     consoleSelect(&bottomScreen);
+                    // }
 
                     break;
             }
