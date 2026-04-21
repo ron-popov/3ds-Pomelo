@@ -9,8 +9,16 @@ I also plan to migrate to C++ to take advantage of the class system.
 
 To test the app, you can do the following on Linux:
 ```sh
+# Patch 3dsx_crt0.o to change our appid to 0x101 instead of the default 0x300
+sudo bash -c "xxd /opt/devkitpro/devkitARM/arm-none-eabi/lib/armv6k/fpu/3dsx_crt0.o | sed 's/00000040: 0003 0000 0000 8001/00000040: 0101 0000 0000 8001/' | xxd -r > /opt/devkitpro/devkitARM/arm-none-eabi/lib/armv6k/fpu/3dsx_crt0.o.temp && mv -v -f /opt/devkitpro/devkitARM/arm-none-eabi/lib/armv6k/fpu/3dsx_crt0.o.temp /opt/devkitpro/devkitARM/arm-none-eabi/lib/armv6k/fpu/3dsx_crt0.o"
+
 # build
 make
+
+# Build cxi file (which is a ncch), specifically for europe region
+# The cxi file will be in custom_homemenu.3dsx.ncch
+~/3ds/mikage-dev/build/tools/3dsx_to_cia/3dsx_to_cia --title-id 0x4003000009802 --gen-ncch --input custom_homemenu.3dsx
+
 ```
 
 
@@ -26,10 +34,6 @@ cp -v ~/.local/share/mikage/data/00040030/00009802/content/00000000.cxi ~/.local
 rm -v ~/.local/share/mikage/data/00040030/00009802/content/00000027.cxi
 rm -v ~/.local/share/mikage/data/00040030/00009802/content/00000000.cxi
 
-# Build cxi file (which is a ncch), specifically for europe region
-# The cxi file will be in custom_homemenu.3dsx.ncch
-~/3ds/mikage-dev/build/tools/3dsx_to_cia/3dsx_to_cia --title-id 0x4003000009802 --gen-ncch --input custom_homemenu.3dsx
-
-# Copy new cxi file to mikage homemenu cxi file directory
+# Copy cxi file we built to mikage homemenu cxi file directory (overriding the original one)
 cp -v -f custom_homemenu.3dsx.ncch ~/.local/share/mikage/data/00040030/00009802/content/00000000.cxi
 ```

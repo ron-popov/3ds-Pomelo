@@ -20,9 +20,6 @@
 
 #define TITLE_ID_SYSTEM_MODULE_AM_EU 0x0004013000001502
 
-#define LAUNCH_FLAG_IS_REGULAR_APPLICATION 0x01
-#define LAUNCH_FLAG_LOAD_TITLE_DEPENDENCIES 0x08
-
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
@@ -33,6 +30,10 @@ void print_error_code_verbose(char* desc, Result res) {
     printf("  Summary : %lu\n", R_SUMMARY(res));
     printf("  Desc    : %lu\n", R_DESCRIPTION(res));
 }
+
+// We need to patch the 3dsx_crt0.o that contains the hardcoded appid
+// The default of devkitpro is 0x300 which is APPID_APPLICATION, but we wan't to be APPID_HOMEMENU
+// This is handeled by patching 3dsx_crt0.o using the oneliner in the readme.md file
 
 typedef struct {
     u16 shortDescription[0x40];  // The title name (UTF-16)
@@ -355,7 +356,6 @@ int main(int argc, char* argv[]) {
     //     if (R_FAILED(temp_res)) {
     //         print_error_code_verbose("CardUpdateInitialize", temp_res);
     //     }
-
     // }
 
     consoleSelect(&bottomScreen);
@@ -385,36 +385,36 @@ int main(int argc, char* argv[]) {
                     printf("Launching title id %#018llx\n", games[selected_game_index].titleId);
                     consoleSelect(&bottomScreen);
 
-                    // titleGame *selectedTitleGame = &games[selected_game_index];
-                    // FS_ProgramInfo selectedGameProgramInfo = {
-                    //     .programId = selectedTitleGame->titleId,
-                    //     .mediaType = selectedTitleGame->mediaType
-                    // };
+                    titleGame *selectedTitleGame = &games[selected_game_index];
+                    FS_ProgramInfo selectedGameProgramInfo = {
+                        .programId = selectedTitleGame->titleId,
+                        .mediaType = selectedTitleGame->mediaType
+                    };
 
-                    // // Query whether an application is already registered/running
-                    // bool registered = 0;
-                    // APT_IsRegistered(APPID_APPLICATION, &registered);
-                    // consoleSelect(&topScreen);
-                    // printf("Is App Registered %d\n", registered);
-                    // consoleSelect(&bottomScreen);
+                    // Query whether an application is already registered/running
+                    bool registered = 0;
+                    APT_IsRegistered(APPID_APPLICATION, &registered);
+                    consoleSelect(&topScreen);
+                    printf("Is App Registered %d\n", registered);
+                    consoleSelect(&bottomScreen);
 
-                    // temp_res = APT_PrepareToStartApplication(&selectedGameProgramInfo, 0x00);
-                    // if (R_FAILED(temp_res)) {
-                    //     consoleSelect(&topScreen);
-                    //     print_error_code_verbose("APT_PrepareToStartApplication", temp_res);
-                    //     printf("Continuing even tho error\n");
-                    //     consoleSelect(&bottomScreen);
-                    //     // break;
-                    // } else {
-                    //     consoleSelect(&topScreen);
-                    //     printf("Successfully ran  APT_PrepareToStartApplication\n");
-                    //     consoleSelect(&bottomScreen);
-                    // }
+                    temp_res = APT_PrepareToStartApplication(&selectedGameProgramInfo, 0x00);
+                    if (R_FAILED(temp_res)) {
+                        consoleSelect(&topScreen);
+                        print_error_code_verbose("APT_PrepareToStartApplication", temp_res);
+                        printf("Continuing even tho error\n");
+                        consoleSelect(&bottomScreen);
+                        // break;
+                    } else {
+                        consoleSelect(&topScreen);
+                        printf("Successfully ran  APT_PrepareToStartApplication\n");
+                        consoleSelect(&bottomScreen);
+                    }
 
                     // // 0x00235E4C
                     // // u8 *parameter = (u8*)0x00235E4C;
 
-                    // u8 parameter[0x300] = {0};
+                    u8 parameter[0x300] = {0};
                     // // parameter[0x00] = 0x00;
                     // // parameter[0x01] = 0x23;
                     // // parameter[0x02] = 0x5e;
@@ -422,18 +422,18 @@ int main(int argc, char* argv[]) {
 
                     
                     // u8 hmac[0x01] = {0};
-                    // temp_res = APT_StartApplication(0x300, 0x00, true, &parameter, &hmac);
-                    // if (R_FAILED(temp_res)) {
-                    //     consoleSelect(&topScreen);
-                    //     print_error_code_verbose("APT_StartApplication", temp_res);
-                    //     consoleSelect(&bottomScreen);
-                    //     break;
-                    // } else {
-                    //     consoleSelect(&topScreen);
-                    //     printf("Successfully ran  APT_StartApplication\n");
+                    temp_res = APT_StartApplication(0x300, 0x00, true, &parameter, NULL);
+                    if (R_FAILED(temp_res)) {
+                        consoleSelect(&topScreen);
+                        print_error_code_verbose("APT_StartApplication", temp_res);
+                        consoleSelect(&bottomScreen);
+                        break;
+                    } else {
+                        consoleSelect(&topScreen);
+                        printf("Successfully ran  APT_StartApplication\n");
 
-                    //     consoleSelect(&bottomScreen);
-                    // }
+                        consoleSelect(&bottomScreen);
+                    }
 
                     break;
             }
@@ -460,5 +460,4 @@ int main(int argc, char* argv[]) {
 
     // TODO: Reaching here causes a weird error in mikage, keep this and debug sometime
     // This is because svc index 0x51 - svcUnbindInterrupt, is not implemented
-
 }

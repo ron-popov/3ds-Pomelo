@@ -209,7 +209,7 @@ Result homemenuAptInit(void)
     u32 attr = 0x20000002;
     // u32 attr = 0x00;
     // APT_AppletAttr attr = aptMakeAppletAttr(APTPOS_SYS, false, false);
-    ret = CUSTOM_APT_Initialize(APPID_HOMEMENU, attr, &aptEvents[0], &aptEvents[1]);
+    ret = CUSTOM_APT_Initialize(envGetAptAppId(), attr, &aptEvents[0], &aptEvents[1]);
     // ret = APT_Initialize(APPID_APPLICATION, APTPOS_SYS, &aptEvents[0], &aptEvents[1]);
     if (R_FAILED(ret)) goto _fail2;
 
