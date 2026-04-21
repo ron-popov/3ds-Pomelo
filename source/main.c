@@ -378,9 +378,16 @@ int main(int argc, char* argv[]) {
 
                     titleGame *selectedTitleGame = &games[selected_game_index];
                     FS_ProgramInfo selectedGameProgramInfo = {
-                        .programId = selectedTitleGame->titleId, 
+                        .programId = selectedTitleGame->titleId,
                         .mediaType = selectedTitleGame->mediaType
                     };
+
+                    // Query whether an application is already registered/running
+                    bool registered = 0;
+                    APT_IsRegistered(APPID_APPLICATION, &registered);
+                    consoleSelect(&topScreen);
+                    printf("Is App Registered %d\n", registered);
+                    consoleSelect(&bottomScreen);
 
                     temp_res = APT_PrepareToStartApplication(&selectedGameProgramInfo, 0x00);
                     if (R_FAILED(temp_res)) {
