@@ -33,10 +33,13 @@ Result APT_StartApplication(u32 parameterSize, u32 hmacSize, u32 paused, void* p
 	cmdbuf[2]=hmacSize;
 	cmdbuf[3]=paused;
 
+	// I checked which static buffer ids the real homemenu is using when performing this calls
+	// 0x00 - For paramter
+	// 0x02 - For hmac
 	cmdbuf[4]=IPC_Desc_StaticBuffer(parameterSize,0x00);
 	cmdbuf[5]=(u32)parameter;
 
-	cmdbuf[6]=IPC_Desc_StaticBuffer(hmacSize,0x01);
+	cmdbuf[6]=IPC_Desc_StaticBuffer(hmacSize,0x02);
 	cmdbuf[7]=(u32)hmac;
 
 	return aptSendCommand(cmdbuf);
