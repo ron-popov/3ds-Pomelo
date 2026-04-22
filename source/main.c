@@ -350,14 +350,6 @@ int main(int argc, char* argv[]) {
         }
     }
 
-    // // Check gamecard update section
-    // {
-    //     temp_res = NS_CardUpdateInitialize();
-    //     if (R_FAILED(temp_res)) {
-    //         print_error_code_verbose("CardUpdateInitialize", temp_res);
-    //     }
-    // }
-
     consoleSelect(&bottomScreen);
 
     int selected_game_index = 1;
