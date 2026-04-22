@@ -352,7 +352,7 @@ int main(int argc, char* argv[]) {
 
     consoleSelect(&bottomScreen);
 
-    int selected_game_index = 1;
+    int selected_game_index = 0;
     bool is_first_run = true;
 
 	while(aptMainLoop()) {
@@ -413,7 +413,7 @@ int main(int argc, char* argv[]) {
                         break;
                     } else {
                         consoleSelect(&topScreen);
-                        printf("Successfully ran  APT_StartApplication\n");
+                        printf("Successfully ran APT_StartApplication\n");
 
                         consoleSelect(&bottomScreen);
                     }
