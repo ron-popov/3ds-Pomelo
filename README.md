@@ -19,10 +19,11 @@ To test the app, you can do the following on Linux:
 # Pull submodules - custom libctru
 git submodule update --init
 
-# install / build from mikage source the tool "3dsx_to_cxi"
-# and add to path, it is used to build the menu cxi file
+# This doesn't require "3dsx_to_cxi", will output only a 3dsx file
+make 3dsx
 
 # build 3dsx and cxi file
+# this requires install / build from mikage source the tool "3dsx_to_cxi" and add to path
 make all
 
 ```
@@ -36,10 +37,7 @@ To install this title as a mikage homemenu do the following (assuming you alread
 cp -v ~/.local/share/mikage/data/00040030/00009802/content/00000027.cxi ~/.local/share/mikage/data/00040030/00009802/content/00000027.cxi.bak
 cp -v ~/.local/share/mikage/data/00040030/00009802/content/00000000.cxi ~/.local/share/mikage/data/00040030/00009802/content/00000000.cxi.bak
 
-# Delete original mikage homemenu cxi files
-rm -v ~/.local/share/mikage/data/00040030/00009802/content/00000027.cxi
-rm -v ~/.local/share/mikage/data/00040030/00009802/content/00000000.cxi
-
-# Copy cxi file we built to mikage homemenu cxi file directory (overriding the original one)
-cp -v -f custom_homemenu.cxi ~/.local/share/mikage/data/00040030/00009802/content/00000000.cxi
+# This will delete original mikage homemenu cxi files
+# And then copy the cxi file we built to mikage homemenu cxi file directory
+make install_mikage
 ```
