@@ -1,6 +1,13 @@
 # Custom Homemenu
 Custom Homemenu made with libctru and citro2d.
 
+### Features
+- [x] List all installed titles
+- [ ] Launch selected title
+- [ ] OS Stats - Battery, wifi and etc...
+- [ ] Pretty UI
+- [ ] Cutomizable UI
+
 ## Build
 
 This project works with the default 3ds devkitpro installation.   
