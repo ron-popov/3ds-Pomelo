@@ -70,7 +70,7 @@ LIBS	:= -lctru -lm
 #---------------------------------------------------------------------------------
 # Usually points to a path in /opt/devkitPRO, this project must use a custom libctru
 # So LIBDIRS is defined during compilation and points to custom build
-# LIBDIRS	:= $(CTRULIB)
+LIBDIRS	:= $(CURDIR)/libctru/libctru
 
 
 #---------------------------------------------------------------------------------
@@ -154,17 +154,25 @@ ifneq ($(ROMFS),)
 	export _3DSXFLAGS += --romfs=$(CURDIR)/$(ROMFS)
 endif
 
-.PHONY: all clean
+.PHONY: all clean libctru
 
 #---------------------------------------------------------------------------------
-all:
+libctru:
+	@echo Building custom libctru
+	@$(MAKE) -C $(CURDIR)/libctru/libctru
+
+#---------------------------------------------------------------------------------
+all: libctru
 	@mkdir -p $(BUILD) $(GFXBUILD)
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
+	@$(MAKE) -C $(CURDIR)/libctru/libctru clean
 	@rm -fr $(BUILD) $(TARGET).3dsx $(OUTPUT).smdh $(TARGET).elf
+
+
 
 
 #---------------------------------------------------------------------------------

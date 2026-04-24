@@ -16,11 +16,11 @@ I also plan to migrate to C++ to take advantage of the class system.
 
 To test the app, you can do the following on Linux:
 ```sh
+# Pull submodules
+git submodule update --init
+
 # build
 make
-
-# build with custom libctru
-LIBDIRS=/home/ron/3ds/libctru/libctru make
 
 # Build cxi file (which is a ncch), specifically for europe region
 # The cxi file will be in custom_homemenu.3dsx.ncch
