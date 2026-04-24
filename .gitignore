@@ -4,5 +4,6 @@
 *.3dsx
 *.smdh
 *.ncch
+*.cxi
 build/
 aes_keys.txt

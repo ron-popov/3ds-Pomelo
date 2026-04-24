@@ -16,15 +16,11 @@ I also plan to migrate to C++ to take advantage of the class system.
 
 To test the app, you can do the following on Linux:
 ```sh
-# Pull submodules
+# Pull submodules - custom libctru
 git submodule update --init
 
-# build
-make
-
-# Build cxi file (which is a ncch), specifically for europe region
-# The cxi file will be in custom_homemenu.3dsx.ncch
-~/3ds/mikage-dev/build/tools/3dsx_to_cia/3dsx_to_cia --title-id 0x4003000009802 --gen-ncch --input custom_homemenu.3dsx
+# build 3dsx and cxi file
+make all
 
 ```
 
@@ -42,5 +38,5 @@ rm -v ~/.local/share/mikage/data/00040030/00009802/content/00000027.cxi
 rm -v ~/.local/share/mikage/data/00040030/00009802/content/00000000.cxi
 
 # Copy cxi file we built to mikage homemenu cxi file directory (overriding the original one)
-cp -v -f custom_homemenu.3dsx.ncch ~/.local/share/mikage/data/00040030/00009802/content/00000000.cxi
+cp -v -f custom_homemenu.cxi ~/.local/share/mikage/data/00040030/00009802/content/00000000.cxi
 ```

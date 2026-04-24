@@ -154,25 +154,32 @@ ifneq ($(ROMFS),)
 	export _3DSXFLAGS += --romfs=$(CURDIR)/$(ROMFS)
 endif
 
-.PHONY: all clean libctru
+.PHONY: all clean libctru cxi 3dsx
+
+#---------------------------------------------------------------------------------
+all: 3dsx cxi
 
 #---------------------------------------------------------------------------------
 libctru:
 	@echo Building custom libctru
 	@$(MAKE) -C $(CURDIR)/libctru/libctru
+	
 
 #---------------------------------------------------------------------------------
-all: libctru
+3dsx: libctru
 	@mkdir -p $(BUILD) $(GFXBUILD)
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
+
+#---------------------------------------------------------------------------------
+cxi: 3dsx
+	@3dsx_to_cia --title-id 0x4003000009802 --title-name "menu" --gen-ncch --input custom_homemenu.3dsx
+	mv -v -f custom_homemenu.3dsx.ncch custom_homemenu.cxi
 
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
 	@$(MAKE) -C $(CURDIR)/libctru/libctru clean
-	@rm -fr $(BUILD) $(TARGET).3dsx $(OUTPUT).smdh $(TARGET).elf
-
-
+	@rm -fr $(BUILD) $(TARGET).3dsx $(OUTPUT).smdh $(TARGET).elf $(OUTPUT).cxi
 
 
 #---------------------------------------------------------------------------------
