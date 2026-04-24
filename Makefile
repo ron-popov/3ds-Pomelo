@@ -154,7 +154,7 @@ ifneq ($(ROMFS),)
 	export _3DSXFLAGS += --romfs=$(CURDIR)/$(ROMFS)
 endif
 
-.PHONY: all clean libctru cxi 3dsx
+.PHONY: all clean libctru cxi 3dsx blabla
 
 #---------------------------------------------------------------------------------
 all: 3dsx cxi
@@ -181,6 +181,11 @@ clean:
 	@$(MAKE) -C $(CURDIR)/libctru/libctru clean
 	@rm -fr $(BUILD) $(TARGET).3dsx $(OUTPUT).smdh $(TARGET).elf $(OUTPUT).cxi
 
+#---------------------------------------------------------------------------------
+# Install the CXI as the mikage launchmenu, instead of the real one
+install_mikage: cxi
+	rm -v ~/.local/share/mikage/data/00040030/00009802/content/*.cxi
+	cp -v -f custom_homemenu.cxi ~/.local/share/mikage/data/00040030/00009802/content/00000000.cxi
 
 #---------------------------------------------------------------------------------
 else
