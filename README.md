@@ -19,6 +19,9 @@ To test the app, you can do the following on Linux:
 # Pull submodules - custom libctru
 git submodule update --init
 
+# install / build from mikage source the tool "3dsx_to_cxi"
+# and add to path, it is used to build the menu cxi file
+
 # build 3dsx and cxi file
 make all
 
