@@ -1,5 +1,5 @@
 #include <3ds.h>
-#include <citro2d.h>
+// #include <citro2d.h>
 
 #include <string.h>
 #include <stdio.h>
@@ -7,8 +7,8 @@
 #include <string.h>
 #include <wchar.h>
 
-#include "custom_ipc_calls.h"
-#include "custom_apt.h"
+// #include "custom_ipc_calls.h"
+// #include "custom_apt.h"
 
 #define SCREEN_WIDTH 400
 #define SCREEN_HEIGHT 240
@@ -170,16 +170,69 @@ bool shouldDisplayTitle(u64 title_id) {
     }
 }
 
+void allocAndRelease(void) {
+    u32 target_addr = 0x08000000;  // somewhere in APPLICATION memory
+    u32 size        = 0x1000;      // one page, minimum granularity
+
+    Result ret = svcControlProcessMemory(
+        CUR_PROCESS_HANDLE,
+        target_addr,
+        0,
+        size,
+        MEMOP_ALLOC,
+        MEMPERM_READ | MEMPERM_WRITE
+    );
+
+    if (R_FAILED(ret)) {
+        printf("Alloc failed: 0x%08lX\n", ret);
+        printf("  Module : %lu\n", R_MODULE(ret));
+        printf("  Desc   : %lu\n", R_DESCRIPTION(ret));
+        return;
+    }
+
+    printf("Allocated 0x%lX bytes at 0x%08lX\n", size, target_addr);
+
+    // // Optionally write something to verify it's accessible
+    // *reinterpret_cast<u32*>(target_addr) = 0xDEADBEEF;
+    // printf("Write OK, read back: 0x%08lX\n",
+    //        *reinterpret_cast<u32*>(target_addr));
+
+    // ── Free ─────────────────────────────────────────────────────────────
+    // MEMOP_FREE unmaps and releases the pages back to the kernel
+    ret = svcControlProcessMemory(
+        CUR_PROCESS_HANDLE,
+        target_addr,
+        0,
+        size,
+        MEMOP_FREE,
+        0   // permissions ignored for FREE
+    );
+
+    if (R_FAILED(ret)) {
+        printf("Free failed: 0x%08lX\n", ret);
+        printf("  Module : %lu\n", R_MODULE(ret));
+        printf("  Desc   : %lu\n", R_DESCRIPTION(ret));
+        return;
+    }
+
+    printf("Freed OK\n");
+}
+
 void __appInit(void)
 {
     // Initialize services
     srvInit();
-    homemenuAptInit();
+    // printf("Alloc and release #-1\n");
+    // svcSleepThread(4888000000); // sleep for ~4 seconds
+    allocAndRelease();
+    aptInit();
     hidInit();
 
     fsInit();
     archiveMountSdmc();
 }
+
+
 
 int main(int argc, char* argv[]) {
     PrintConsole topScreen, bottomScreen;
@@ -196,30 +249,25 @@ int main(int argc, char* argv[]) {
 
     printf("rpopov custom homemenu!\n");
 
-    // Get handle to PM system module
-    // PM is used to initialize the AM module
-    {
-        // Initialize "Process Application Manager" system module
-        // It is useful for launching more titles / system modules
-        temp_res = pmAppInit();
-        if (temp_res != 0) {
-            print_error_code_verbose("pmappInit", temp_res);
-        } 
-    }
-
-    // Get handle to NS system module
-    // NS is used to initialize all sorts of modules the homemenu is supposed to launch
-    {
-        temp_res = nsInit();
-        if (temp_res != 0) {
-            print_error_code_verbose("nsInit", temp_res);
-        } 
-    }
+    printf("Alloc and release #0\n");
+    svcSleepThread(4888000000); // sleep for ~4 seconds
+    allocAndRelease();
 
     // Run the "am" system module title, before getting it's handle
     // It is used to iterate the installed titles
     {
         // printf("Launching AM system module\n");
+
+        // Get handle to PM system module
+        // PM is used to initialize the AM module
+        {
+            // Initialize "Process Application Manager" system module
+            // It is useful for launching more titles / system modules
+            temp_res = pmAppInit();
+            if (temp_res != 0) {
+                print_error_code_verbose("pmappInit", temp_res);
+            } 
+        }
 
         const FS_ProgramInfo amProgramInfo = {
             .programId = TITLE_ID_SYSTEM_MODULE_AM_EU, 
@@ -231,25 +279,30 @@ int main(int argc, char* argv[]) {
             print_error_code_verbose("launch application manager", temp_res);
         }
 
+        pmAppExit();
+
         // printf("Launched AM system module\n");
     }
 
-
-    // Get handle to AM system module
-    {
-        // printf("initializing the AM system module handle\n");
-
-        // Initialize "application manager" system module - it is used to fetch the list of installed titles
-        temp_res = amInit();
-        if (temp_res != 0) {
-            print_error_code_verbose("amInit", temp_res);
-        } 
-
-        // printf("initialized the am service handle\n");        
-    }
+    printf("Alloc and release #1\n");
+    svcSleepThread(4888000000); // sleep for ~4 seconds
+    allocAndRelease();
 
     // Iterate over gamecard games - single one
     {
+        // Get handle to AM system module
+        {
+            // printf("initializing the AM system module handle\n");
+
+            // Initialize "application manager" system module - it is used to fetch the list of installed titles
+            temp_res = amInit();
+            if (temp_res != 0) {
+                print_error_code_verbose("amInit", temp_res);
+            } 
+
+            // printf("initialized the am service handle\n");        
+        }
+
         // Get gamecard title id
         u32 title_found_gamecard = 0;
         u64 gamecard_title_id[1];
@@ -258,6 +311,10 @@ int main(int argc, char* argv[]) {
             print_error_code_verbose("AM_GetTitleList GAMECARD", temp_res);
         }
 
+        amExit();
+
+
+        // Get name for the title
         titleGame gamecardTitleGame = {
             .titleId = 0x00,
             .mediaType = MEDIATYPE_GAME_CARD,
@@ -285,8 +342,25 @@ int main(int argc, char* argv[]) {
         games_counter++;
     }
 
+    printf("Alloc and release #2\n");
+    svcSleepThread(4888000000); // sleep for ~4 seconds
+    allocAndRelease();
+
     // Iterate over nand titles and fetch name of each installed title
     {
+        // Get handle to AM system module
+        {
+            // printf("initializing the AM system module handle\n");
+
+            // Initialize "application manager" system module - it is used to fetch the list of installed titles
+            temp_res = amInit();
+            if (temp_res != 0) {
+                print_error_code_verbose("amInit", temp_res);
+            } 
+
+            // printf("initialized the am service handle\n");        
+        }
+
         // Get list of installed titles
         u32 titles_found_nand = 0;
         u64 title_ids[128];
@@ -324,31 +398,50 @@ int main(int argc, char* argv[]) {
                 printf("%02lu title %#018llx - failed to get name\n", i, title_ids[i]);
             }
         }
+
+        amExit();
     }
 
-    // Launch a bunch of titles required for the homescreen
-    // I took this list from the real home menu
-    {
-        u64 titleIdsToLaunch[] = {
-            0x4013000001d02, 0x4013000001802, 0x4013000001a02, 0x4013000001502, 0x4013000001c02, 
-            0x4013000002702, 0x4013000001602, 0x4013000002002, 0x4013000003302, 0x4013000002d02, 
-            0x4013000002e02, 0x4013000002902, 0x4013000002f02, 0x4013000002602, 0x4013000002402, 
-            0x4013000003202, 0x4013000003402, 0x4013000003502, 0x4013000002b02, 0x4013000002c02, 
-            0x4013000002802
-        };
+    printf("Alloc and release #3\n");
+    svcSleepThread(4888000000); // sleep for ~4 seconds
+    allocAndRelease();
 
-        // Result NS_LaunchTitle(u64 titleid, u32 launch_flags, u32 *procid)
+    // // Launch a bunch of titles required for the homescreen
+    // // I took this list from the real home menu
+    // {
+    //     // Get handle to NS system module
+    //     // NS is used to initialize all sorts of modules the homemenu is supposed to launch
+    //     {
+    //         temp_res = nsInit();
+    //         if (temp_res != 0) {
+    //             print_error_code_verbose("nsInit", temp_res);
+    //         } 
+    //     }
 
-        for (int i = 0; i < sizeof(titleIdsToLaunch) / sizeof(u64); i++) {
-            u32 proc_id_out = 0;
-            temp_res = NS_LaunchTitle(titleIdsToLaunch[i], 0x00, &proc_id_out);
-            if (R_FAILED(temp_res)) {
-                char *error_message = (char*)malloc(256);
-                sprintf(error_message, "launch required title (%#018llx)", titleIdsToLaunch[i]);
-                print_error_code_verbose(error_message, temp_res);
-            }
-        }
-    }
+    //     u64 titleIdsToLaunch[] = {
+    //         0x4013000001d02, 0x4013000001802, 0x4013000001a02, 0x4013000001502, 0x4013000001c02, 
+    //         0x4013000002702, 0x4013000001602, 0x4013000002002, 0x4013000003302, 0x4013000002d02, 
+    //         0x4013000002e02, 0x4013000002902, 0x4013000002f02, 0x4013000002602, 0x4013000002402, 
+    //         0x4013000003202, 0x4013000003402, 0x4013000003502, 0x4013000002b02, 0x4013000002c02, 
+    //         0x4013000002802
+    //     };
+
+    //     for (int i = 0; i < sizeof(titleIdsToLaunch) / sizeof(u64); i++) {
+    //         u32 proc_id_out = 0;
+    //         temp_res = NS_LaunchTitle(titleIdsToLaunch[i], 0x00, &proc_id_out);
+    //         if (R_FAILED(temp_res)) {
+    //             char *error_message = (char*)malloc(256);
+    //             sprintf(error_message, "launch required title (%#018llx)", titleIdsToLaunch[i]);
+    //             print_error_code_verbose(error_message, temp_res);
+    //         }
+    //     }
+
+    //     nsExit();
+    // }
+    
+    printf("Alloc and release #4\n");
+    svcSleepThread(4888000000); // sleep for ~4 seconds
+    allocAndRelease();
 
     consoleSelect(&bottomScreen);
 

@@ -16,11 +16,11 @@ I also plan to migrate to C++ to take advantage of the class system.
 
 To test the app, you can do the following on Linux:
 ```sh
-# Patch 3dsx_crt0.o to change our appid to 0x101 instead of the default 0x300
-sudo bash -c "xxd /opt/devkitpro/devkitARM/arm-none-eabi/lib/armv6k/fpu/3dsx_crt0.o | sed 's/00000040: 0003 0000 0000 8001/00000040: 0101 0000 0000 8001/' | xxd -r > /opt/devkitpro/devkitARM/arm-none-eabi/lib/armv6k/fpu/3dsx_crt0.o.temp && mv -v -f /opt/devkitpro/devkitARM/arm-none-eabi/lib/armv6k/fpu/3dsx_crt0.o.temp /opt/devkitpro/devkitARM/arm-none-eabi/lib/armv6k/fpu/3dsx_crt0.o"
-
 # build
 make
+
+# build with custom libctru
+LIBDIRS=/home/ron/3ds/libctru/libctru make
 
 # Build cxi file (which is a ncch), specifically for europe region
 # The cxi file will be in custom_homemenu.3dsx.ncch
