@@ -1,7 +1,7 @@
 # Custom Homemenu
 Custom Homemenu made with libctru and citro2d.
 
-### Features
+## Features
 - [x] List all installed titles
 - [ ] Launch selected title
 - [ ] OS Stats - Battery, wifi and etc...
