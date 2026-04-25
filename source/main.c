@@ -345,7 +345,7 @@ int main(int argc, char* argv[]) {
             printf("AM_GetTitleList Result 0x%lx\n", temp_res);
         }
 
-        printf("Found %lu title ids in NAND\n", titles_found_nand);
+        // printf("Found %lu title ids in NAND\n", titles_found_nand);
 
         // Get name of each title
         for(u32 i = 0; i < titles_found_nand; i++){
@@ -445,13 +445,6 @@ int main(int argc, char* argv[]) {
                         .mediaType = selectedTitleGame->mediaType
                     };
 
-                    // Query whether an application is already registered/running
-                    bool registered = 0;
-                    APT_IsRegistered(APPID_APPLICATION, &registered);
-                    consoleSelect(&topScreen);
-                    printf("Is App Registered %d\n", registered);
-                    consoleSelect(&bottomScreen);
-
                     temp_res = APT_PrepareToStartApplication(&selectedGameProgramInfo, 0x00);
                     if (R_FAILED(temp_res)) {
                         consoleSelect(&topScreen);
@@ -478,6 +471,23 @@ int main(int argc, char* argv[]) {
                         printf("Successfully ran APT_StartApplication\n");
 
                         consoleSelect(&bottomScreen);
+                    }
+
+                    // Query whether an application is already registered/running
+                    while (true) {
+                        bool registered = 0;
+                        APT_IsRegistered(APPID_APPLICATION, &registered);
+
+                        if (registered) {
+                            consoleSelect(&topScreen);
+                            printf("Is App Registered %d\n", registered);    
+                            consoleSelect(&bottomScreen);
+
+                            // Terminate self
+                            gfxExit();
+                            aptExit();
+                            return 0;
+                        }
                     }
 
                     break;
