@@ -7,9 +7,6 @@
 #include <string.h>
 #include <wchar.h>
 
-// #include "custom_ipc_calls.h"
-// #include "custom_apt.h"
-
 #define SCREEN_WIDTH 400
 #define SCREEN_HEIGHT 240
 
@@ -22,6 +19,9 @@
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
+
+u32 __ctru_heap_size        = 0x304000;
+u32 __ctru_linear_heap_size = 0xb64000;
 
 void print_error_code_verbose(char* desc, Result res) {
     printf("%s Result 0x%lx\n", desc, res);
@@ -171,68 +171,52 @@ bool shouldDisplayTitle(u64 title_id) {
 }
 
 void allocAndRelease(void) {
-    u32 target_addr = 0x08000000;  // somewhere in APPLICATION memory
-    u32 size        = 0x1000;      // one page, minimum granularity
+    // u32 target_addr = 0x08000000;  // somewhere in APPLICATION memory
+    // u32 size        = 0x1000;      // one page, minimum granularity
 
-    Result ret = svcControlProcessMemory(
-        CUR_PROCESS_HANDLE,
-        target_addr,
-        0,
-        size,
-        MEMOP_ALLOC,
-        MEMPERM_READ | MEMPERM_WRITE
-    );
+    // Result ret = svcControlProcessMemory(
+    //     CUR_PROCESS_HANDLE,
+    //     target_addr,
+    //     0,
+    //     size,
+    //     MEMOP_ALLOC,
+    //     MEMPERM_READ | MEMPERM_WRITE
+    // );
 
-    if (R_FAILED(ret)) {
-        printf("Alloc failed: 0x%08lX\n", ret);
-        printf("  Module : %lu\n", R_MODULE(ret));
-        printf("  Desc   : %lu\n", R_DESCRIPTION(ret));
-        return;
-    }
+    // if (R_FAILED(ret)) {
+    //     printf("Alloc failed: 0x%08lX\n", ret);
+    //     printf("  Module : %lu\n", R_MODULE(ret));
+    //     printf("  Desc   : %lu\n", R_DESCRIPTION(ret));
+    //     return;
+    // }
 
-    printf("Allocated 0x%lX bytes at 0x%08lX\n", size, target_addr);
+    // printf("Allocated 0x%lX bytes at 0x%08lX\n", size, target_addr);
 
-    // // Optionally write something to verify it's accessible
-    // *reinterpret_cast<u32*>(target_addr) = 0xDEADBEEF;
-    // printf("Write OK, read back: 0x%08lX\n",
-    //        *reinterpret_cast<u32*>(target_addr));
+    // // // Optionally write something to verify it's accessible
+    // // *reinterpret_cast<u32*>(target_addr) = 0xDEADBEEF;
+    // // printf("Write OK, read back: 0x%08lX\n",
+    // //        *reinterpret_cast<u32*>(target_addr));
 
-    // ── Free ─────────────────────────────────────────────────────────────
-    // MEMOP_FREE unmaps and releases the pages back to the kernel
-    ret = svcControlProcessMemory(
-        CUR_PROCESS_HANDLE,
-        target_addr,
-        0,
-        size,
-        MEMOP_FREE,
-        0   // permissions ignored for FREE
-    );
+    // // ── Free ─────────────────────────────────────────────────────────────
+    // // MEMOP_FREE unmaps and releases the pages back to the kernel
+    // ret = svcControlProcessMemory(
+    //     CUR_PROCESS_HANDLE,
+    //     target_addr,
+    //     0,
+    //     size,
+    //     MEMOP_FREE,
+    //     0   // permissions ignored for FREE
+    // );
 
-    if (R_FAILED(ret)) {
-        printf("Free failed: 0x%08lX\n", ret);
-        printf("  Module : %lu\n", R_MODULE(ret));
-        printf("  Desc   : %lu\n", R_DESCRIPTION(ret));
-        return;
-    }
+    // if (R_FAILED(ret)) {
+    //     printf("Free failed: 0x%08lX\n", ret);
+    //     printf("  Module : %lu\n", R_MODULE(ret));
+    //     printf("  Desc   : %lu\n", R_DESCRIPTION(ret));
+    //     return;
+    // }
 
-    printf("Freed OK\n");
+    // printf("Freed OK\n");
 }
-
-void __appInit(void)
-{
-    // Initialize services
-    srvInit();
-    // printf("Alloc and release #-1\n");
-    // svcSleepThread(4888000000); // sleep for ~4 seconds
-    allocAndRelease();
-    aptInit();
-    hidInit();
-
-    fsInit();
-    archiveMountSdmc();
-}
-
-
 
 int main(int argc, char* argv[]) {
     PrintConsole topScreen, bottomScreen;
@@ -249,9 +233,9 @@ int main(int argc, char* argv[]) {
 
     printf("rpopov custom homemenu!\n");
 
-    printf("Alloc and release #0\n");
-    svcSleepThread(4888000000); // sleep for ~4 seconds
-    allocAndRelease();
+    // Memory stuff
+    printf("__ctru_heap_size - %#016lx\n", envGetHeapSize());
+    printf("__ctru_linear_heap_size - %#016lx\n", envGetLinearHeapSize());
 
     // Run the "am" system module title, before getting it's handle
     // It is used to iterate the installed titles
@@ -283,10 +267,6 @@ int main(int argc, char* argv[]) {
 
         // printf("Launched AM system module\n");
     }
-
-    printf("Alloc and release #1\n");
-    svcSleepThread(4888000000); // sleep for ~4 seconds
-    allocAndRelease();
 
     // Iterate over gamecard games - single one
     {
@@ -341,10 +321,6 @@ int main(int argc, char* argv[]) {
         games[games_counter] = gamecardTitleGame;
         games_counter++;
     }
-
-    printf("Alloc and release #2\n");
-    svcSleepThread(4888000000); // sleep for ~4 seconds
-    allocAndRelease();
 
     // Iterate over nand titles and fetch name of each installed title
     {
@@ -402,10 +378,6 @@ int main(int argc, char* argv[]) {
         amExit();
     }
 
-    printf("Alloc and release #3\n");
-    svcSleepThread(4888000000); // sleep for ~4 seconds
-    allocAndRelease();
-
     // // Launch a bunch of titles required for the homescreen
     // // I took this list from the real home menu
     // {
@@ -438,10 +410,7 @@ int main(int argc, char* argv[]) {
 
     //     nsExit();
     // }
-    
-    printf("Alloc and release #4\n");
-    svcSleepThread(4888000000); // sleep for ~4 seconds
-    allocAndRelease();
+
 
     consoleSelect(&bottomScreen);
 
