@@ -200,6 +200,16 @@ void aptCallback(APT_HookType hook, void* param) {
     consoleSelect(originalConsole);
 }
 
+// This handles messages from other applets
+void aptMessageCallback(void* user, NS_APPID sender, void* msg, size_t msgsize) {
+    PrintConsole* originalConsole = consoleGetDefault();
+    consoleSelect(&topScreen);
+    
+    printf("Got message from other system applet\n");
+
+    consoleSelect(originalConsole);
+}
+
 int main(int argc, char* argv[]) {
 
     gfxInitDefault();
@@ -216,6 +226,7 @@ int main(int argc, char* argv[]) {
 
     // Register apt hook
     aptHook(&homemenuAptHookCookie, aptCallback, NULL);
+    aptSetMessageCallback(&aptMessageCallback, NULL);
 
     // Run the "am" system module title, before getting it's handle
     // It is used to iterate the installed titles
@@ -434,7 +445,7 @@ int main(int argc, char* argv[]) {
                         // break;
                     } else {
                         consoleSelect(&topScreen);
-                        printf("Successfully ran  APT_PrepareToStartApplication\n");
+                        printf("Successfully ran APT_PrepareToStartApplication\n");
                         consoleSelect(&bottomScreen);
                     }
 
