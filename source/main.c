@@ -170,9 +170,6 @@ bool shouldDisplayTitle(u64 title_id) {
 }
 
 void aptCallback(APT_HookType hook, void* param) {
-    PrintConsole* originalConsole = consoleGetDefault();
-    consoleSelect(&topScreen);
-
     switch(hook) {
         case APTHOOK_ONSUSPEND:
             printf("Got apt hook APTHOOK_ONSUSPEND\n");
@@ -196,18 +193,11 @@ void aptCallback(APT_HookType hook, void* param) {
             printf("Got apt hook UNKNOWN\n");
             break;
     }
-
-    consoleSelect(originalConsole);
 }
 
 // This handles messages from other applets
 void aptMessageCallback(void* user, NS_APPID sender, void* msg, size_t msgsize) {
-    PrintConsole* originalConsole = consoleGetDefault();
-    consoleSelect(&topScreen);
-    
     printf("Got message from other system applet\n");
-
-    consoleSelect(originalConsole);
 }
 
 int main(int argc, char* argv[]) {
@@ -219,8 +209,11 @@ int main(int argc, char* argv[]) {
     consoleSelect(&topScreen);
 
     Result temp_res;
-    titleGame games[16];
-    u8 games_counter = 0;
+    titleGame gamecardGame = {
+        .titleId = 0x00,
+        .mediaType = MEDIATYPE_GAME_CARD,
+        .name = "Gamecard - No Game Inserted"
+    };
 
     printf("rpopov custom homemenu!\n");
 
@@ -231,8 +224,6 @@ int main(int argc, char* argv[]) {
     // Run the "am" system module title, before getting it's handle
     // It is used to iterate the installed titles
     {
-        // printf("Launching AM system module\n");
-
         // Get handle to PM system module
         // PM is used to initialize the AM module
         {
@@ -255,118 +246,51 @@ int main(int argc, char* argv[]) {
         }
 
         pmAppExit();
-
-        // printf("Launched AM system module\n");
     }
 
-    // Iterate over gamecard games - single one
+    // Find game in gamecard and save it's info, it will be launched later
     {
         // Get handle to AM system module
         {
-            // printf("initializing the AM system module handle\n");
-
             // Initialize "application manager" system module - it is used to fetch the list of installed titles
             temp_res = amInit();
             if (temp_res != 0) {
                 print_error_code_verbose("amInit", temp_res);
             } 
-
-            // printf("initialized the am service handle\n");        
         }
 
         // Get gamecard title id
         u32 title_found_gamecard = 0;
         u64 gamecard_title_id[1];
+
         temp_res = AM_GetTitleList(&title_found_gamecard, MEDIATYPE_GAME_CARD, 1, gamecard_title_id);
         if (temp_res != 0) {
             print_error_code_verbose("AM_GetTitleList GAMECARD", temp_res);
         }
 
-        amExit();
-
-
-        // Get name for the title
-        titleGame gamecardTitleGame = {
-            .titleId = 0x00,
-            .mediaType = MEDIATYPE_GAME_CARD,
-            .name = "Gamecard - No Game Inserted"
-        };
+        // Close handle to am system module
+        {
+            amExit();    
+        }
 
         if (title_found_gamecard) {
-            // printf("Gamecard has title id %#018llx\n", gamecard_title_id[0]);
-
             // Get gamecard title name
             char title_name_gamecard[MAX_TITLE_NAME];
             temp_res = getTitleName(gamecard_title_id[0], MEDIATYPE_GAME_CARD, title_name_gamecard, MAX_TITLE_NAME);
 
             if (temp_res) {
-                // printf("Gamecard title %#018llx - %s\n", gamecard_title_id[0], title_name_gamecard);
+                gamecardGame.titleId = gamecard_title_id[0];
+                strncpy(gamecardGame.name, title_name_gamecard, MAX_TITLE_NAME);
 
-                gamecardTitleGame.titleId = gamecard_title_id[0];
-                strncpy(gamecardTitleGame.name, title_name_gamecard, MAX_TITLE_NAME);
+                printf("Gamecard found : %s\n", gamecardGame.name);
             } else {
                 printf("Gamecard title %#018llx - failed to get name\n", gamecard_title_id[0]);
+                return 0;
             }
+        } else {
+            printf("Couldn't find gamecard to launch, PANIC!\n");
+            return 0;
         }
-
-        games[games_counter] = gamecardTitleGame;
-        games_counter++;
-    }
-
-    // Iterate over nand titles and fetch name of each installed title
-    {
-        // Get handle to AM system module
-        {
-            // printf("initializing the AM system module handle\n");
-
-            // Initialize "application manager" system module - it is used to fetch the list of installed titles
-            temp_res = amInit();
-            if (temp_res != 0) {
-                print_error_code_verbose("amInit", temp_res);
-            } 
-
-            // printf("initialized the am service handle\n");        
-        }
-
-        // Get list of installed titles
-        u32 titles_found_nand = 0;
-        u64 title_ids[128];
-        temp_res = AM_GetTitleList(&titles_found_nand, MEDIATYPE_NAND, 128, title_ids);
-        if (temp_res != 0) {
-            printf("AM_GetTitleList Result 0x%lx\n", temp_res);
-        }
-
-        // printf("Found %lu title ids in NAND\n", titles_found_nand);
-
-        // Get name of each title
-        for(u32 i = 0; i < titles_found_nand; i++){
-
-
-            if (!shouldDisplayTitle(title_ids[i])){
-                continue;
-            }
-
-            char title_name[MAX_TITLE_NAME] = {0};
-            temp_res = getTitleName(title_ids[i], MEDIATYPE_NAND, title_name, MAX_TITLE_NAME);
-            if (temp_res) {
-                // printf("%02lu title %#018llx - %s\n", i, title_ids[i], title_name);
-                titleGame nandTitleGame = {
-                    .titleId = title_ids[i],
-                    .mediaType = MEDIATYPE_NAND,
-                    .name = ""
-                };
-
-                strncpy(nandTitleGame.name, title_name, MAX_TITLE_NAME);
-
-                games[games_counter] = nandTitleGame;
-                games_counter++;
-
-            } else {
-                printf("%02lu title %#018llx - failed to get name\n", i, title_ids[i]);
-            }
-        }
-
-        amExit();
     }
 
     // Launch a bunch of titles required for the homescreen
@@ -401,8 +325,6 @@ int main(int argc, char* argv[]) {
 
         nsExit();
     }
-
-
 
     // Get process list - for testing
     {
@@ -463,124 +385,73 @@ int main(int argc, char* argv[]) {
         // }
     }
 
-    int selected_game_index = 0;
-    bool is_first_run = true;
-
 	while(aptMainLoop()) {
-        hidScanInput();
-        u32 kDown = hidKeysDown();
-        
-        if (kDown || is_first_run) {
-            is_first_run = false;
+        printf("Launching title in gamecard slot\n");
 
-            // Handle kDown
-            switch (kDown) {
-                case KEY_B: // Go down in menu
-                    selected_game_index++;
-                    selected_game_index = MIN(selected_game_index, games_counter - 1);
-                    break;
-                case KEY_X: // Go up in menu
-                    selected_game_index--;
-                    selected_game_index = MAX(selected_game_index, 0);
-                    break;
-                case KEY_SELECT: // Exit
-                    return 0;
-                case KEY_START: // Launch selected game
-                    printf("Launching title id %#018llx\n", games[selected_game_index].titleId);
+        // // Start game using apt:startapplication
+        // {
+        //     temp_res = APT_PrepareToStartApplication(&selectedGameProgramInfo, 0x00);
+        //     if (R_FAILED(temp_res)) {
+        //         print_error_code_verbose("APT_PrepareToStartApplication", temp_res);
+        //         printf("Continuing even tho error\n");
+        //         // break;
+        //     } else {
+        //         printf("Successfully ran APT_PrepareToStartApplication\n");
+        //     }
 
-                    titleGame *selectedTitleGame = &games[selected_game_index];
- 
-                    FS_ProgramInfo selectedGameProgramInfo = {
-                        .programId = selectedTitleGame->titleId,
-                        .mediaType = selectedTitleGame->mediaType
-                    };
+        //     u8 parameter[0x300] = {0};
+            
+        //     temp_res = APT_StartApplication(0x300, 0x00, true, &parameter, NULL);
+        //     if (R_FAILED(temp_res)) {
+        //         print_error_code_verbose("APT_StartApplication", temp_res);
+        //         break;
+        //     } else {
+        //         printf("Successfully ran APT_StartApplication\n");
+        //     }
+        // }
 
-                    // Start game using apt:startapplication
-                    {
-                        temp_res = APT_PrepareToStartApplication(&selectedGameProgramInfo, 0x00);
-                        if (R_FAILED(temp_res)) {
-                            print_error_code_verbose("APT_PrepareToStartApplication", temp_res);
-                            printf("Continuing even tho error\n");
-                            // break;
-                        } else {
-                            printf("Successfully ran APT_PrepareToStartApplication\n");
-                        }
+        // // Query whether an application is already registered/running
+        // while (true) {
+        //     bool registered = 0;
+        //     APT_IsRegistered(APPID_APPLICATION, &registered);
 
-                        u8 parameter[0x300] = {0};
-                        
-                        temp_res = APT_StartApplication(0x300, 0x00, true, &parameter, NULL);
-                        if (R_FAILED(temp_res)) {
-                            print_error_code_verbose("APT_StartApplication", temp_res);
-                            break;
-                        } else {
-                            printf("Successfully ran APT_StartApplication\n");
-                        }
-                    }
+        //     if (registered) {
+        //         printf("Is App Registered %d\n", registered);
+        //         printf("Terminateing GFX\n");
 
-                    // Query whether an application is already registered/running
-                    while (true) {
-                        bool registered = 0;
-                        APT_IsRegistered(APPID_APPLICATION, &registered);
+        //         // Terminate gfx
+        //         gfxExit();
 
-                        if (registered) {
-                            printf("Is App Registered %d\n", registered);
-                            printf("Terminateing GFX\n");
+        //         printf("Terminated GFX\n");
+        //         printf("Waking Up Application\n");
+                
+        //         // Waking up application
+        //         temp_res = APT_WakeupApplication();
+        //         if (R_FAILED(temp_res)) {
+        //             print_error_code_verbose("APT_WakeupApplication", temp_res);
+        //             break;
+        //         } else {
+        //             printf("Successfully ran APT_WakeupApplication\n");
+        //         }
 
-                            // Terminate gfx
-                            gfxExit();
+                
+        //         // printf("Terminating APT\n");
 
-                            printf("Terminated GFX\n");
-                            printf("Waking Up Application\n");
-                            
-                            // Waking up application
-                            temp_res = APT_WakeupApplication();
-                            if (R_FAILED(temp_res)) {
-                                print_error_code_verbose("APT_WakeupApplication", temp_res);
-                                break;
-                            } else {
-                                printf("Successfully ran APT_WakeupApplication\n");
-                            }
+        //         // // Close APT
+        //         // APT_Finalize(envGetAptAppId());
 
-                            
-                            // printf("Terminating APT\n");
-
-                            // // Close APT
-                            // APT_Finalize(envGetAptAppId());
-
-                            // printf("Terminated APT, Exiting\n");
+        //         // printf("Terminated APT, Exiting\n");
 
 
-                            // Exit
-                            // return 0;
+        //         // Exit
+        //         // return 0;
 
-                            break; // Break from APT_IsRegistered Loop
-                        }
-                    }
+        //         break; // Break from APT_IsRegistered Loop
+        //     }
+        // }
 
-
-                    break; // Break from handleStart case
-            }
-
-            consoleSelect(&bottomScreen);
-            consoleClear();
-            for (int i = 0; i < (sizeof(games) / sizeof(titleGame)); i++) {
-                titleGame game = games[i];
-                if (game.name[0] == 0) {
-                    // No more games to display
-                    break;
-                }
-
-
-                if (i == selected_game_index) {
-                    printf("* %s\n", game.name);
-                } else {
-                    printf("  %s\n", game.name);
-                }                
-            }
-            consoleSelect(&topScreen);
-        }
+        break;
     }
-
 
     gfxExit();
     aptExit();
