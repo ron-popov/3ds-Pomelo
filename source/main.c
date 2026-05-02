@@ -403,7 +403,65 @@ int main(int argc, char* argv[]) {
     }
 
 
-    consoleSelect(&bottomScreen);
+
+    // Get process list - for testing
+    {
+        // s32 process_count = 0;
+        // u32* process_ids = malloc(64 * sizeof(u32));
+        // temp_res = svcGetProcessList(&process_count, process_ids, 64);
+        // if (temp_res != 0) {
+        //     print_error_code_verbose("svcGetProcessList", temp_res);
+        //     return 0;
+        // }
+
+        // printf("Found %ld processes\n", process_count);
+        // // for (int i = 0; i < process_count; i++) {
+        // //     printf("%ld,", process_ids[i]);
+        // //     if (i > 0 && ((i % 5) == 4)) {
+        // //         printf("\n");
+        // //     }
+        // // }
+        // // printf("\n");
+
+        // for (int i = 0; i < process_count; i++) {
+        //     // s64 *out_pointer_name = NULL;
+        //     // s64 proc_tid = 0;
+        //     s64 proc_name_as_int = 0;
+        //     char proc_name[9]; // 8 chars + 1 for null terminator
+        //     Handle proc_handle;
+
+        //     // Result svcOpenProcess(Handle* process, u32 processId);
+        //     // Result svcGetProcessInfo(s64* out, Handle process, u32 type);
+
+        //     temp_res = svcOpenProcess(&proc_handle, process_ids[i]);
+        //     if (temp_res != 0) {
+        //         print_error_code_verbose("svcOpenProcess", temp_res);
+        //         return 0;
+        //     }
+
+        //     // temp_res = svcGetProcessInfo(&proc_tid, proc_handle, 0x10001);
+        //     // if (temp_res != 0) {
+        //     //     print_error_code_verbose("svcGetProcessInfo", temp_res);
+        //     //     return 0;
+        //     // }
+
+        //     // printf("out_value %llx\n", proc_tid);
+
+        //     temp_res = svcGetProcessInfo(&proc_name_as_int, proc_handle, 0x10000);
+        //     if (temp_res != 0) {
+        //         print_error_code_verbose("svcGetProcessInfo", temp_res);
+        //         return 0;
+        //     }
+
+            
+        //     memcpy(proc_name, &proc_name_as_int, 8);
+        //     proc_name[8] = '\0'; // Manually null-terminate!
+        //     printf("%d -> %s\n", i, proc_name);
+
+        //     // printf("%d - %llx - %llx\n", i, proc_tid, proc_name);
+        //     svcSleepThread(90000000000);
+        // }
+    }
 
     int selected_game_index = 0;
     bool is_first_run = true;
@@ -425,43 +483,38 @@ int main(int argc, char* argv[]) {
                     selected_game_index--;
                     selected_game_index = MAX(selected_game_index, 0);
                     break;
+                case KEY_SELECT: // Exit
+                    return 0;
                 case KEY_START: // Launch selected game
-                    consoleSelect(&topScreen);
                     printf("Launching title id %#018llx\n", games[selected_game_index].titleId);
-                    consoleSelect(&bottomScreen);
 
                     titleGame *selectedTitleGame = &games[selected_game_index];
+ 
                     FS_ProgramInfo selectedGameProgramInfo = {
                         .programId = selectedTitleGame->titleId,
                         .mediaType = selectedTitleGame->mediaType
                     };
 
-                    temp_res = APT_PrepareToStartApplication(&selectedGameProgramInfo, 0x00);
-                    if (R_FAILED(temp_res)) {
-                        consoleSelect(&topScreen);
-                        print_error_code_verbose("APT_PrepareToStartApplication", temp_res);
-                        printf("Continuing even tho error\n");
-                        consoleSelect(&bottomScreen);
-                        // break;
-                    } else {
-                        consoleSelect(&topScreen);
-                        printf("Successfully ran APT_PrepareToStartApplication\n");
-                        consoleSelect(&bottomScreen);
-                    }
+                    // Start game using apt:startapplication
+                    {
+                        temp_res = APT_PrepareToStartApplication(&selectedGameProgramInfo, 0x00);
+                        if (R_FAILED(temp_res)) {
+                            print_error_code_verbose("APT_PrepareToStartApplication", temp_res);
+                            printf("Continuing even tho error\n");
+                            // break;
+                        } else {
+                            printf("Successfully ran APT_PrepareToStartApplication\n");
+                        }
 
-                    u8 parameter[0x300] = {0};
-                    
-                    temp_res = APT_StartApplication(0x300, 0x00, true, &parameter, NULL);
-                    if (R_FAILED(temp_res)) {
-                        consoleSelect(&topScreen);
-                        print_error_code_verbose("APT_StartApplication", temp_res);
-                        consoleSelect(&bottomScreen);
-                        break;
-                    } else {
-                        consoleSelect(&topScreen);
-                        printf("Successfully ran APT_StartApplication\n");
-
-                        consoleSelect(&bottomScreen);
+                        u8 parameter[0x300] = {0};
+                        
+                        temp_res = APT_StartApplication(0x300, 0x00, true, &parameter, NULL);
+                        if (R_FAILED(temp_res)) {
+                            print_error_code_verbose("APT_StartApplication", temp_res);
+                            break;
+                        } else {
+                            printf("Successfully ran APT_StartApplication\n");
+                        }
                     }
 
                     // Query whether an application is already registered/running
@@ -470,23 +523,45 @@ int main(int argc, char* argv[]) {
                         APT_IsRegistered(APPID_APPLICATION, &registered);
 
                         if (registered) {
-                            consoleSelect(&topScreen);
                             printf("Is App Registered %d\n", registered);
-                            consoleSelect(&bottomScreen);
+                            printf("Terminateing GFX\n");
 
-                            aptSetChainloader(selectedTitleGame->titleId, selectedTitleGame->mediaType);
-
-                            // Terminate self
+                            // Terminate gfx
                             gfxExit();
-                            aptExit();
-                            return 0;
-                            // break;
+
+                            printf("Terminated GFX\n");
+                            printf("Waking Up Application\n");
+                            
+                            // Waking up application
+                            temp_res = APT_WakeupApplication();
+                            if (R_FAILED(temp_res)) {
+                                print_error_code_verbose("APT_WakeupApplication", temp_res);
+                                break;
+                            } else {
+                                printf("Successfully ran APT_WakeupApplication\n");
+                            }
+
+                            
+                            // printf("Terminating APT\n");
+
+                            // // Close APT
+                            // APT_Finalize(envGetAptAppId());
+
+                            // printf("Terminated APT, Exiting\n");
+
+
+                            // Exit
+                            // return 0;
+
+                            break; // Break from APT_IsRegistered Loop
                         }
                     }
 
-                    break;
+
+                    break; // Break from handleStart case
             }
 
+            consoleSelect(&bottomScreen);
             consoleClear();
             for (int i = 0; i < (sizeof(games) / sizeof(titleGame)); i++) {
                 titleGame game = games[i];
@@ -502,9 +577,13 @@ int main(int argc, char* argv[]) {
                     printf("  %s\n", game.name);
                 }                
             }
+            consoleSelect(&topScreen);
         }
     }
 
+
+    gfxExit();
+    aptExit();
 	return 0;
 
     // TODO: Reaching here causes a weird error in mikage, keep this and debug sometime

@@ -172,7 +172,8 @@ libctru:
 
 #---------------------------------------------------------------------------------
 cxi: 3dsx
-	@3dsx_to_cia --title-id 0x4003000009802 --title-name "menu" --gen-ncch --input custom_homemenu.3dsx
+# 	@3dsx_to_cia --title-id 0x4003000009802 --title-name "menu" --gen-ncch --input custom_homemenu.3dsx
+	@3dsx_to_cia --title-id 0x4003000009802 --gen-ncch --input custom_homemenu.3dsx
 	mv -v -f custom_homemenu.3dsx.ncch custom_homemenu.cxi
 
 #---------------------------------------------------------------------------------
@@ -250,3 +251,4 @@ endef
 #---------------------------------------------------------------------------------------
 endif
 #---------------------------------------------------------------------------------------
+
