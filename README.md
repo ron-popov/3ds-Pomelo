@@ -3,9 +3,10 @@ Custom Homemenu made with libctru and citro2d.
 
 ## Features
 - [x] List all installed titles
-- [ ] Launch selected title
+- [x] Launch selected title
 - [ ] OS Stats - Battery, wifi and etc...
 - [ ] Pretty UI
+- [ ] Show title 3d icon
 - [ ] Cutomizable UI
 
 ## Build
@@ -41,3 +42,9 @@ cp -v ~/.local/share/mikage/data/00040030/00009802/content/00000000.cxi ~/.local
 # And then copy the cxi file we built to mikage homemenu cxi file directory
 make install_mikage
 ```
+
+
+## Known Issues
+### Unable to launch all games
+For some reason, not entirely sure yet why, some games won't boot and the kernel will panic when they load
+I am currently aware of 1 game that does this, which is "Super Mario 3D Land"
