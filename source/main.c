@@ -388,69 +388,77 @@ int main(int argc, char* argv[]) {
 	while(aptMainLoop()) {
         printf("Launching title in gamecard slot\n");
 
-        // // Start game using apt:startapplication
-        // {
-        //     temp_res = APT_PrepareToStartApplication(&selectedGameProgramInfo, 0x00);
-        //     if (R_FAILED(temp_res)) {
-        //         print_error_code_verbose("APT_PrepareToStartApplication", temp_res);
-        //         printf("Continuing even tho error\n");
-        //         // break;
-        //     } else {
-        //         printf("Successfully ran APT_PrepareToStartApplication\n");
-        //     }
+        // Start game using apt:startapplication
+        {
+            FS_ProgramInfo gameToLaunchProgramInfo = {
+                .programId = gamecardGame.titleId,
+                .mediaType = gamecardGame.mediaType
+            };
 
-        //     u8 parameter[0x300] = {0};
+            temp_res = APT_PrepareToStartApplication(&gameToLaunchProgramInfo, 0x00);
+            if (R_FAILED(temp_res)) {
+                print_error_code_verbose("APT_PrepareToStartApplication", temp_res);
+                printf("Continuing even tho error\n");
+                // break;
+            } else {
+                printf("Successfully ran APT_PrepareToStartApplication\n");
+            }
+
+            u8 parameter[0x300] = {0};
             
-        //     temp_res = APT_StartApplication(0x300, 0x00, true, &parameter, NULL);
-        //     if (R_FAILED(temp_res)) {
-        //         print_error_code_verbose("APT_StartApplication", temp_res);
-        //         break;
-        //     } else {
-        //         printf("Successfully ran APT_StartApplication\n");
-        //     }
-        // }
+            temp_res = APT_StartApplication(0x300, 0x00, true, &parameter, NULL);
+            if (R_FAILED(temp_res)) {
+                print_error_code_verbose("APT_StartApplication", temp_res);
+                break;
+            } else {
+                printf("Successfully ran APT_StartApplication\n");
+            }
+        }
 
-        // // Query whether an application is already registered/running
-        // while (true) {
-        //     bool registered = 0;
-        //     APT_IsRegistered(APPID_APPLICATION, &registered);
+        // Query whether an application is already registered/running
+        while (true) {
+            bool registered = 0;
+            APT_IsRegistered(APPID_APPLICATION, &registered);
 
-        //     if (registered) {
-        //         printf("Is App Registered %d\n", registered);
-        //         printf("Terminateing GFX\n");
+            if (registered) {
+                printf("Is App Registered %d\n", registered);
+                printf("Terminateing GFX\n");
 
-        //         // Terminate gfx
-        //         gfxExit();
+                // Terminate gfx
+                gfxExit();
 
-        //         printf("Terminated GFX\n");
-        //         printf("Waking Up Application\n");
+                printf("Terminated GFX\n");
+                printf("Waking Up Application\n");
                 
-        //         // Waking up application
-        //         temp_res = APT_WakeupApplication();
-        //         if (R_FAILED(temp_res)) {
-        //             print_error_code_verbose("APT_WakeupApplication", temp_res);
-        //             break;
-        //         } else {
-        //             printf("Successfully ran APT_WakeupApplication\n");
-        //         }
+                // Waking up application
+                temp_res = APT_WakeupApplication();
+                if (R_FAILED(temp_res)) {
+                    print_error_code_verbose("APT_WakeupApplication", temp_res);
+                    break;
+                } else {
+                    printf("Successfully ran APT_WakeupApplication\n");
+                }
 
+                while (true) {
+                    // Now wait to die so that the game can take over
+                }
                 
-        //         // printf("Terminating APT\n");
+                // printf("Terminating APT\n");
 
-        //         // // Close APT
-        //         // APT_Finalize(envGetAptAppId());
+                // // Close APT
+                // APT_Finalize(envGetAptAppId());
 
-        //         // printf("Terminated APT, Exiting\n");
+                // printf("Terminated APT, Exiting\n");
 
 
-        //         // Exit
-        //         // return 0;
+                // Exit
+                // return 0;
 
-        //         break; // Break from APT_IsRegistered Loop
-        //     }
-        // }
+                break; // Break from APT_IsRegistered Loop
+            }
+        }
 
-        break;
+        break; // Break from aptMainLoop
     }
 
     gfxExit();
