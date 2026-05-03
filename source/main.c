@@ -326,66 +326,15 @@ int main(int argc, char* argv[]) {
         nsExit();
     }
 
-    // Get process list - for testing
-    {
-        // s32 process_count = 0;
-        // u32* process_ids = malloc(64 * sizeof(u32));
-        // temp_res = svcGetProcessList(&process_count, process_ids, 64);
-        // if (temp_res != 0) {
-        //     print_error_code_verbose("svcGetProcessList", temp_res);
-        //     return 0;
-        // }
-
-        // printf("Found %ld processes\n", process_count);
-        // // for (int i = 0; i < process_count; i++) {
-        // //     printf("%ld,", process_ids[i]);
-        // //     if (i > 0 && ((i % 5) == 4)) {
-        // //         printf("\n");
-        // //     }
-        // // }
-        // // printf("\n");
-
-        // for (int i = 0; i < process_count; i++) {
-        //     // s64 *out_pointer_name = NULL;
-        //     // s64 proc_tid = 0;
-        //     s64 proc_name_as_int = 0;
-        //     char proc_name[9]; // 8 chars + 1 for null terminator
-        //     Handle proc_handle;
-
-        //     // Result svcOpenProcess(Handle* process, u32 processId);
-        //     // Result svcGetProcessInfo(s64* out, Handle process, u32 type);
-
-        //     temp_res = svcOpenProcess(&proc_handle, process_ids[i]);
-        //     if (temp_res != 0) {
-        //         print_error_code_verbose("svcOpenProcess", temp_res);
-        //         return 0;
-        //     }
-
-        //     // temp_res = svcGetProcessInfo(&proc_tid, proc_handle, 0x10001);
-        //     // if (temp_res != 0) {
-        //     //     print_error_code_verbose("svcGetProcessInfo", temp_res);
-        //     //     return 0;
-        //     // }
-
-        //     // printf("out_value %llx\n", proc_tid);
-
-        //     temp_res = svcGetProcessInfo(&proc_name_as_int, proc_handle, 0x10000);
-        //     if (temp_res != 0) {
-        //         print_error_code_verbose("svcGetProcessInfo", temp_res);
-        //         return 0;
-        //     }
-
-            
-        //     memcpy(proc_name, &proc_name_as_int, 8);
-        //     proc_name[8] = '\0'; // Manually null-terminate!
-        //     printf("%d -> %s\n", i, proc_name);
-
-        //     // printf("%d - %llx - %llx\n", i, proc_tid, proc_name);
-        //     svcSleepThread(90000000000);
-        // }
-    }
+    bool shouldLaunch = true;
 
 	while(aptMainLoop()) {
+        if (!shouldLaunch) {
+            continue;
+        }
+
+        shouldLaunch = false;
+
         printf("Launching title in gamecard slot\n");
 
         // Start game using apt:startapplication
@@ -439,26 +388,12 @@ int main(int argc, char* argv[]) {
                     printf("Successfully ran APT_WakeupApplication\n");
                 }
 
-                while (true) {
-                    // Now wait to die so that the game can take over
-                }
-                
-                // printf("Terminating APT\n");
-
-                // // Close APT
-                // APT_Finalize(envGetAptAppId());
-
-                // printf("Terminated APT, Exiting\n");
-
-
-                // Exit
-                // return 0;
+                // Now the process goes into sleep mode
+                // Just run aptMainLoop again and again, to handle events
 
                 break; // Break from APT_IsRegistered Loop
             }
         }
-
-        break; // Break from aptMainLoop
     }
 
     gfxExit();
