@@ -172,8 +172,11 @@ libctru:
 
 #---------------------------------------------------------------------------------
 cxi: 3dsx
-# 	@3dsx_to_cia --title-id 0x4003000009802 --title-name "menu" --gen-ncch --input custom_homemenu.3dsx
-	@3dsx_to_cia --title-id 0x4003000009802 --gen-ncch --input custom_homemenu.3dsx
+# EU Systems
+ 	#@3dsx_to_cia --title-id 0x4003000009802 --title-name "menu" --gen-ncch --input custom_homemenu.3dsx
+ 	#@3dsx_to_cia --title-id 0x4003000009802 --gen-ncch --input custom_homemenu.3dsx
+# US Systems
+	@3dsx_to_cia --title-id 0x4003000008f02 --title-name "menu" --gen-ncch --input custom_homemenu.3dsx
 	mv -v -f custom_homemenu.3dsx.ncch custom_homemenu.cxi
 
 #---------------------------------------------------------------------------------
@@ -185,8 +188,12 @@ clean:
 #---------------------------------------------------------------------------------
 # Install the CXI as the mikage launchmenu, instead of the real one
 install_mikage: cxi
-	rm -v ~/.local/share/mikage/data/00040030/00009802/content/*.cxi
-	cp -v -f custom_homemenu.cxi ~/.local/share/mikage/data/00040030/00009802/content/00000000.cxi
+# EU systems
+	# rm -v ~/.local/share/mikage/data/00040030/00009802/content/*.cxi
+	# cp -v -f custom_homemenu.cxi ~/.local/share/mikage/data/00040030/00009802/content/00000000.cxi
+# US Systems
+	rm -v ~/.local/share/mikage/data/title/00040030/00008f02/content/*.cxi
+	cp -v -f custom_homemenu.cxi ~/.local/share/mikage/data/title/00040030/00008f02/content/00000000.cxi
 
 #---------------------------------------------------------------------------------
 else
