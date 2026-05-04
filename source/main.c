@@ -4,6 +4,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 #include <wchar.h>
 
@@ -48,6 +49,20 @@ typedef struct {
     FS_MediaType mediaType;
     char name[MAX_TITLE_NAME];
 } titleGame;
+
+void debug_printf(const char* format, ...) {
+    char buffer[512]; // Temporary buffer for the formatted string
+    va_list args;
+    
+    va_start(args, format);
+    // vsnprintf prevents buffer overflows by limiting write size
+    vsnprintf(buffer, sizeof(buffer), format, args);
+    va_end(args);
+
+    // Pass the formatted string to your libctru wrapper
+    // svcOutputDebugString(buffer, strlen(buffer));
+    svcOutputDebugString(buffer, strlen(buffer));
+}
 
 void print_error_code_verbose(char* desc, Result res) {
     printf("%s Result 0x%lx\n", desc, res);
@@ -203,6 +218,9 @@ void aptMessageCallback(void* user, NS_APPID sender, void* msg, size_t msgsize) 
 int main(int argc, char* argv[]) {
 
     gfxInitDefault();
+
+    consoleDebugInit(debugDevice_NULL);
+
 	consoleInit(GFX_TOP, &topScreen);
     consoleInit(GFX_BOTTOM, &bottomScreen);
 
@@ -216,6 +234,7 @@ int main(int argc, char* argv[]) {
     };
 
     printf("rpopov custom homemenu!\n");
+    debug_printf("rpopov custom homemenu! - DEBUG MESSAGE");
 
     // Register apt hook
     aptHook(&homemenuAptHookCookie, aptCallback, NULL);
@@ -224,6 +243,7 @@ int main(int argc, char* argv[]) {
     // Run the "am" system module title, before getting it's handle
     // It is used to iterate the installed titles
     {
+        debug_printf("Starting AM system module");
         // Get handle to PM system module
         // PM is used to initialize the AM module
         {
@@ -410,3 +430,4 @@ int main(int argc, char* argv[]) {
     // TODO: Reaching here causes a weird error in mikage, keep this and debug sometime
     // This is because svc index 0x51 - svcUnbindInterrupt, is not implemented
 }
+
