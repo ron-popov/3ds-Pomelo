@@ -243,7 +243,7 @@ int main(int argc, char* argv[]) {
     // Run the "am" system module title, before getting it's handle
     // It is used to iterate the installed titles
     {
-        debug_printf("Starting AM system module");
+        debug_printf("Launching AM system module");
         // Get handle to PM system module
         // PM is used to initialize the AM module
         {
@@ -270,6 +270,7 @@ int main(int argc, char* argv[]) {
 
     // Get handle to AM system module
     {
+        debug_printf("Getting handle to AM system module");
         // Initialize "application manager" system module - it is used to fetch the list of installed titles
         temp_res = amInit();
         if (temp_res != 0) {
@@ -279,6 +280,7 @@ int main(int argc, char* argv[]) {
 
     // Find game in gamecard and save it's info, it will be launched later
     {
+        debug_printf("Searching for title installed on gamecard");
         // Get gamecard title id
         u32 title_found_gamecard = 0;
         u64 gamecard_title_id[1];
@@ -288,8 +290,14 @@ int main(int argc, char* argv[]) {
             print_error_code_verbose("AM_GetTitleList GAMECARD", temp_res);
         }
 
-        gamecardGame.titleId = gamecard_title_id[0];
-        gamecardGame.mediaType = MEDIATYPE_GAME_CARD;
+        if (title_found_gamecard) {
+            debug_printf("Found title %#018llx on gamecard", gamecard_title_id[0]);
+            gamecardGame.titleId = gamecard_title_id[0];
+            gamecardGame.mediaType = MEDIATYPE_GAME_CARD;
+        } else {
+            debug_printf("Didn't find title in gamecard");
+            return 0;
+        }
     }
 
     // 00040000/0afd5f00
@@ -300,6 +308,7 @@ int main(int argc, char* argv[]) {
 
     // Print title name
     {
+        debug_printf("Getting title name for %#018llx", gamecardGame.titleId);
         // Get gamecard title name
         char title_name_gamecard[MAX_TITLE_NAME];
         temp_res = getTitleName(gamecardGame.titleId, gamecardGame.mediaType, title_name_gamecard, MAX_TITLE_NAME);
@@ -309,8 +318,10 @@ int main(int argc, char* argv[]) {
             strncpy(gamecardGame.name, title_name_gamecard, MAX_TITLE_NAME);
 
             printf("Gamecard found : %s\n", gamecardGame.name);
+            debug_printf("Gamecard found : %s", gamecardGame.name);
         } else {
             printf("Gamecard title %#018llx - failed to get name\n", gamecardGame.titleId);
+            debug_printf("Gamecard title %#018llx - failed to get name", gamecardGame.titleId);
             return 0;
         }
     }
@@ -341,12 +352,16 @@ int main(int argc, char* argv[]) {
         };
 
         for (int i = 0; i < sizeof(titleIdsToLaunch) / sizeof(u64); i++) {
+            debug_printf("Launching system module %#018llx", titleIdsToLaunch[i]);
             u32 proc_id_out = 0;
             temp_res = NS_LaunchTitle(titleIdsToLaunch[i], 0x00, &proc_id_out);
             if (R_FAILED(temp_res)) {
+                debug_printf("Failed launching system module %#018llx", titleIdsToLaunch[i]);
                 char *error_message = (char*)malloc(256);
                 sprintf(error_message, "launch required title (%#018llx)", titleIdsToLaunch[i]);
                 print_error_code_verbose(error_message, temp_res);
+            } else {
+                debug_printf("Launched system module %#018llx", titleIdsToLaunch[i]);
             }
         }
 
