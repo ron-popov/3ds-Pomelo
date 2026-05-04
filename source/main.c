@@ -248,17 +248,17 @@ int main(int argc, char* argv[]) {
         pmAppExit();
     }
 
+    // Get handle to AM system module
+    {
+        // Initialize "application manager" system module - it is used to fetch the list of installed titles
+        temp_res = amInit();
+        if (temp_res != 0) {
+            print_error_code_verbose("amInit", temp_res);
+        } 
+    }
+
     // Find game in gamecard and save it's info, it will be launched later
     {
-        // Get handle to AM system module
-        {
-            // Initialize "application manager" system module - it is used to fetch the list of installed titles
-            temp_res = amInit();
-            if (temp_res != 0) {
-                print_error_code_verbose("amInit", temp_res);
-            } 
-        }
-
         // Get gamecard title id
         u32 title_found_gamecard = 0;
         u64 gamecard_title_id[1];
@@ -268,29 +268,36 @@ int main(int argc, char* argv[]) {
             print_error_code_verbose("AM_GetTitleList GAMECARD", temp_res);
         }
 
-        // Close handle to am system module
-        {
-            amExit();    
-        }
+        gamecardGame.titleId = gamecard_title_id[0];
+        gamecardGame.mediaType = MEDIATYPE_GAME_CARD;
+    }
 
-        if (title_found_gamecard) {
-            // Get gamecard title name
-            char title_name_gamecard[MAX_TITLE_NAME];
-            temp_res = getTitleName(gamecard_title_id[0], MEDIATYPE_GAME_CARD, title_name_gamecard, MAX_TITLE_NAME);
+    // 00040000/0afd5f00
 
-            if (temp_res) {
-                gamecardGame.titleId = gamecard_title_id[0];
-                strncpy(gamecardGame.name, title_name_gamecard, MAX_TITLE_NAME);
+    // Override with hardcoded title-id installed using "install_cia"
+    gamecardGame.titleId = 0x0004001000021000;
+    gamecardGame.mediaType = MEDIATYPE_NAND;
 
-                printf("Gamecard found : %s\n", gamecardGame.name);
-            } else {
-                printf("Gamecard title %#018llx - failed to get name\n", gamecard_title_id[0]);
-                return 0;
-            }
+    // Print title name
+    {
+        // Get gamecard title name
+        char title_name_gamecard[MAX_TITLE_NAME];
+        temp_res = getTitleName(gamecardGame.titleId, gamecardGame.mediaType, title_name_gamecard, MAX_TITLE_NAME);
+
+        if (temp_res) {
+            
+            strncpy(gamecardGame.name, title_name_gamecard, MAX_TITLE_NAME);
+
+            printf("Gamecard found : %s\n", gamecardGame.name);
         } else {
-            printf("Couldn't find gamecard to launch, PANIC!\n");
+            printf("Gamecard title %#018llx - failed to get name\n", gamecardGame.titleId);
             return 0;
         }
+    }
+
+    // Close handle to am system module
+    {
+        amExit();    
     }
 
     // Launch a bunch of titles required for the homescreen
