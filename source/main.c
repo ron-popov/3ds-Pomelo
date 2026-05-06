@@ -217,6 +217,10 @@ void aptMessageCallback(void* user, NS_APPID sender, void* msg, size_t msgsize) 
     debug_printf("Got message from other system applet");
 }
 
+void _aptDebug(int a, int b) {
+    debug_printf("APT Debug %#x %#x\n", a, b);
+}
+
 int main(int argc, char* argv[]) {
 
     gfxInitDefault();
