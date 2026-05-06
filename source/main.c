@@ -468,12 +468,11 @@ int main(int argc, char* argv[]) {
 
                         if (registered) {
                             printf("Is App Registered %d\n", registered);
-                            printf("Terminateing GFX\n");
+                            printf("Terminating GFX\n");
 
                             // Terminate gfx
                             gfxExit();
 
-                            printf("Terminated GFX\n");
                             printf("Waking Up Application\n");
                             
                             // Waking up application
