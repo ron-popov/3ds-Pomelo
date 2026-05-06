@@ -488,18 +488,6 @@ int main(int argc, char* argv[]) {
                                 printf("Successfully ran APT_WakeupApplication\n");
                             }
 
-                            
-                            // printf("Terminating APT\n");
-
-                            // // Close APT
-                            // APT_Finalize(envGetAptAppId());
-
-                            // printf("Terminated APT, Exiting\n");
-
-
-                            // Exit
-                            // return 0;
-
                             break; // Break from APT_IsRegistered Loop
                         }
                     }
@@ -507,6 +495,8 @@ int main(int argc, char* argv[]) {
                     break; // Break from handleStart case
             }
 
+            // Update only if some key was pressed
+            // The contents can't change otherwise
             consoleSelect(&bottomScreen);
             consoleClear();
             for (int i = 0; i < (sizeof(games) / sizeof(titleGame)); i++) {
