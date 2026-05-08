@@ -7,3 +7,4 @@
 *.cxi
 build/
 aes_keys.txt
+code.bin
