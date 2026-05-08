@@ -26,6 +26,7 @@ u32 __ctru_linear_heap_size = 0xb64000;
 
 static aptHookCookie homemenuAptHookCookie;
 static PrintConsole topScreen, bottomScreen;
+static bool isForefront = true; // Is the homemenu in the forefront right now?
 
 typedef struct {
     u16 shortDescription[0x40];  // The title name (UTF-16)
@@ -66,10 +67,8 @@ void debug_printf(const char* format, ...) {
 
 void print_error_code_verbose(char* desc, Result res) {
     printf("%s Result 0x%lx\n", desc, res);
-    printf("  Module  : %lu\n", R_MODULE(res));
-    printf("  Level   : %lu\n", R_LEVEL(res));
-    printf("  Summary : %lu\n", R_SUMMARY(res));
-    printf("  Desc    : %lu\n", R_DESCRIPTION(res));
+    printf("  Module  : %lu | Level   : %lu\n", R_MODULE(res), R_LEVEL(res));
+    printf("  Summary : %lu | Desc    : %lu\n", R_SUMMARY(res), R_DESCRIPTION(res));
 }
 
 bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nameLen) {
@@ -231,6 +230,8 @@ int main(int argc, char* argv[]) {
     consoleInit(GFX_BOTTOM, &bottomScreen);
 
     consoleSelect(&topScreen);
+
+    isForefront = true;
 
     titleGame games[16];
     u8 games_counter = 0;
@@ -410,6 +411,13 @@ int main(int argc, char* argv[]) {
     bool is_first_run = true;
 
     while(aptMainLoop()) {
+
+        // If the homemenu is not in the forefront, meaning there is an application / applet running
+        // don't handle key inputs, as it will result in weird behaviour
+        if (!isForefront) { 
+            continue;
+        }
+
         hidScanInput();
         u32 kDown = hidKeysDown();
         
@@ -487,6 +495,8 @@ int main(int argc, char* argv[]) {
                             } else {
                                 printf("Successfully ran APT_WakeupApplication\n");
                             }
+
+                            isForefront = false;
 
                             break; // Break from APT_IsRegistered Loop
                         }
