@@ -4,8 +4,9 @@ Custom Homemenu made with libctru and citro2d.
 ## Features
 - [x] List all installed titles
 - [x] Launch selected title
-- [ ] OS Stats - Battery, wifi and etc...
+- [ ] Handle APT events
 - [ ] Pretty UI
+- [ ] OS Stats - Battery, wifi and etc...
 - [ ] Show title 3d icon
 - [ ] Cutomizable UI
 
@@ -48,3 +49,9 @@ make install_mikage
 ### Unable to launch all games
 For some reason, not entirely sure yet why, some games won't boot and the kernel will panic when they load
 I am currently aware of 1 game that does this, which is "Super Mario 3D Land"
+Some games load but crash after a couple of seconds, currently i am using mostly [3ds-examples](https://github.com/devkitpro/3ds-examples) for testing things out
+
+### Not handling APT events
+We don't do anything with the apt events except for printin them
+Becuase of this things like returning to the homemenu after a game exists don't work.
+Another thing that doens't work is suspending the game by pressing the home button.
