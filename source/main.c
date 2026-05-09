@@ -8,6 +8,24 @@
 #include <string.h>
 #include <wchar.h>
 
+// This two strings are here to fix luma3ds loader trying to patch a homemenu code.bin
+// trying to do some memory replacements and failing
+// I reverse engineered it according to the patchCode function in luma3ds "loader"
+// https://github.com/LumaTeam/Luma3DS/blob/master/sysmodules/loader/source/patcher.c
+
+static char* PATCHING_BYPASS_SMDH_REGION_CHECK_MANUAL __attribute__((used)) = 
+    "\x00\x00\x11\xE1"
+    "\x00\x00\x00\x0A"
+    "\x0D\x00\xA0\xE1";
+
+static char* PATCHING_BYPASS_NDS_FLASHCARD_CHECK __attribute__((used)) = 
+    "\x2D\xE9\xAA\xAA\xAA\xAA\xBB\xBB\xBB\xBB\xFF"
+    "\x10\xD1\xE5\x08\x00\x8D";
+
+
+
+
+
 #define SCREEN_WIDTH 400
 #define SCREEN_HEIGHT 240
 
