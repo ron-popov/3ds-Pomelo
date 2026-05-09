@@ -180,6 +180,11 @@ cxi: 3dsx
 	mv -v -f custom_homemenu.3dsx.ncch custom_homemenu.cxi
 
 #---------------------------------------------------------------------------------
+code.bin: cxi
+	ctrtool --exefsdir=. custom_homemenu.cxi
+	mv code.bin custom_homemenu.code.bin
+
+#---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
 	@$(MAKE) -C $(CURDIR)/libctru/libctru clean
