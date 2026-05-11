@@ -13,15 +13,30 @@
 // I reverse engineered it according to the patchCode function in luma3ds "loader"
 // https://github.com/LumaTeam/Luma3DS/blob/master/sysmodules/loader/source/patcher.c
 
+// 0x0A, 0x0C, 0x00, 0x10
+
+static char* PATCHING_BYPASS_REGION_FREE_PATCHING __attribute__((used)) = 
+    "\x0A\x0C\x00\x10"
+    "\x00\x00\x00\x00";
+
 static char* PATCHING_BYPASS_SMDH_REGION_CHECK_MANUAL __attribute__((used)) = 
     "\x00\x00\x11\xE1"
     "\x00\x00\x00\x0A"
     "\x0D\x00\xA0\xE1";
 
+// This is repeated 4 times to make sure atleast 1 of the section is in the 4 offset
 static char* PATCHING_BYPASS_NDS_FLASHCARD_CHECK __attribute__((used)) = 
     "\x2D\xE9\xAA\xAA\xAA\xAA\xBB\xBB\xBB\xBB\xFF"
+    "\x10\xD1\xE5\x08\x00\x8D"
+    "\x00"
+    "\x2D\xE9\xAA\xAA\xAA\xAA\xBB\xBB\xBB\xBB\xFF"
+    "\x10\xD1\xE5\x08\x00\x8D"
+    "\x00"
+    "\x2D\xE9\xAA\xAA\xAA\xAA\xBB\xBB\xBB\xBB\xFF"
+    "\x10\xD1\xE5\x08\x00\x8D"
+    "\x00"
+    "\x2D\xE9\xAA\xAA\xAA\xAA\xBB\xBB\xBB\xBB\xFF"
     "\x10\xD1\xE5\x08\x00\x8D";
-
 
 
 

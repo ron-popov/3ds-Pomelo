@@ -182,6 +182,7 @@ cxi: 3dsx
 #---------------------------------------------------------------------------------
 code.bin: cxi
 	ctrtool --exefsdir=. custom_homemenu.cxi
+	truncate -s 2118004 code.bin # Expand with null bytes code.bin to size of real homemenu text section
 	mv code.bin custom_homemenu.code.bin
 
 #---------------------------------------------------------------------------------
