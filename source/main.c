@@ -8,20 +8,18 @@
 #include <string.h>
 #include <wchar.h>
 
-// This two strings are here to fix luma3ds loader trying to patch a homemenu code.bin
+// This strings is here to fix luma3ds loader trying to patch a homemenu code.bin
 // trying to do some memory replacements and failing
 // I reverse engineered it according to the patchCode function in luma3ds "loader"
 // https://github.com/LumaTeam/Luma3DS/blob/master/sysmodules/loader/source/patcher.c
-
-// 0x0A, 0x0C, 0x00, 0x10
 
 static char* PATCHING_BYPASS_REGION_FREE_PATCHING __attribute__((used)) = 
     "\x0A\x0C\x00\x10"
     "\x00\x00\x00\x00";
 
 
-
-// 0x10, 0xD1, 0xE5, 0x08, 0x00, 0x8D
+// This section is using asm word statements because the loader is looking specifically
+// at the text section for some of the patching
 __attribute__((naked)) void inject_loader_decoys(void) {
     asm volatile (
         "b 1f\n"                    // Jump to label '1' (forward)
