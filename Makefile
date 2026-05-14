@@ -202,6 +202,10 @@ install_mikage: cxi
 	rm -v ~/.local/share/mikage/data/title/00040030/00008f02/content/*.cxi
 	cp -v -f pomelo.cxi ~/.local/share/mikage/data/title/00040030/00008f02/content/00000000.cxi
 
+install_sdcard: code.bin
+	cp -v -f pomelo.code.bin /media/ron/disk/luma/titles/0004003000008F02/code.bin
+	cp -v -f pomelo.exheader.bin /media/ron/disk/luma/titles/0004003000008F02/exheader.bin
+
 #---------------------------------------------------------------------------------
 else
 
