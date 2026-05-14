@@ -253,6 +253,18 @@ void _aptDebug(int a, int b) {
     debug_printf("APT Debug %#x %#x\n", a, b);
 }
 
+void __appInit(void)
+{
+    // Initialize services
+    srvInit();
+    aptInit();
+    // hidInit();
+
+    fsInit();
+    archiveMountSdmc();
+}
+
+
 int main(int argc, char* argv[]) {
 
     inject_loader_decoys();
