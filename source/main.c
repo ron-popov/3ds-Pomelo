@@ -271,8 +271,8 @@ int main(int argc, char* argv[]) {
 
     Result temp_res;
 
-    printf("rpopov custom homemenu!\n");
-    debug_printf("rpopov custom homemenu! - DEBUG MESSAGE");
+    printf("Starting Pomelo!\n");
+    debug_printf("Starting Pomelo! - DEBUG MESSAGE");
 
     // Register apt hook
     aptHook(&homemenuAptHookCookie, aptCallback, NULL);
