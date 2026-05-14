@@ -177,19 +177,20 @@ cxi: 3dsx
  	#@3dsx_to_cia --title-id 0x4003000009802 --gen-ncch --input pomelo.3dsx
 # US Systems
 	@3dsx_to_cia --title-id 0x4003000008f02 --title-name "menu" --gen-ncch --input pomelo.3dsx
+	#@3dsx_to_cia --title-id 0x4003000008f02 --title-name "menu" --gen-ncch --cxi-template "/home/ron/3ds/title_dumps/myconsole_0004003000008F02_homemenu/0004003000008F02.0000008a (CTR-N-HMME).cxi" --input pomelo.3dsx
 	mv -v -f pomelo.3dsx.ncch pomelo.cxi
 
 #---------------------------------------------------------------------------------
 code.bin: cxi
-	ctrtool --exefsdir=. pomelo.cxi
-	truncate -s 2118004 code.bin # Expand with null bytes code.bin to size of real homemenu text section
+	ctrtool --exheader pomelo.exheader.bin --exefsdir=. pomelo.cxi
+	# truncate -s 2118004 code.bin # Expand with null bytes code.bin to size of real homemenu text section
 	mv code.bin pomelo.code.bin
 
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
 	@$(MAKE) -C $(CURDIR)/libctru/libctru clean
-	@rm -fr $(BUILD) $(TARGET).3dsx $(OUTPUT).smdh $(TARGET).elf $(OUTPUT).cxi $(OUTPUT).3dsx.ncch code.bin $(OUTPUT).code.bin
+	@rm -fr $(BUILD) $(TARGET).3dsx $(OUTPUT).smdh $(TARGET).elf $(OUTPUT).cxi $(OUTPUT).3dsx.ncch code.bin $(OUTPUT).code.bin pomelo.*
 
 #---------------------------------------------------------------------------------
 # Install the CXI as the mikage launchmenu, instead of the real one
