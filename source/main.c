@@ -259,8 +259,6 @@ int main(int argc, char* argv[]) {
 
     gfxInitDefault();
 
-    consoleDebugInit(debugDevice_NULL);
-
 	consoleInit(GFX_TOP, &topScreen);
     consoleInit(GFX_BOTTOM, &bottomScreen);
 
@@ -274,6 +272,24 @@ int main(int argc, char* argv[]) {
     Result temp_res;
 
     printf("Starting Pomelo!\n");
+    gfxFlushBuffers();
+
+    // // This doens't really work on real hardware
+    // svcSleepThread(4888000 * 10); // 4.888ms (approx. one sound frame)
+
+    // This should work
+    Handle timer;
+    svcCreateTimer(&timer, RESET_ONESHOT);
+    svcSetTimer(timer, 30000000000, 0);
+    svcWaitSynchronization(timer, -1); // Wait for the timer event
+    svcCloseHandle(timer);
+
+    // hidInit(); // Specifically this function hangs
+
+    asm volatile ("mov r12, %0" : : "r" (0xAABB0004));
+    svcBreak(EXCEVENT_USER_BREAK);
+
+    // consoleDebugInit(debugDevice_NULL);
     debug_printf("Starting Pomelo! - DEBUG MESSAGE");
 
     // Register apt hook
