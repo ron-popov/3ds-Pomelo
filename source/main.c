@@ -253,12 +253,20 @@ void _aptDebug(int a, int b) {
     debug_printf("APT Debug %#x %#x\n", a, b);
 }
 
+void hardwareTimerSleep(u8 seconds) {
+    Handle timer;
+    svcCreateTimer(&timer, RESET_ONESHOT);
+    svcSetTimer(timer, seconds * 1000000000, 0);
+    svcWaitSynchronization(timer, -1); // Wait for the timer event
+    svcCloseHandle(timer);
+}
+
+// Overriding __appInit to remove the hidInit from this section, full explanation next to hidInit call in "main"
 void __appInit(void)
 {
     // Initialize services
     srvInit();
     aptInit();
-    // hidInit();
 
     fsInit();
     archiveMountSdmc();
@@ -284,24 +292,8 @@ int main(int argc, char* argv[]) {
     Result temp_res;
 
     printf("Starting Pomelo!\n");
-    gfxFlushBuffers();
 
-    // // This doens't really work on real hardware
-    // svcSleepThread(4888000 * 10); // 4.888ms (approx. one sound frame)
-
-    // This should work
-    Handle timer;
-    svcCreateTimer(&timer, RESET_ONESHOT);
-    svcSetTimer(timer, 30000000000, 0);
-    svcWaitSynchronization(timer, -1); // Wait for the timer event
-    svcCloseHandle(timer);
-
-    // hidInit(); // Specifically this function hangs
-
-    asm volatile ("mov r12, %0" : : "r" (0xAABB0004));
-    svcBreak(EXCEVENT_USER_BREAK);
-
-    // consoleDebugInit(debugDevice_NULL);
+    consoleDebugInit(debugDevice_NULL);
     debug_printf("Starting Pomelo! - DEBUG MESSAGE");
 
     // Register apt hook
@@ -344,6 +336,10 @@ int main(int argc, char* argv[]) {
 
         nsExit();
     }
+
+    // This must come after launching the titles, because one of the titles that is being launcher
+    // is the InfraRed module, which HID requires, hidInit hangs if the IR module is not running
+    hidInit();
 
     // Run the "am" system module title, before getting it's handle
     // It is used to iterate the installed titles
