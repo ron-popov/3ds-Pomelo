@@ -31,7 +31,7 @@ include $(DEVKITARM)/3ds_rules
 #     - icon.png
 #     - <libctru folder>/default_icon.png
 #---------------------------------------------------------------------------------
-TARGET		:=	$(notdir $(CURDIR))
+TARGET		:=	pomelo
 BUILD		:=	build
 SOURCES		:=	source
 DATA		:=	data
@@ -173,33 +173,33 @@ libctru:
 #---------------------------------------------------------------------------------
 cxi: 3dsx
 # EU Systems
- 	#@3dsx_to_cia --title-id 0x4003000009802 --title-name "menu" --gen-ncch --input custom_homemenu.3dsx
- 	#@3dsx_to_cia --title-id 0x4003000009802 --gen-ncch --input custom_homemenu.3dsx
+ 	#@3dsx_to_cia --title-id 0x4003000009802 --title-name "menu" --gen-ncch --input pomelo.3dsx
+ 	#@3dsx_to_cia --title-id 0x4003000009802 --gen-ncch --input pomelo.3dsx
 # US Systems
-	@3dsx_to_cia --title-id 0x4003000008f02 --title-name "menu" --gen-ncch --input custom_homemenu.3dsx
-	mv -v -f custom_homemenu.3dsx.ncch custom_homemenu.cxi
+	@3dsx_to_cia --title-id 0x4003000008f02 --title-name "menu" --gen-ncch --input pomelo.3dsx
+	mv -v -f pomelo.3dsx.ncch pomelo.cxi
 
 #---------------------------------------------------------------------------------
 code.bin: cxi
-	ctrtool --exefsdir=. custom_homemenu.cxi
+	ctrtool --exefsdir=. pomelo.cxi
 	truncate -s 2118004 code.bin # Expand with null bytes code.bin to size of real homemenu text section
-	mv code.bin custom_homemenu.code.bin
+	mv code.bin pomelo.code.bin
 
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
 	@$(MAKE) -C $(CURDIR)/libctru/libctru clean
-	@rm -fr $(BUILD) $(TARGET).3dsx $(OUTPUT).smdh $(TARGET).elf $(OUTPUT).cxi $(OUTPUT).3dsx.ncch
+	@rm -fr $(BUILD) $(TARGET).3dsx $(OUTPUT).smdh $(TARGET).elf $(OUTPUT).cxi $(OUTPUT).3dsx.ncch code.bin $(OUTPUT).code.bin
 
 #---------------------------------------------------------------------------------
 # Install the CXI as the mikage launchmenu, instead of the real one
 install_mikage: cxi
 # EU systems
 	# rm -v ~/.local/share/mikage/data/00040030/00009802/content/*.cxi
-	# cp -v -f custom_homemenu.cxi ~/.local/share/mikage/data/00040030/00009802/content/00000000.cxi
+	# cp -v -f pomelo.cxi ~/.local/share/mikage/data/00040030/00009802/content/00000000.cxi
 # US Systems
 	rm -v ~/.local/share/mikage/data/title/00040030/00008f02/content/*.cxi
-	cp -v -f custom_homemenu.cxi ~/.local/share/mikage/data/title/00040030/00008f02/content/00000000.cxi
+	cp -v -f pomelo.cxi ~/.local/share/mikage/data/title/00040030/00008f02/content/00000000.cxi
 
 #---------------------------------------------------------------------------------
 else
