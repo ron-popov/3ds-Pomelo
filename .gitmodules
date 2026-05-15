@@ -1,3 +1,6 @@
 [submodule "libctru"]
 	path = libctru
 	url = git@github.com:ron-popov/libctru-for-homemenu.git
+[submodule "project_ctr"]
+	path = project_ctr
+	url = https://github.com/3DSGuy/Project_CTR.git
