@@ -1,0 +1,173 @@
+# Pomelo Custom Home Menu - RSF Blueprint Matching homemenu requirements
+BasicInfo:
+  Title: "menu"
+  CompanyCode: "01"
+  ProductCode: "CTR-N-HMME"
+  ContentType: Application
+
+# This build the title id to be 0x0004003000008F02
+TitleInfo:
+  Category: Applet
+  UniqueId: 0x008f
+  Version: 2
+
+SystemControlInfo:
+  RemasterVersion: 0
+  StackSize: 0x1000
+
+AccessControlInfo:
+  SystemMode: 64MB
+  CoreVersion: 2                
+  IdealProcessor: 0             
+  AffinityMask: 1
+  Priority: 48
+  SystemCallAccess:
+    ControlMemory: 1
+    QueryMemory: 2
+    ExitProcess: 3
+    GetProcessAffinityMask: 4
+    SetProcessAffinityMask: 5
+    GetProcessIdealProcessor: 6 
+    SetProcessIdealProcessor: 7
+    CreateThread: 8
+    ExitThread: 9
+    SleepThread: 10
+    GetThreadPriority: 11
+    SetThreadPriority: 12
+    GetThreadAffinityMask: 13
+    SetThreadAffinityMask: 14
+    GetProcessId: 15
+    GetThreadId: 16
+    Break: 17
+    OutputDebugString: 18
+    ControlPerformanceCounter: 19
+    CreateTimer: 20
+    SetTimer: 21
+    CancelTimer: 22
+    ClearTimer: 23
+    CreateEvent: 24
+    SignalEvent: 25
+    ClearEvent: 26
+    CreateMutex: 27
+    ReleaseMutex: 28
+    CreateSemaphore: 29
+    ReleaseSemaphore: 30
+    CreateAddressArbiter: 31
+    ArbitrateAddress: 32
+    CloseHandle: 33
+    WaitSynchronization1: 34
+    WaitSynchronizationN: 35
+    SignalAndWait: 36
+    DuplicateHandle: 37
+    GetSystemTick: 38
+    HandleSRVNotification: 39
+    GetResourceLimit: 40
+    GetResourceLimitLimitValues: 41
+    GetResourceLimitCurrentValues: 42
+    GetProcessInfo: 43
+    GetThreadInfo: 44
+    ConnectToPort: 45
+    SendSyncRequest1: 46
+    SendSyncRequest2: 47
+    SendSyncRequest3: 48
+    SendSyncRequest4: 49
+    SendSyncRequest: 50
+    OpenProcess: 51
+    OpenThread: 52
+    GetProcessList: 53
+    GetThreadList: 54
+    CommandAndResult: 55
+    GetControlNotifyEvent: 56
+    CreateReportMemoryBlock: 57
+    MapReportMemoryBlock: 58
+    UnmapReportMemoryBlock: 59
+    CreatePort: 60
+    CreateSessionToPort: 61
+    CreateSession: 62
+    AcceptSession: 63
+    ReplyAndReceive1: 64
+    ReplyAndReceive2: 65
+    ReplyAndReceive3: 66
+    ReplyAndReceive4: 67
+    ReplyAndReceive: 68
+    BindInterrupt: 69
+    UnbindInterrupt: 70
+    InvalidateProcessDataCache: 71
+    StoreProcessDataCache: 72
+    FlushProcessDataCache: 73
+    ProgramVerification: 74
+    ControlProcessMemory: 75
+    MapProcessMemory: 76
+    UnmapProcessMemory: 77
+    CreateCodeSet: 78
+    LaunchProcess: 79
+    TerminateProcess: 80
+    SetProcessResourceLimit: 81
+    GetProcessResourceLimit: 82
+    CreateResourceLimit: 83
+    SetResourceLimitValues: 84
+    ControlMemoryMapping: 85
+    SetGpuProt: 86
+    SetGid: 87
+    Backdoor: 123
+  # SystemCallAccess: 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 71, 72, 73, 75, 76, 77, 78, 79, 80, 81, 82, 83, 84, 85, 86, 87, 96, 97, 98, 99, 100, 101, 102, 103, 104, 105, 106, 107, 112, 113, 114, 115, 117, 118, 119, 120, 121, 122, 123, 124, 125, 126, 127              
+
+  # System service matrix matched precisely from your ctrtool dump
+  ServiceAccessControl:
+    - APT:U
+    - ac:u
+    - am:net
+    - boss:U
+    - cam:u
+    - cecd:u
+    - cfg:nor
+    - cfg:u
+    - csnd:SND
+    - dsp::DSP
+    - frd:u
+    - fs:USER
+    - gsp::Gpu
+    - gsp::Lcd
+    - hid:USER
+    - http:C
+    - ir:rst
+    - ir:u
+    - ir:USER
+    - mic:u
+    - ndm:u
+    - news:s
+    - nwm::EXT
+    - nwm::UDS
+    - ptm:sysm
+    - ptm:u
+    - pxi:dev
+    - soc:U
+    - y2r:u
+    - pm:app
+    - ns:s
+
+  FileSystemAccess:
+    - CategorySystemApplication 
+
+  HandleTableSize: 0x200
+  MemoryType: Application       
+
+  # Static MMU memory configurations
+  # IoMapping:
+  #   - 0x1FF00000-0x1FF7FFFF
+  #   - 0x1EC00000-0x1EFFFFFF
+  # StaticMapping:
+  #  - 0x1F000000-0x1F5FFFFF:r
+
+# ARM9-specific filesystem permission vectors
+# Arm9AccessControl:
+#  FsMountNand: true
+#  FsMountNandRoWrite: true
+#  FsMountTwln: true
+#  FsMountWnand: true
+#  FsMountCardSpi: true
+#  UseSdif3: true
+#  CreateSeed: true
+#  UseCardSpi: true
+#  SdApplication: true
+#  UseDirectSdmc: true

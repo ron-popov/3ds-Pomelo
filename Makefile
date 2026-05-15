@@ -172,18 +172,11 @@ libctru:
 
 #---------------------------------------------------------------------------------
 cxi: 3dsx
-# EU Systems
- 	#@3dsx_to_cia --title-id 0x4003000009802 --title-name "menu" --gen-ncch --input pomelo.3dsx
- 	#@3dsx_to_cia --title-id 0x4003000009802 --gen-ncch --input pomelo.3dsx
-# US Systems
-	@3dsx_to_cia --title-id 0x4003000008f02 --title-name "menu" --gen-ncch --input pomelo.3dsx
-	#@3dsx_to_cia --title-id 0x4003000008f02 --title-name "menu" --gen-ncch --cxi-template "/home/ron/3ds/title_dumps/myconsole_0004003000008F02_homemenu/0004003000008F02.0000008a (CTR-N-HMME).cxi" --input pomelo.3dsx
-	mv -v -f pomelo.3dsx.ncch pomelo.cxi
+	makerom -f cxi -o pomelo.cxi -rsf source/template.rsf -elf pomelo.elf
 
 #---------------------------------------------------------------------------------
 code.bin: cxi
 	ctrtool --exheader pomelo.exheader.bin --exefsdir=. pomelo.cxi
-	# truncate -s 2118004 code.bin # Expand with null bytes code.bin to size of real homemenu text section
 	mv code.bin pomelo.code.bin
 
 #---------------------------------------------------------------------------------

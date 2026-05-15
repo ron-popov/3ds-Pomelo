@@ -267,7 +267,6 @@ void __appInit(void)
     // Initialize services
     srvInit();
     aptInit();
-
     fsInit();
     archiveMountSdmc();
 }
