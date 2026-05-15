@@ -1,5 +1,6 @@
-# Custom Homemenu
-Custom Homemenu made with libctru and citro2d.
+# Pomelo 3DS
+Pomelo 3ds is an alternative homemenu to the stock homemenu! Currently the project is in early stages of development and this repository only serves as a super basic POC.
+This project currently only supports US systems, it is able to run on mikage and on real hardware running US firmware.
 
 ## Features
 - [x] List all installed titles
@@ -11,47 +12,53 @@ Custom Homemenu made with libctru and citro2d.
 - [ ] Cutomizable UI
 
 ## Build
+This project uses my own fork of `libctru`. libctru is intented for building a 3ds application / game, however
+the homemenu has different requirements, so i created my own fork - [link](https://github.com/ron-popov/libctru-for-homemenu)
 
-This project works with the default 3ds devkitpro installation.   
-At this state, this is still fullfilled with bugs and disgraceful tricks.   
-I also plan to migrate to C++ to take advantage of the class system.   
+It also requires to have `makerom` installed and in your path to work. `makerom` is used to cxi files, that can be deployed to mikage.
+And code.bin + exheader.bin files that can be deployed to real hardware.
 
 To test the app, you can do the following on Linux:
 ```sh
-# Pull submodules - custom libctru
+# Pull submodules - custom libctru for homemenu
 git submodule update --init
 
-# This doesn't require "3dsx_to_cxi", will output only a 3dsx file
+# Will output only a 3dsx file
+# This doesn't require "makerom"
 make 3dsx
 
-# build 3dsx and cxi file
-# this requires install / build from mikage source the tool "3dsx_to_cxi" and add to path
+# Build 3dsx, cxi, and code.bin + exheader.bin
+# Make sure you have "makerom" in your path
 make all
-
 ```
 
 
 ## Deploy to mikage homemenu
-The title built by this project is supposed to run as a home menu
+The title built by this project is supposed to run as a home menu. Mikage must be bootstrapped as a US system.
 To install this title as a mikage homemenu do the following (assuming you already have mikage home menu running)
 ```bash
 # Backup original mikage homemenu
 cp -v ~/.local/share/mikage/data/00040030/00009802/content/00000027.cxi ~/.local/share/mikage/data/00040030/00009802/content/00000027.cxi.bak
 cp -v ~/.local/share/mikage/data/00040030/00009802/content/00000000.cxi ~/.local/share/mikage/data/00040030/00009802/content/00000000.cxi.bak
 
-# This will delete original mikage homemenu cxi files
-# And then copy the cxi file we built to mikage homemenu cxi file directory
+# This will override the mikage homemenu with pomelo
 make install_mikage
 ```
 
+## Deploy to real hardware
+This requires having a sdcard and luma3ds installed on your system
+```bash
+# Build a "pomelo.code.bin" and "pomelo.exheader.bin"
+make code.bin
 
-## Known Issues
-### Unable to launch all games
-For some reason, not entirely sure yet why, some games won't boot and the kernel will panic when they load
-I am currently aware of 1 game that does this, which is "Super Mario 3D Land"
-Some games load but crash after a couple of seconds, currently i am using mostly [3ds-examples](https://github.com/devkitpro/3ds-examples) for testing things out
+# Then renale "pomelo.code.bin" and "pomelo.exheader.bin"
+mv pomelo.code.bin code.bin
+mv pomelo.exheader.bin exheader.bin
 
-### Not handling APT events
-We don't do anything with the apt events except for printin them
-Becuase of this things like returning to the homemenu after a game exists don't work.
-Another thing that doens't work is suspending the game by pressing the home button.
+# Then copy them to a SDCARD to
+# If the "titles" or "0004003000008F02" directories don't exist on your SDCARD, create them
+/luma/titles/0004003000008F02/code.bin
+/luma/titles/0004003000008F02/exheader.bin
+
+# Insert the SDCARD into your system and enjoy :)
+```
