@@ -154,7 +154,7 @@ ifneq ($(ROMFS),)
 	export _3DSXFLAGS += --romfs=$(CURDIR)/$(ROMFS)
 endif
 
-.PHONY: all clean libctru cxi 3dsx blabla
+.PHONY: all clean libctru cxi 3dsx project_ctr
 
 #---------------------------------------------------------------------------------
 all: 3dsx cxi
@@ -163,26 +163,29 @@ all: 3dsx cxi
 libctru:
 	@echo Building custom libctru
 	@$(MAKE) -C $(CURDIR)/libctru/libctru
-	
+
+project_ctr:
+	CC=gcc CXX=g++ CFLAGS="" LDFLAGS="" make -C $(CURDIR)/project_ctr
 
 #---------------------------------------------------------------------------------
-3dsx: libctru
+3dsx: libctru project_ctr
 	@mkdir -p $(BUILD) $(GFXBUILD)
 	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
 
 #---------------------------------------------------------------------------------
 cxi: 3dsx
-	makerom -f cxi -o pomelo.cxi -rsf source/template.rsf -elf pomelo.elf
+	$(CURDIR)/project_ctr/makerom/bin/makerom -f cxi -o pomelo.cxi -rsf source/template.rsf -elf pomelo.elf
 
 #---------------------------------------------------------------------------------
 code.bin: cxi
-	ctrtool --exheader pomelo.exheader.bin --exefsdir=. pomelo.cxi
+	$(CURDIR)/project_ctr/ctrtool/bin/ctrtool --exheader pomelo.exheader.bin --exefsdir=. pomelo.cxi
 	mv code.bin pomelo.code.bin
 
 #---------------------------------------------------------------------------------
 clean:
 	@echo clean ...
 	@$(MAKE) -C $(CURDIR)/libctru/libctru clean
+	@$(MAKE) -C $(CURDIR)/project_ctr clean
 	@rm -fr $(BUILD) $(TARGET).3dsx $(OUTPUT).smdh $(TARGET).elf $(OUTPUT).cxi $(OUTPUT).3dsx.ncch code.bin $(OUTPUT).code.bin pomelo.*
 
 #---------------------------------------------------------------------------------
