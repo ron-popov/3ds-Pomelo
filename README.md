@@ -15,8 +15,8 @@ This project currently only supports US systems, it is able to run on mikage and
 This project uses my own fork of `libctru`. libctru is intented for building a 3ds application / game, however
 the homemenu has different requirements, so i created my own fork - [link](https://github.com/ron-popov/libctru-for-homemenu)
 
-It also requires to have `makerom` installed and in your path to work. `makerom` is used to cxi files, that can be deployed to mikage.
-And code.bin + exheader.bin files that can be deployed to real hardware.
+It also requires to have `makerom` and `ctrtool` installed and in your path to work. `makerom` is used to cxi files, that can be deployed to mikage.
+`ctrtool` is used to extract the code.bin + exheader.bin files from the CXI file, those files can then be deployed to real hardware.
 
 To test the app, you can do the following on Linux:
 ```sh
@@ -28,7 +28,7 @@ git submodule update --init
 make 3dsx
 
 # Build 3dsx, cxi, and code.bin + exheader.bin
-# Make sure you have "makerom" in your path
+# Make sure you have "makerom" and "ctrtool" in your path
 make all
 ```
 
