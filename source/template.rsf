@@ -12,15 +12,25 @@ TitleInfo:
   Version: 2
 
 SystemControlInfo:
+  JumpId: 0
   RemasterVersion: 0
   StackSize: 0x1000
+  Dependency:
+    ns: 0x0004013000008002
+    hwcd: 0x0004013000001c02
+    mvd: 0x0004013000001d02
+    dsp: 0x0004013000001802
+    nwm: 0x0004013000003102
+    soc: 0x0004013000001b02
 
 AccessControlInfo:
   SystemMode: 64MB
-  CoreVersion: 2                
-  IdealProcessor: 0             
+  SystemModeExt: 178MB
+  CpuSpeed: 804MHz
+  CoreVersion: 2
+  IdealProcessor: 0
   AffinityMask: 1
-  Priority: 48
+  Priority: 16 # It must be this value, or else the NS will crash when trying to load the homemenu, like honestly IDK
   SystemCallAccess:
     ControlMemory: 1
     QueryMemory: 2
@@ -142,27 +152,39 @@ AccessControlInfo:
     - y2r:u
     - pm:app
     - ns:s
-  FileSystemAccess:
-    - CategorySystemApplication 
+  # FileSystemAccess:
+  #   - CategorySystemApplication 
+  #   - DirectSdmc
   HandleTableSize: 0x200
-  MemoryType: System
-
-  # Static MMU memory configurations
+  MemoryType: Application
+  # IORegisterMapping:
+  #   - 0x1FF50000-0x1FF57FFF
+  #   - 0x1FF70000-0x1FF77FFF
+  # MemoryMapping:
+  #  - 0x1F000000-0x1F5FFFFF:r
   IORegisterMapping:
-    - 0x1FF50000-0x1FF57FFF
-    - 0x1FF70000-0x1FF77FFF
+    - 0x1FF00000-0x1FF7FFFF
+    - 0x1EC00000-0x1EFFFFFF
   MemoryMapping:
-   - 0x1F000000-0x1F5FFFFF:r
+    - 0x1F000000-0x1F5FFFFF:r
+  # SystemSaveDataId1: 0x0002008f
+  # AccessibleSaveDataIds:
+  #   - 0x0008f
+  #   - 0x00210
+  #   - 0x002cd
+  #   - 0x014d1
+  #   - 0x0165c
+  ResourceLimitCategory: 1
+  IoAccessControl:
+    - FsMountNand
+    - FsMountNandRoWrite
+    - FsMountTwln
+    - FsMountWnand
+    - FsMountCardSpi
+    - UseSdif3
+    - CreateSeed
+    - UseCardSpi
+  EnableL2Cache: true
 
-# ARM9-specific filesystem permission vectors
-# Arm9AccessControl:
-#  FsMountNand: true
-#  FsMountNandRoWrite: true
-#  FsMountTwln: true
-#  FsMountWnand: true
-#  FsMountCardSpi: true
-#  UseSdif3: true
-#  CreateSeed: true
-#  UseCardSpi: true
-#  SdApplication: true
-#  UseDirectSdmc: true
+Option:
+  UseOnSD: true
