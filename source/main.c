@@ -54,6 +54,7 @@ __attribute__((naked)) void inject_loader_decoys(void) {
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
+// Homemenu heap size is different from regular app heap size
 u32 __ctru_heap_size        = 0x304000;
 u32 __ctru_linear_heap_size = 0xb64000;
 
@@ -84,6 +85,9 @@ typedef struct {
     char name[MAX_TITLE_NAME];
 } titleGame;
 
+// Print debug messages
+// When running in mikage, will output to mikage stdout
+// When running on real hardware, will write to a file in the SDMC
 void debug_printf(const char* format, ...) {
     char buffer[512]; // Temporary buffer for the formatted string
     va_list args;
@@ -98,12 +102,14 @@ void debug_printf(const char* format, ...) {
     svcOutputDebugString(buffer, strlen(buffer));
 }
 
+// Decode and prints the error code itself and it's components
 void print_error_code_verbose(char* desc, Result res) {
     printf("%s Result 0x%lx\n", desc, res);
     printf("  Module  : %lu | Level   : %lu\n", R_MODULE(res), R_LEVEL(res));
     printf("  Summary : %lu | Desc    : %lu\n", R_SUMMARY(res), R_DESCRIPTION(res));
 }
 
+// Get the name of a title, from the "icon" file in the ExeFS section of the title
 bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nameLen) {
     SMDH smdh;
     
@@ -189,6 +195,7 @@ bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nam
     return true;
 }
 
+// Should title be displayed in the homemenu and launchable
 bool shouldDisplayTitle(u64 title_id) {
     u32 title_id_upper = (u32)((title_id >> 32) & 0xFFFFFFFF);
 
@@ -216,6 +223,7 @@ bool shouldDisplayTitle(u64 title_id) {
     }
 }
 
+// This handles apt callbacks to our process
 void aptCallback(APT_HookType hook, void* param) {
     debug_printf("Got APT callback");
 
@@ -249,16 +257,22 @@ void aptMessageCallback(void* user, NS_APPID sender, void* msg, size_t msgsize) 
     debug_printf("Got message from other system applet");
 }
 
-void _aptDebug(int a, int b) {
-    debug_printf("APT Debug %#x %#x\n", a, b);
-}
-
+// Hardware sleep, implemented using timers cause svcSleepThread doesn't work for some reason
 void hardwareTimerSleep(u8 seconds) {
     Handle timer;
     svcCreateTimer(&timer, RESET_ONESHOT);
     svcSetTimer(timer, seconds * 1000000000, 0);
     svcWaitSynchronization(timer, -1); // Wait for the timer event
     svcCloseHandle(timer);
+}
+
+
+/// libctru weak function overriding, the functions here are defined as weak in libctru
+/// The fact they are defined here, overrides the libctru implementation, each function is overriden for different purposes
+
+// This function is used to debug apt messages, we are overriding it to use our logger
+void _aptDebug(int a, int b) {
+    debug_printf("APT Debug %#x %#x\n", a, b);
 }
 
 // Overriding __appInit to remove the hidInit from this section, full explanation next to hidInit call in "main"
@@ -271,6 +285,8 @@ void __appInit(void)
     archiveMountSdmc();
 }
 
+
+/// Main Function
 
 int main(int argc, char* argv[]) {
 
