@@ -8,6 +8,8 @@
 #include <string.h>
 #include <wchar.h>
 
+#include "log.h"
+
 // This strings is here to fix luma3ds loader trying to patch a homemenu code.bin
 // trying to do some memory replacements and failing
 // I reverse engineered it according to the patchCode function in luma3ds "loader"
@@ -84,30 +86,6 @@ typedef struct {
     FS_MediaType mediaType;
     char name[MAX_TITLE_NAME];
 } titleGame;
-
-// Print debug messages
-// When running in mikage, will output to mikage stdout
-// When running on real hardware, will write to a file in the SDMC
-void debug_printf(const char* format, ...) {
-    char buffer[512]; // Temporary buffer for the formatted string
-    va_list args;
-    
-    va_start(args, format);
-    // vsnprintf prevents buffer overflows by limiting write size
-    vsnprintf(buffer, sizeof(buffer), format, args);
-    va_end(args);
-
-    // Pass the formatted string to your libctru wrapper
-    // svcOutputDebugString(buffer, strlen(buffer));
-    svcOutputDebugString(buffer, strlen(buffer));
-}
-
-// Decode and prints the error code itself and it's components
-void print_error_code_verbose(char* desc, Result res) {
-    printf("%s Result 0x%lx\n", desc, res);
-    printf("  Module  : %lu | Level   : %lu\n", R_MODULE(res), R_LEVEL(res));
-    printf("  Summary : %lu | Desc    : %lu\n", R_SUMMARY(res), R_DESCRIPTION(res));
-}
 
 // Get the name of a title, from the "icon" file in the ExeFS section of the title
 bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nameLen) {
@@ -225,36 +203,36 @@ bool shouldDisplayTitle(u64 title_id) {
 
 // This handles apt callbacks to our process
 void aptCallback(APT_HookType hook, void* param) {
-    debug_printf("Got APT callback");
+    log_debug("Got APT callback");
 
     switch(hook) {
         case APTHOOK_ONSUSPEND:
-            debug_printf("Got apt hook APTHOOK_ONSUSPEND");
+            log_debug("Got apt hook APTHOOK_ONSUSPEND");
             break;
         case APTHOOK_ONRESTORE:
-            debug_printf("Got apt hook APTHOOK_ONRESTORE");
+            log_debug("Got apt hook APTHOOK_ONRESTORE");
             break;
         case APTHOOK_ONSLEEP:
-            debug_printf("Got apt hook APTHOOK_ONSLEEP");
+            log_debug("Got apt hook APTHOOK_ONSLEEP");
             break;
         case APTHOOK_ONWAKEUP:
-            debug_printf("Got apt hook APTHOOK_ONWAKEUP");
+            log_debug("Got apt hook APTHOOK_ONWAKEUP");
             break;
         case APTHOOK_ONEXIT:
-            debug_printf("Got apt hook APTHOOK_ONEXIT");
+            log_debug("Got apt hook APTHOOK_ONEXIT");
             break;
         case APTHOOK_COUNT:
-            debug_printf("Got apt hook APTHOOK_COUNT");
+            log_debug("Got apt hook APTHOOK_COUNT");
             break;
         default:
-            debug_printf("Got apt hook UNKNOWN");
+            log_debug("Got apt hook UNKNOWN");
             break;
     }
 }
 
 // This handles messages from other applets
 void aptMessageCallback(void* user, NS_APPID sender, void* msg, size_t msgsize) {
-    debug_printf("Got message from other system applet");
+    log_debug("Got message from other system applet");
 }
 
 // Hardware sleep, implemented using timers cause svcSleepThread doesn't work for some reason
@@ -272,7 +250,7 @@ void hardwareTimerSleep(u8 seconds) {
 
 // This function is used to debug apt messages, we are overriding it to use our logger
 void _aptDebug(int a, int b) {
-    debug_printf("APT Debug %#x %#x\n", a, b);
+    log_debug("APT Debug %#x %#x\n", a, b);
 }
 
 // Overriding __appInit to remove the hidInit from this section, full explanation next to hidInit call in "main"
@@ -287,7 +265,6 @@ void __appInit(void)
 
 
 /// Main Function
-
 int main(int argc, char* argv[]) {
 
     inject_loader_decoys();
@@ -309,7 +286,7 @@ int main(int argc, char* argv[]) {
     printf("Starting Pomelo!\n");
 
     consoleDebugInit(debugDevice_NULL);
-    debug_printf("Starting Pomelo! - DEBUG MESSAGE");
+    log_debug("Starting Pomelo! - DEBUG MESSAGE");
 
     // Register apt hook
     aptHook(&homemenuAptHookCookie, aptCallback, NULL);
@@ -318,7 +295,7 @@ int main(int argc, char* argv[]) {
     // Launch a bunch of titles required for the homescreen
     // I took this list from the real home menu
     {
-        debug_printf("Launching system modules");
+        log_debug("Launching system modules");
         // Get handle to NS system module
         // NS is used to initialize all sorts of modules the homemenu is supposed to launch
         {
@@ -340,14 +317,14 @@ int main(int argc, char* argv[]) {
             u32 proc_id_out = 0;
             temp_res = NS_LaunchTitle(titleIdsToLaunch[i], 0x00, &proc_id_out);
             if (R_FAILED(temp_res)) {
-                debug_printf("Failed launching system module %#018llx", titleIdsToLaunch[i]);
+                log_debug("Failed launching system module %#018llx", titleIdsToLaunch[i]);
                 char *error_message = (char*)malloc(256);
                 sprintf(error_message, "launch required title (%#018llx)", titleIdsToLaunch[i]);
                 print_error_code_verbose(error_message, temp_res);
             }
         }
 
-        debug_printf("Finished launching system modules");
+        log_debug("Finished launching system modules");
 
         nsExit();
     }
@@ -359,7 +336,7 @@ int main(int argc, char* argv[]) {
     // Run the "am" system module title, before getting it's handle
     // It is used to iterate the installed titles
     {
-        debug_printf("Launching AM system module");
+        log_debug("Launching AM system module");
         // Get handle to PM system module
         // PM is used to initialize the AM module
         {
@@ -386,7 +363,7 @@ int main(int argc, char* argv[]) {
 
     // Get handle to AM system module
     {
-        debug_printf("Getting handle to AM system module");
+        log_debug("Getting handle to AM system module");
         // Initialize "application manager" system module - it is used to fetch the list of installed titles
         temp_res = amInit();
         if (temp_res != 0) {
@@ -412,20 +389,20 @@ int main(int argc, char* argv[]) {
         };
 
         if (title_found_gamecard) {
-            debug_printf("Gamecard has title id %#018llx", gamecard_title_id[0]);
+            log_debug("Gamecard has title id %#018llx", gamecard_title_id[0]);
 
             // Get gamecard title name
             char title_name_gamecard[MAX_TITLE_NAME];
             temp_res = getTitleName(gamecard_title_id[0], MEDIATYPE_GAME_CARD, title_name_gamecard, MAX_TITLE_NAME);
 
             if (temp_res) {
-                debug_printf("Found Gamecard title %#018llx - %s", gamecard_title_id[0], title_name_gamecard);
+                log_debug("Found Gamecard title %#018llx - %s", gamecard_title_id[0], title_name_gamecard);
 
                 gamecardTitleGame.titleId = gamecard_title_id[0];
                 strncpy(gamecardTitleGame.name, title_name_gamecard, MAX_TITLE_NAME);
             } else {
                 printf("Gamecard title %#018llx - failed to get name\n", gamecard_title_id[0]);
-                debug_printf("Gamecard title %#018llx - failed to get name", gamecard_title_id[0]);
+                log_debug("Gamecard title %#018llx - failed to get name", gamecard_title_id[0]);
             }
         }
 
@@ -443,7 +420,7 @@ int main(int argc, char* argv[]) {
             printf("AM_GetTitleList Result 0x%lx\n", temp_res);
         }
 
-        debug_printf("Found %lu title ids in NAND", titles_found_nand);
+        log_debug("Found %lu title ids in NAND", titles_found_nand);
 
         // Get name of each title
         for(u32 i = 0; i < titles_found_nand; i++){
@@ -464,14 +441,14 @@ int main(int argc, char* argv[]) {
 
                 strncpy(nandTitleGame.name, title_name, MAX_TITLE_NAME);
 
-                debug_printf("Found NAND title %#018llx : %s", nandTitleGame.titleId, nandTitleGame.name);
+                log_debug("Found NAND title %#018llx : %s", nandTitleGame.titleId, nandTitleGame.name);
 
                 games[games_counter] = nandTitleGame;
                 games_counter++;
 
             } else {
                 printf("%02lu title %#018llx - failed to get name\n", i, title_ids[i]);
-                debug_printf("%02lu title %#018llx - failed to get name", i, title_ids[i]);
+                log_debug("%02lu title %#018llx - failed to get name", i, title_ids[i]);
             }
         }
     }
@@ -512,7 +489,7 @@ int main(int argc, char* argv[]) {
                     return 0;
                 case KEY_START: // Launch selected game
                     printf("Launching title id %#018llx\n", games[selected_game_index].titleId);
-                    debug_printf("Launching title id %#018llx", games[selected_game_index].titleId);
+                    log_debug("Launching title id %#018llx", games[selected_game_index].titleId);
 
                     titleGame *selectedTitleGame = &games[selected_game_index];
  
@@ -523,7 +500,7 @@ int main(int argc, char* argv[]) {
 
                     // Start game using apt:startapplication
                     {
-                        debug_printf("Calling APT_PrepareToStartApplication");
+                        log_debug("Calling APT_PrepareToStartApplication");
                         temp_res = APT_PrepareToStartApplication(&selectedGameProgramInfo, 0x00);
                         if (R_FAILED(temp_res)) {
                             print_error_code_verbose("APT_PrepareToStartApplication", temp_res);
@@ -531,19 +508,19 @@ int main(int argc, char* argv[]) {
                             // break;
                         } else {
                             printf("Successfully ran APT_PrepareToStartApplication\n");
-                            debug_printf("Successfully ran APT_PrepareToStartApplication");
+                            log_debug("Successfully ran APT_PrepareToStartApplication");
                         }
 
                         u8 parameter[0x300] = {0};
                         
-                        debug_printf("Calling APT_StartApplication");
+                        log_debug("Calling APT_StartApplication");
                         temp_res = APT_StartApplication(0x300, 0x00, true, &parameter, NULL);
                         if (R_FAILED(temp_res)) {
                             print_error_code_verbose("APT_StartApplication", temp_res);
                             break;
                         } else {
                             printf("Successfully ran APT_StartApplication\n");
-                            debug_printf("Successfully ran APT_StartApplication");
+                            log_debug("Successfully ran APT_StartApplication");
                         }
                     }
 
