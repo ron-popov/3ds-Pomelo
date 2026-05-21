@@ -153,8 +153,10 @@ AccessControlInfo:
     - pm:app
     - ns:s
   FileSystemAccess:
-    - CategorySystemApplication 
     - DirectSdmc
+    - SwitchCleanup
+    - CategoryHomeMenu
+    - SeedDB
   HandleTableSize: 0x200
   MemoryType: Application
   IORegisterMapping:
