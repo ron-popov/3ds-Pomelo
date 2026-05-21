@@ -258,7 +258,7 @@ void hardwareTimerSleep(u8 seconds) {
 
 // This function is used to debug apt messages, we are overriding it to use our logger
 void _aptDebug(int a, int b) {
-    log_debug("APT Debug %#x %#x\n", a, b);
+    log_debug("APT Debug %#x %#x", a, b);
 }
 
 // Overriding __appInit to remove the hidInit from this section, full explanation next to hidInit call in "main"
