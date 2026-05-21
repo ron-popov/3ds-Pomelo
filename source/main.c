@@ -402,7 +402,6 @@ int main(int argc, char* argv[]) {
                 gamecardTitleGame.titleId = gamecard_title_id[0];
                 strncpy(gamecardTitleGame.name, title_name_gamecard, MAX_TITLE_NAME);
             } else {
-                printf("Gamecard title %#018llx - failed to get name\n", gamecard_title_id[0]);
                 log_debug("Gamecard title %#018llx - failed to get name", gamecard_title_id[0]);
             }
         }
@@ -418,7 +417,9 @@ int main(int argc, char* argv[]) {
         u64 title_ids[128];
         temp_res = AM_GetTitleList(&titles_found_nand, MEDIATYPE_NAND, 128, title_ids);
         if (temp_res != 0) {
-            printf("AM_GetTitleList Result 0x%lx\n", temp_res);
+            log_debug("AM_GetTitleList Failed, Result 0x%lx", temp_res);
+            print_error_code_verbose("AM_GetTitleList", temp_res);
+            return 0;
         }
 
         log_debug("Found %lu title ids in NAND", titles_found_nand);
@@ -448,7 +449,7 @@ int main(int argc, char* argv[]) {
                 games_counter++;
 
             } else {
-                printf("%02lu title %#018llx - failed to get name\n", i, title_ids[i]);
+                // printf("%02lu title %#018llx - failed to get name\n", i, title_ids[i]);
                 log_debug("%02lu title %#018llx - failed to get name", i, title_ids[i]);
             }
         }
@@ -505,10 +506,10 @@ int main(int argc, char* argv[]) {
                         temp_res = APT_PrepareToStartApplication(&selectedGameProgramInfo, 0x00);
                         if (R_FAILED(temp_res)) {
                             print_error_code_verbose("APT_PrepareToStartApplication", temp_res);
-                            printf("Continuing even tho error\n");
+                            // printf("Continuing even tho error\n");
                             // break;
                         } else {
-                            printf("Successfully ran APT_PrepareToStartApplication\n");
+                            // printf("Successfully ran APT_PrepareToStartApplication\n");
                             log_debug("Successfully ran APT_PrepareToStartApplication");
                         }
 
@@ -520,7 +521,7 @@ int main(int argc, char* argv[]) {
                             print_error_code_verbose("APT_StartApplication", temp_res);
                             break;
                         } else {
-                            printf("Successfully ran APT_StartApplication\n");
+                            // printf("Successfully ran APT_StartApplication\n");
                             log_debug("Successfully ran APT_StartApplication");
                         }
                     }
@@ -531,13 +532,13 @@ int main(int argc, char* argv[]) {
                         APT_IsRegistered(APPID_APPLICATION, &registered);
 
                         if (registered) {
-                            printf("Is App Registered %d\n", registered);
-                            printf("Terminating GFX\n");
+                            log_debug("Is App Registered %d", registered);
+                            log_debug("Terminating GFX");
 
                             // Terminate gfx
                             gfxExit();
 
-                            printf("Waking Up Application\n");
+                            log_debug("Waking Up Application");
                             
                             // Waking up application
                             temp_res = APT_WakeupApplication();
@@ -545,7 +546,7 @@ int main(int argc, char* argv[]) {
                                 print_error_code_verbose("APT_WakeupApplication", temp_res);
                                 break;
                             } else {
-                                printf("Successfully ran APT_WakeupApplication\n");
+                                log_debug("Successfully ran APT_WakeupApplication");
                             }
 
                             isForefront = false;
