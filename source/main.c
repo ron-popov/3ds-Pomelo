@@ -50,6 +50,7 @@ __attribute__((naked)) void inject_loader_decoys(void) {
 #define BOTTOM_SCREEN_HEIGHT 240
 
 #define MAX_TITLE_NAME 255
+#define MAX_TITLES_TO_DISPLAY 26
 
 #define TITLE_ID_SYSTEM_MODULE_AM_EU 0x0004013000001502
 
@@ -175,6 +176,9 @@ bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nam
 
 // Should title be displayed in the homemenu and launchable
 bool shouldDisplayTitle(u64 title_id) {
+    // Title id black list
+
+
     u32 title_id_upper = (u32)((title_id >> 32) & 0xFFFFFFFF);
 
     switch (title_id_upper) {
@@ -194,6 +198,10 @@ bool shouldDisplayTitle(u64 title_id) {
             return false;
         case 0x00040001: // Download play titles
             return true;
+        case 0x00048004: // DSiWare Ports
+            return false;
+        case 0x00048005: // DSi System Applications
+            return false;
         case 0x0004800F: // DSi System Data Archives
             return false;
         default:
@@ -278,7 +286,7 @@ int main(int argc, char* argv[]) {
 
     isForefront = true;
 
-    titleGame games[16];
+    titleGame games[64]; // I set this to 128 and the system crashed, probably ran out of stack size
     u8 games_counter = 0;
 
     Result temp_res;
@@ -455,6 +463,52 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    // Iterate over sdcard titles and fetch name of each installed title
+    {
+        // Get list of installed titles
+        u32 titles_found_sd = 0;
+        u64 title_ids[128];
+        temp_res = AM_GetTitleList(&titles_found_sd, MEDIATYPE_SD, 128, title_ids);
+        if (temp_res != 0) {
+            log_debug("AM_GetTitleList Failed, Result 0x%lx", temp_res);
+            print_error_code_verbose("AM_GetTitleList", temp_res);
+            return 0;
+        }
+
+        log_debug("Found %lu title ids in SD", titles_found_sd);
+
+        // Get name of each title
+        for(u32 i = 0; i < titles_found_sd; i++){
+
+            if (!shouldDisplayTitle(title_ids[i])){
+                continue;
+            }
+
+            char title_name[MAX_TITLE_NAME] = {0};
+            temp_res = getTitleName(title_ids[i], MEDIATYPE_SD, title_name, MAX_TITLE_NAME);
+            if (temp_res) {
+                // printf("%02lu title %#018llx - %s\n", i, title_ids[i], title_name);
+                titleGame sdTitleGame = {
+                    .titleId = title_ids[i],
+                    .mediaType = MEDIATYPE_SD,
+                    .name = ""
+                };
+
+                strncpy(sdTitleGame.name, title_name, MAX_TITLE_NAME);
+
+                log_debug("Found SD title %#018llx : %s", sdTitleGame.titleId, sdTitleGame.name);
+
+                games[games_counter] = sdTitleGame;
+                games_counter++;
+
+            } else {
+                // printf("%02lu title %#018llx - failed to get name\n", i, title_ids[i]);
+                log_debug("%02lu title %#018llx - failed to get name", i, title_ids[i]);
+            }
+        }
+    }
+
+
     // Close handle to am system module
     {
         amExit();    
@@ -562,7 +616,7 @@ int main(int argc, char* argv[]) {
             // The contents can't change otherwise
             consoleSelect(&bottomScreen);
             consoleClear();
-            for (int i = 0; i < (sizeof(games) / sizeof(titleGame)); i++) {
+            for (int i = 0; i < MAX_TITLES_TO_DISPLAY; i++) {
                 titleGame game = games[i];
                 if (game.name[0] == 0) {
                     // No more games to display
