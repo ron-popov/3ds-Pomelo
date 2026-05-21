@@ -10,9 +10,9 @@ void log_debug_mikage(const char* buffer) {
 
 // Decode and prints the error code itself and it's components
 void print_error_code_verbose(char* desc, Result res) {
-    log_debug("%s Result 0x%lx\n", desc, res);
-    log_debug("  Module  : %lu | Level   : %lu\n", R_MODULE(res), R_LEVEL(res));
-    log_debug("  Summary : %lu | Desc    : %lu\n", R_SUMMARY(res), R_DESCRIPTION(res));
+    log_debug("%s Result 0x%lx", desc, res);
+    log_debug("  Module  : %lu | Level   : %lu", R_MODULE(res), R_LEVEL(res));
+    log_debug("  Summary : %lu | Desc    : %lu", R_SUMMARY(res), R_DESCRIPTION(res));
 }
 
 // Write log message to SDMC
