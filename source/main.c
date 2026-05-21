@@ -286,7 +286,8 @@ int main(int argc, char* argv[]) {
     printf("Starting Pomelo!\n");
 
     consoleDebugInit(debugDevice_NULL);
-    log_debug("Starting Pomelo! - DEBUG MESSAGE");
+    log_debug("Starting Pomelo!");
+
 
     // Register apt hook
     aptHook(&homemenuAptHookCookie, aptCallback, NULL);
