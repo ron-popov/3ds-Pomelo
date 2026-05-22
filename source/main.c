@@ -9,38 +9,8 @@
 #include <wchar.h>
 
 #include "log.h"
-
-// This strings is here to fix luma3ds loader trying to patch a homemenu code.bin
-// trying to do some memory replacements and failing
-// I reverse engineered it according to the patchCode function in luma3ds "loader"
-// https://github.com/LumaTeam/Luma3DS/blob/master/sysmodules/loader/source/patcher.c
-
-static char* PATCHING_BYPASS_REGION_FREE_PATCHING __attribute__((used)) = 
-    "\x0A\x0C\x00\x10"
-    "\x00\x00\x00\x00";
-
-
-// This section is using asm word statements because the loader is looking specifically
-// at the text section for some of the patching
-__attribute__((naked)) void inject_loader_decoys(void) {
-    asm volatile (
-        "b 1f\n"                    // Jump to label '1' (forward)
-        ""                          // SMDH REGION CHECK MANUAL START
-        ".word 0xE1110000\n"
-        ".word 0x0A000000\n"
-        ".word 0xE1A0000D\n"
-        ""                          // SMDH REGION CHECK MANUAL END
-        ""                          // NDS FLASHCARD WHITELIST START
-        ".word 0x00E92DAA\n"
-        ".word 0xAAAAAABB\n"
-        ".word 0xBBBBBBFF\n"
-        ".word 0x08E5D110\n"
-        ".word 0x00008D00\n"
-        ""                          // NDS FLASHCARD WHITELIST END
-        "1:\n"                      // Label '1'
-        "bx lr\n"                   // Return
-    );
-}
+#include "utils.h"
+#include "patch_fixes.h"
 
 
 #define SCREEN_WIDTH 400
@@ -66,148 +36,11 @@ static PrintConsole topScreen, bottomScreen;
 static bool isForefront = true; // Is the homemenu in the forefront right now?
 
 typedef struct {
-    u16 shortDescription[0x40];  // The title name (UTF-16)
-    u16 longDescription[0x80];   // Subtitle / longer description
-    u16 publisher[0x40];         // Publisher name
-} SMDH_ApplicationTitle;
-
-typedef struct {
-    u32 magic;                          // 0x48444D53 = "SMDH"
-    u16 version;
-    u16 reserved_1;
-    SMDH_ApplicationTitle titles[16];   // One per language
-    u8 application_settings[0x30]; // not used, only for filler purposes
-    u8 reserved_2[0x08]; // not used, only for filler purposes
-    u8 icon_graphics[0x1680]; // not used, only for filler purposes
-    // ... icon data follows
-} SMDH; // struct size must be 0x36c0 - mikage doesn't allow to read partial sections
-
-typedef struct {
     u64 titleId;
     FS_MediaType mediaType;
     char name[MAX_TITLE_NAME];
 } titleGame;
 
-// Get the name of a title, from the "icon" file in the ExeFS section of the title
-bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nameLen) {
-    SMDH smdh;
-    
-    // // Build the archive path (mediaType + titleId)
-    // u32 archPath[3] = {
-    //     (u32)mediaType,
-    //     (u32)((titleId >> 32) & 0xFFFFFFFF),
-    //     (u32)(titleId & 0xFFFFFFFF)
-    // };
-
-    const FS_ProgramInfo archiveProgramInfo = {
-        .programId = titleId, 
-        .mediaType = mediaType
-    };
-    FS_Path archivePath = { PATH_BINARY, sizeof(archiveProgramInfo), (void*)&archiveProgramInfo };
-
-    // printf("About to run FSUSER_OpenArchive\n");
-
-    FS_Archive archive;
-    Result res = FSUSER_OpenArchive(&archive, ARCHIVE_SAVEDATA_AND_CONTENT, archivePath);
-    if (R_FAILED(res)) {
-        print_error_code_verbose("FSUSER_OpenArchive", res);
-        return false;
-    }
-
-    // printf("Ran FSUSER_OpenArchive\n");
-
-    // This is a comment from mikage
-    // a new path:
-        // * Word 0: NCCH (0) or save data (1)
-        // * Word 1: TMD content index or NCSD partition index
-        // * Word 2: 0 for romfs (and for save data), 1 for exefs code section, 2 for exefs non-code section
-        // * Words 3+4: ExeFS section name
-
-    // Open the SMDH (stored as exefs:/icon)
-    // Build the file path (file that inside the archive)
-    u32 filePathData[5] = {0};
-    filePathData[0] = 0x00;             // is_save_data
-    filePathData[1] = 0x00;             // content_id (in mikage), also known as NCSDPartitionId
-    filePathData[2] = 0x02;             // sub_file_type, used by the function NCCHOpenExeFSSection
-    filePathData[3] = 0x6e6f6369;       // name of the section to read (this spells "icon")
-    filePathData[4] = 0x00000000;       // name of the section to read (part2)
-
-    FS_Path filePath = { PATH_BINARY, sizeof(filePathData), filePathData };
-
-    Handle fileHandle;
-
-    // printf("About to run FSUSER_OpenFile\n");
-
-    res = FSUSER_OpenFile(&fileHandle, archive, filePath, FS_OPEN_READ, 0);
-    if (R_FAILED(res)) {
-        print_error_code_verbose("FSUSER_OpenFile",  res);
-        FSUSER_CloseArchive(archive);
-        return false;
-    }
-
-    // printf("Ran FSUSER_OpenFile\n");
-
-    // Read the SMDH data
-    u32 bytesRead;
-    res = FSFILE_Read(fileHandle, &bytesRead, 0, &smdh, sizeof(SMDH));
-    FSFILE_Close(fileHandle);
-    FSUSER_CloseArchive(archive);
-
-    if (R_FAILED(res)) {
-        return false;
-    }
-
-    // Validate SMDH magic ("SMDH")
-    if (smdh.magic != 0x48444D53) {
-        printf("File magic does not match SMDH\n");
-        return false;
-    }
-
-    // Pick language (use English = 1, or CFG_LANGUAGE_EN)
-    u8 lang = 1; // CFG_LANGUAGE_EN
-    
-    // The short description is a UTF-16 string (0x40 u16 chars)
-    // Convert to UTF-8 for easier use
-    utf16_to_utf8((uint8_t*)nameOut, smdh.titles[lang].shortDescription, nameLen - 1);
-    nameOut[nameLen - 1] = '\0';
-
-    return true;
-}
-
-// Should title be displayed in the homemenu and launchable
-bool shouldDisplayTitle(u64 title_id) {
-    // Title id black list
-
-
-    u32 title_id_upper = (u32)((title_id >> 32) & 0xFFFFFFFF);
-
-    switch (title_id_upper) {
-        case 0x00040010: // System Applications
-            return true;
-        case 0x0004001b: // System data archives
-            return false;
-        case 0x00040030: // System Applets
-            return false;
-        case 0x0004009B: // Shared data archives
-            return false;
-        case 0x000400DB: // System data archives
-            return false;
-        case 0x00040130: // System modules
-            return false;
-        case 0x00040138: // System Firmware
-            return false;
-        case 0x00040001: // Download play titles
-            return true;
-        case 0x00048004: // DSiWare Ports
-            return false;
-        case 0x00048005: // DSi System Applications
-            return false;
-        case 0x0004800F: // DSi System Data Archives
-            return false;
-        default:
-            return true;
-    }
-}
 
 // This handles apt callbacks to our process
 void aptCallback(APT_HookType hook, void* param) {
@@ -243,16 +76,6 @@ void aptMessageCallback(void* user, NS_APPID sender, void* msg, size_t msgsize) 
     log_debug("Got message from other system applet");
 }
 
-// Hardware sleep, implemented using timers cause svcSleepThread doesn't work for some reason
-void hardwareTimerSleep(u8 seconds) {
-    Handle timer;
-    svcCreateTimer(&timer, RESET_ONESHOT);
-    svcSetTimer(timer, seconds * 1000000000, 0);
-    svcWaitSynchronization(timer, -1); // Wait for the timer event
-    svcCloseHandle(timer);
-}
-
-
 /// libctru weak function overriding, the functions here are defined as weak in libctru
 /// The fact they are defined here, overrides the libctru implementation, each function is overriden for different purposes
 
@@ -266,17 +89,22 @@ void __appInit(void)
 {
     // Initialize services
     srvInit();
-    aptInit();
     fsInit();
     archiveMountSdmc();
+    aptInit();
 }
 
 
 /// Main Function
 int main(int argc, char* argv[]) {
 
+    // This call is here to trick the compiler into adding the decoy code to the final binary
     inject_loader_decoys();
 
+
+
+
+    // Init gfx stuff
     gfxInitDefault();
 
 	consoleInit(GFX_TOP, &topScreen);
@@ -286,20 +114,39 @@ int main(int argc, char* argv[]) {
 
     isForefront = true;
 
-    titleGame games[64]; // I set this to 128 and the system crashed, probably ran out of stack size
-    u8 games_counter = 0;
 
-    Result temp_res;
 
-    printf("Starting Pomelo!\n");
-
+    // Setup debug logging stuff
     consoleDebugInit(debugDevice_NULL);
     log_debug("Starting Pomelo!");
 
+    printf("Starting Pomelo!\n\n");
 
-    // Register apt hook
+    // Check if we are running on real hardware or mikage
+    bool is_mikage = is_running_in_emulator();
+    if (is_mikage) {
+        printf("Running in Mikage\n");
+        log_debug("Running in mikage");
+    } else {
+        printf("Running on real hardware\n");
+        log_debug("Running on real hardware");
+    }
+
+
+
+    // Configure APT stuff and hooks
     aptHook(&homemenuAptHookCookie, aptCallback, NULL);
     aptSetMessageCallback(&aptMessageCallback, NULL);
+
+
+
+
+
+
+    // Start doing homemenu stuff - enumerating titles and their names
+    Result temp_res;
+    titleGame games[64]; // I set this to 128 and the system crashed, probably ran out of stack size
+    u8 games_counter = 0;
 
     // Launch a bunch of titles required for the homescreen
     // I took this list from the real home menu
@@ -641,4 +488,5 @@ int main(int argc, char* argv[]) {
     // TODO: Reaching here causes a weird error in mikage, keep this and debug sometime
     // This is because svc index 0x51 - svcUnbindInterrupt, is not implemented
 }
+
 

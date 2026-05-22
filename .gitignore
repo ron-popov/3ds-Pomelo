@@ -8,3 +8,4 @@
 build/
 aes_keys.txt
 *.bin
+.vscode

@@ -8,7 +8,6 @@
 #include <stdarg.h>
 #include <stdlib.h>
 
-// void log_debug_mikage(const char* buffer);
 
 void log_debug(const char* format, ...);
 
