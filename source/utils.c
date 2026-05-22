@@ -1,5 +1,23 @@
 #include "utils.h"
 
+bool is_ascii_char(char c) {
+    return (c >= 0x20 && c <= 0x7E);
+}
+
+void remove_non_ascii(char *str) {
+    char *src = str; // Pointer to read from
+    char *dst = str; // Pointer to write to
+
+    while (*src != '\0') {
+        // ASCII characters have values between 0 and 127
+        // Casting to unsigned char prevents issues with negative values
+        if (is_ascii_char(*src)) {
+            *dst++ = *src;
+        }
+        src++;
+    }
+    *dst = '\0'; // Null-terminate the cleaned string
+}
 
 // Get the name of a title, from the "icon" file in the ExeFS section of the title
 bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nameLen) {
@@ -84,6 +102,10 @@ bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nam
     utf16_to_utf8((uint8_t*)nameOut, smdh.titles[lang].shortDescription, nameLen - 1);
     nameOut[nameLen - 1] = '\0';
 
+
+    // Remove non ascii chars
+    remove_non_ascii(nameOut);
+
     return true;
 }
 
@@ -119,11 +141,13 @@ bool shouldDisplayTitle(u64 title_id) {
     switch(title_id) {
         case 0x0004001000021a00: // System transfer - name in "icon" is "???"
             return false;
+        case 0x0004001000021f00: // System updates in safe mode - no name
+            return false;
         default:
             break;
     }
     
-    
+
     return true;
 }
 
@@ -140,28 +164,46 @@ void hardwareTimerSleep(u8 seconds) {
 
 
 // Checks if we are currently running in an emulator?
-bool is_running_in_emulator(void) {
-    bool is_emulator = false;
+bool isRunningInEmulator(void) {
+    Handle fileHandle = 0;
     
-    // --- Check 2: The Hardware MAC Address via CFG Block ---
-    u8 mac[6];
-    memset(mac, 0, sizeof(mac));
+    // Map paths to the root of the raw SDMC archive
+    FS_Path archivePath = fsMakePath(PATH_EMPTY, "");
+    FS_Path filePath = fsMakePath(PATH_ASCII, "/boot.firm");
     
-    if (R_SUCCEEDED(cfguInit())) {
-        // Use the raw block reader. Size = 6 bytes, Block ID = 0x00090001 (WLAN MAC)
-        Result macRes = CFGU_GetConfigInfoBlk2(6, 0x00090001, mac);
-        
-        if (R_FAILED(macRes)) {
-            // If the block read fails, the sysdata archives are missing -> Emulator.
-            is_emulator = true;
-        } else if (mac[0] == 0x00 && mac[1] == 0x00 && mac[2] == 0x00 && 
-                   mac[3] == 0x00 && mac[4] == 0x00 && mac[5] == 0x00) {
-            // If it succeeds but the MAC is blank -> Emulator.
-            is_emulator = true;
-        }
-        
-        cfguExit();
+    // Attempt to open /boot.firm strictly in read-only mode.
+    // We use OpenFileDirectly to hit the SD card without needing a pre-mounted archive.
+    Result res = FSUSER_OpenFileDirectly(&fileHandle, ARCHIVE_SDMC, archivePath, 
+                                         filePath, FS_OPEN_READ, 0);
+    
+    // If the result succeeds, the file exists on the SD card.
+    if (R_SUCCEEDED(res)) {
+        // Instantly close the handle to prevent memory leaks
+        FSFILE_Close(fileHandle);
+        return false;  // Real CFW Hardware detected
     }
     
-    return is_emulator;
+    // If it fails (file not found, or IPC rejected), we are likely in an emulator.
+    return true; 
+}
+
+
+void systemModelName(u8 systemModel, char* nameOut) {
+
+    switch(systemModel) {
+        case 0x00:
+            strcpy(nameOut, "Old 3ds"); break;
+        case 0x01:
+            strcpy(nameOut, "Old 3ds XL"); break;
+        case 0x02:
+            strcpy(nameOut, "New 3ds"); break;
+        case 0x03:
+            strcpy(nameOut, "Old 2ds"); break;
+        case 0x04:
+            strcpy(nameOut, "New 3ds XL"); break;
+        case 0x05:
+            strcpy(nameOut, "New 2ds XL"); break;
+        default:
+            strcpy(nameOut, "Unknown Systme Model"); break;
+    }
 }

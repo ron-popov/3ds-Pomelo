@@ -37,6 +37,8 @@ bool shouldDisplayTitle(u64 title_id);
 void hardwareTimerSleep(u8 seconds);
 
 // Check if we are currently running in mikage or real hardware
-bool is_running_in_emulator(void);
+bool isRunningInEmulator(void);
+
+void systemModelName(u8 systemModel, char* nameOut);
 
 #endif

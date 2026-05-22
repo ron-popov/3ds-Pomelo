@@ -98,6 +98,11 @@ void __appInit(void)
 /// Main Function
 int main(int argc, char* argv[]) {
 
+    // This var will be used when needing to get result from IPC call
+    Result temp_res;
+
+
+
     // This call is here to trick the compiler into adding the decoy code to the final binary
     inject_loader_decoys();
 
@@ -123,14 +128,41 @@ int main(int argc, char* argv[]) {
     printf("Starting Pomelo!\n\n");
 
     // Check if we are running on real hardware or mikage
-    bool is_mikage = is_running_in_emulator();
+    bool is_mikage = isRunningInEmulator();
     if (is_mikage) {
         printf("Running in Mikage\n");
         log_debug("Running in mikage");
+
+        printf("System Model : %s\n", "Emulator");
+        log_debug("System Model : %s", "Emulator");
     } else {
-        printf("Running on real hardware\n");
-        log_debug("Running on real hardware");
+        printf("Running on Real Hardware\n");
+        log_debug("Running on Real Hardware");
+
+        temp_res = cfguInit();
+        if (R_FAILED(temp_res)) {
+            print_error_code_verbose("cfguInit for system model", temp_res);
+            return 0;
+        }
+
+        u8 system_model;
+        temp_res = CFGU_GetSystemModel(&system_model);
+        if (R_FAILED(temp_res)) {
+            print_error_code_verbose("GetSystemModel", temp_res);
+        } else {
+            char system_name[32];
+            systemModelName(system_model, (char*)&system_name);
+
+            log_debug("System Model Id : %x", system_model);
+
+            printf("System Model : %s\n", system_name);
+            log_debug("System Model : %s", system_name);
+        }
+
+        cfguExit();
     }
+
+
 
 
 
@@ -144,7 +176,6 @@ int main(int argc, char* argv[]) {
 
 
     // Start doing homemenu stuff - enumerating titles and their names
-    Result temp_res;
     titleGame games[64]; // I set this to 128 and the system crashed, probably ran out of stack size
     u8 games_counter = 0;
 
