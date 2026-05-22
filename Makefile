@@ -170,7 +170,7 @@ project_ctr:
 #---------------------------------------------------------------------------------
 3dsx: libctru project_ctr
 	@mkdir -p $(BUILD) $(GFXBUILD)
-	@$(MAKE) --no-print-directory -C $(BUILD) -f $(CURDIR)/Makefile
+	@$(MAKE) --no-print-directory -B -C $(BUILD) -f $(CURDIR)/Makefile
 
 #---------------------------------------------------------------------------------
 cxi: 3dsx
@@ -185,7 +185,7 @@ code.bin: cxi
 clean:
 	@echo clean ...
 	@$(MAKE) -C $(CURDIR)/libctru/libctru clean
-	@$(MAKE) -C $(CURDIR)/project_ctr clean
+# 	@$(MAKE) -C $(CURDIR)/project_ctr clean
 	@rm -fr $(BUILD) $(TARGET).3dsx $(OUTPUT).smdh $(TARGET).elf $(OUTPUT).cxi $(OUTPUT).3dsx.ncch code.bin $(OUTPUT).code.bin pomelo.*
 
 #---------------------------------------------------------------------------------

@@ -176,7 +176,7 @@ int main(int argc, char* argv[]) {
 
 
     // Start doing homemenu stuff - enumerating titles and their names
-    titleGame games[64]; // I set this to 128 and the system crashed, probably ran out of stack size
+    titleGame games[32]; // I set this to 128 and the system crashed, probably ran out of stack size
     u8 games_counter = 0;
 
     // Launch a bunch of titles required for the homescreen
@@ -297,7 +297,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Iterate over nand titles and fetch name of each installed title
-    {
+    if (false) {
         // Get list of installed titles
         u32 titles_found_nand = 0;
         u64 title_ids[128];
@@ -395,7 +395,9 @@ int main(int argc, char* argv[]) {
     int selected_game_index = 0;
     bool is_first_run = true;
 
-    while(aptMainLoop()) {
+    while(true) {
+
+        aptMainLoop();
 
         // If the homemenu is not in the forefront, meaning there is an application / applet running
         // don't handle key inputs, as it will result in weird behaviour
@@ -420,7 +422,8 @@ int main(int argc, char* argv[]) {
                     selected_game_index = MAX(selected_game_index, 0);
                     break;
                 case KEY_SELECT: // Exit
-                    return 0;
+                    ptmSysmInit();
+                    PTMSYSM_ShutdownAsync(0);
                 case KEY_START: // Launch selected game
                     printf("Launching title id %#018llx\n", games[selected_game_index].titleId);
                     log_debug("Launching title id %#018llx", games[selected_game_index].titleId);
