@@ -81,7 +81,7 @@ void aptMessageCallback(void* user, NS_APPID sender, void* msg, size_t msgsize) 
 
 // This function is used to debug apt messages, we are overriding it to use our logger
 void _aptDebug(int a, int b) {
-    log_debug("APT Debug %#x %#x", a, b);
+    log_debug("APT Debug 0x%x 0x%x", a, b);
 }
 
 // Overriding __appInit to remove the hidInit from this section, full explanation next to hidInit call in "main"
@@ -413,18 +413,18 @@ int main(int argc, char* argv[]) {
 
             // Handle kDown
             switch (kDown) {
-                case KEY_B: // Go down in menu
+                case KEY_DOWN: // Go down in menu
                     selected_game_index++;
                     selected_game_index = MIN(selected_game_index, games_counter - 1);
                     break;
-                case KEY_X: // Go up in menu
+                case KEY_UP: // Go up in menu
                     selected_game_index--;
                     selected_game_index = MAX(selected_game_index, 0);
                     break;
-                case KEY_SELECT: // Exit
+                case KEY_X: // Exit
                     ptmSysmInit();
                     PTMSYSM_ShutdownAsync(0);
-                case KEY_START: // Launch selected game
+                case KEY_B: // Launch selected game
                     printf("Launching title id %#018llx\n", games[selected_game_index].titleId);
                     log_debug("Launching title id %#018llx", games[selected_game_index].titleId);
 
