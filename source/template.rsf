@@ -121,7 +121,7 @@ AccessControlInfo:
     SetGid: 87
     Backdoor: 123
   ServiceAccessControl:
-    - APT:U
+    - APT:S
     - ac:u
     - am:net
     - boss:U

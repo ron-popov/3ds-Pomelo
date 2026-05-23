@@ -76,6 +76,20 @@ void aptMessageCallback(void* user, NS_APPID sender, void* msg, size_t msgsize) 
     log_debug("Got message from other system applet");
 }
 
+void aptSignalCallback(APT_Signal signal) {
+    switch (signal) {
+        case APTSIGNAL_POWERBUTTON:
+        case APTSIGNAL_POWERBUTTON2: // Shutdown the system
+            log_debug("Got APT poweroff signal");    
+            ptmSysmInit();
+            PTMSYSM_ShutdownAsync(0);
+            break;
+        default:
+            log_debug("Got APT signal 0x%x", signal);
+            break;
+        }
+}
+
 /// libctru weak function overriding, the functions here are defined as weak in libctru
 /// The fact they are defined here, overrides the libctru implementation, each function is overriden for different purposes
 
@@ -169,7 +183,7 @@ int main(int argc, char* argv[]) {
     // Configure APT stuff and hooks
     aptHook(&homemenuAptHookCookie, aptCallback, NULL);
     aptSetMessageCallback(&aptMessageCallback, NULL);
-
+    aptSetSignalCallback(&aptSignalCallback);
 
 
 
@@ -421,9 +435,6 @@ int main(int argc, char* argv[]) {
                     selected_game_index--;
                     selected_game_index = MAX(selected_game_index, 0);
                     break;
-                case KEY_X: // Exit
-                    ptmSysmInit();
-                    PTMSYSM_ShutdownAsync(0);
                 case KEY_B: // Launch selected game
                     printf("Launching title id %#018llx\n", games[selected_game_index].titleId);
                     log_debug("Launching title id %#018llx", games[selected_game_index].titleId);
