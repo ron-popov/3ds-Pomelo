@@ -81,7 +81,8 @@ void aptSignalCallback(APT_Signal signal) {
     switch (signal) {
         case APTSIGNAL_POWERBUTTON:
         case APTSIGNAL_POWERBUTTON2: // Shutdown the system
-            log_debug("Got APT poweroff signal");    
+            log_debug("Initiating shutdown due to power button press");
+            hardwareTimerSleep(2); // Give the console a moment to flush the log
             ptmSysmInit();
             PTMSYSM_ShutdownAsync(0);
             break;
@@ -458,13 +459,19 @@ int main(int argc, char* argv[]) {
 
             // Handle kDown
             switch (kDown) {
-                case KEY_DOWN: // Go down in menu
+                case KEY_DDOWN: // Go down in menu
                     selected_game_index++;
                     selected_game_index = MIN(selected_game_index, games_counter - 1);
                     break;
                 case KEY_DUP: // Go up in menu
                     selected_game_index--;
                     selected_game_index = MAX(selected_game_index, 0);
+                    break;
+                case KEY_START: // Turn off console
+                    log_debug("Initiating shutdown due to start button press");
+                    hardwareTimerSleep(2); // Give the console a moment to flush the log
+                    ptmSysmInit();
+                    PTMSYSM_ShutdownAsync(0);
                     break;
                 case KEY_A: // Launch selected game
                     printf("Launching title id %#018llx\n", games[selected_game_index].titleId);

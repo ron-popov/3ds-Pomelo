@@ -75,6 +75,6 @@ void log_debug(const char* format, ...) {
     stbsp_vsnprintf(buffer, 512, format, args);
     va_end(args);
 
-    // log_debug_mikage((const char*)&buffer);
-    // log_debug_hardware((const char*)&buffer);
+    log_debug_mikage((const char*)&buffer);
+    log_debug_hardware((const char*)&buffer);
 }
