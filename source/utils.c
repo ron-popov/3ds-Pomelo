@@ -23,12 +23,7 @@ void remove_non_ascii(char *str) {
 bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nameLen) {
     SMDH smdh;
     
-    // // Build the archive path (mediaType + titleId)
-    // u32 archPath[3] = {
-    //     (u32)mediaType,
-    //     (u32)((titleId >> 32) & 0xFFFFFFFF),
-    //     (u32)(titleId & 0xFFFFFFFF)
-    // };
+    log_debug("Get name of title %#018llx (media 0x%x)", titleId, mediaType);
 
     const FS_ProgramInfo archiveProgramInfo = {
         .programId = titleId, 

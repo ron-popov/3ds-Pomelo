@@ -1,5 +1,6 @@
 #include "log.h"
 
+#include "stb_sprintf.h"
 
 // Print debug messages
 // When running in mikage, will output to mikage stdout
@@ -27,7 +28,7 @@ void log_debug_hardware(const char* text) {
     char* text_with_newline = malloc(textLength + 1);
     sprintf(text_with_newline, "%s\n", text);
 
-    if (textLength == 0) return;
+    if (textLength == 0) goto cleanup;
 
     // --- 1. Generate the Hardware Timestamp ---
     time_t unixTime = time(NULL);
@@ -45,7 +46,7 @@ void log_debug_hardware(const char* text) {
 
     Result res = FSUSER_OpenFileDirectly(&fileHandle, ARCHIVE_SDMC, archivePath, 
                                          filePath, FS_OPEN_WRITE | FS_OPEN_CREATE, 0);
-    if (R_FAILED(res)) return;
+    if (R_FAILED(res)) goto cleanup;
 
     // --- 3. Write Data to SD Card ---
     res = FSFILE_GetSize(fileHandle, &fileSize);
@@ -59,17 +60,21 @@ void log_debug_hardware(const char* text) {
         FSFILE_Write(fileHandle, &bytesWritten, fileSize + timeLength, 
                      (const void*)text_with_newline, textLength + 1, FS_WRITE_FLUSH);
     }
+
+    cleanup:
+    free(text_with_newline);
 }
 
 void log_debug(const char* format, ...) {
     char buffer[512]; // Temporary buffer for the formatted string
     va_list args;
     
-    va_start(args, format);
+    va_start(args); // This project is compiled using C Version 202311
+
     // vsnprintf prevents buffer overflows by limiting write size
-    vsnprintf(buffer, sizeof(buffer), format, args);
+    stbsp_vsnprintf(buffer, 512, format, args);
     va_end(args);
 
-    log_debug_mikage((const char*)&buffer);
-    log_debug_hardware((const char*)&buffer);
+    // log_debug_mikage((const char*)&buffer);
+    // log_debug_hardware((const char*)&buffer);
 }

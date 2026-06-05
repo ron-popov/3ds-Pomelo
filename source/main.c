@@ -20,6 +20,7 @@
 #define BOTTOM_SCREEN_HEIGHT 240
 
 #define MAX_TITLE_NAME 255
+#define MAX_TITLES 64
 #define MAX_TITLES_TO_DISPLAY 26
 
 #define TITLE_ID_SYSTEM_MODULE_AM_EU 0x0004013000001502
@@ -84,6 +85,10 @@ void aptSignalCallback(APT_Signal signal) {
             ptmSysmInit();
             PTMSYSM_ShutdownAsync(0);
             break;
+        case APTSIGNAL_HOMEBUTTON2:
+        case APTSIGNAL_HOMEBUTTON:
+            log_debug("Got APT Home button press signal");
+            break;
         default:
             log_debug("Got APT signal 0x%x", signal);
             break;
@@ -141,6 +146,8 @@ int main(int argc, char* argv[]) {
 
     printf("Starting Pomelo!\n\n");
 
+    log_debug("Compiled using C Version %ld", __STDC_VERSION__);
+
     // Check if we are running on real hardware or mikage
     bool is_mikage = isRunningInEmulator();
     if (is_mikage) {
@@ -190,8 +197,9 @@ int main(int argc, char* argv[]) {
 
 
     // Start doing homemenu stuff - enumerating titles and their names
-    titleGame games[32]; // I set this to 128 and the system crashed, probably ran out of stack size
+    titleGame *games = malloc(MAX_TITLES * sizeof(titleGame));
     u8 games_counter = 0;
+    
 
     // Launch a bunch of titles required for the homescreen
     // I took this list from the real home menu
@@ -274,6 +282,9 @@ int main(int argc, char* argv[]) {
 
     // Iterate over gamecard games - single one
     {
+        log_debug("Iterating over gamecard games");
+        printf("Iterating over gamecard games\n");
+
         // Get gamecard title id
         u32 title_found_gamecard = 0;
         u64 gamecard_title_id[1];
@@ -312,6 +323,9 @@ int main(int argc, char* argv[]) {
 
     // Iterate over nand titles and fetch name of each installed title
     if (false) {
+        log_debug("Iterating over NAND titles");
+        printf("Iterating over NAND games\n");
+
         // Get list of installed titles
         u32 titles_found_nand = 0;
         u64 title_ids[128];
@@ -326,6 +340,12 @@ int main(int argc, char* argv[]) {
 
         // Get name of each title
         for(u32 i = 0; i < titles_found_nand; i++){
+
+            if (games_counter == MAX_TITLES){
+                printf("Finished games limit in nand\n");
+                log_debug("Finished games limit in nand");
+                break;
+            }
 
             if (!shouldDisplayTitle(title_ids[i])){
                 continue;
@@ -357,6 +377,9 @@ int main(int argc, char* argv[]) {
 
     // Iterate over sdcard titles and fetch name of each installed title
     {
+        log_debug("Iterating over sdcard titles");
+        printf("Iterating over sdcard games\n");
+
         // Get list of installed titles
         u32 titles_found_sd = 0;
         u64 title_ids[128];
@@ -371,6 +394,12 @@ int main(int argc, char* argv[]) {
 
         // Get name of each title
         for(u32 i = 0; i < titles_found_sd; i++){
+
+            if (games_counter == MAX_TITLES){
+                printf("Finished games limit in sdcard\n");
+                log_debug("Finished games limit in sdcard");
+                break;
+            }
 
             if (!shouldDisplayTitle(title_ids[i])){
                 continue;
@@ -400,6 +429,8 @@ int main(int argc, char* argv[]) {
         }
     }
 
+    log_debug("Finished iterating");
+    printf("Finished iterating\n");
 
     // Close handle to am system module
     {
@@ -431,11 +462,11 @@ int main(int argc, char* argv[]) {
                     selected_game_index++;
                     selected_game_index = MIN(selected_game_index, games_counter - 1);
                     break;
-                case KEY_UP: // Go up in menu
+                case KEY_DUP: // Go up in menu
                     selected_game_index--;
                     selected_game_index = MAX(selected_game_index, 0);
                     break;
-                case KEY_B: // Launch selected game
+                case KEY_A: // Launch selected game
                     printf("Launching title id %#018llx\n", games[selected_game_index].titleId);
                     log_debug("Launching title id %#018llx", games[selected_game_index].titleId);
 
@@ -449,25 +480,27 @@ int main(int argc, char* argv[]) {
                     // Start game using apt:startapplication
                     {
                         log_debug("Calling APT_PrepareToStartApplication");
+                        printf("Calling APT_PrepareToStartApplication\n");
                         temp_res = APT_PrepareToStartApplication(&selectedGameProgramInfo, 0x00);
                         if (R_FAILED(temp_res)) {
                             print_error_code_verbose("APT_PrepareToStartApplication", temp_res);
-                            // printf("Continuing even tho error\n");
+                            printf("Continuing even tho error\n");
                             // break;
                         } else {
-                            // printf("Successfully ran APT_PrepareToStartApplication\n");
+                            printf("Successfully ran APT_PrepareToStartApplication\n");
                             log_debug("Successfully ran APT_PrepareToStartApplication");
                         }
 
                         u8 parameter[0x300] = {0};
                         
                         log_debug("Calling APT_StartApplication");
+                        printf("Calling APT_StartApplication\n");
                         temp_res = APT_StartApplication(0x300, 0x00, true, &parameter, NULL);
                         if (R_FAILED(temp_res)) {
                             print_error_code_verbose("APT_StartApplication", temp_res);
                             break;
                         } else {
-                            // printf("Successfully ran APT_StartApplication\n");
+                            printf("Successfully ran APT_StartApplication\n");
                             log_debug("Successfully ran APT_StartApplication");
                         }
                     }
@@ -481,10 +514,14 @@ int main(int argc, char* argv[]) {
                             log_debug("Is App Registered %d", registered);
                             log_debug("Terminating GFX");
 
+                            printf("Is App Registered %d\n", registered);
+                            printf("Terminating GFX\n");
+
                             // Terminate gfx
                             gfxExit();
 
                             log_debug("Waking Up Application");
+                            printf("Waking Up Application\n");
                             
                             // Waking up application
                             temp_res = APT_WakeupApplication();
@@ -493,6 +530,7 @@ int main(int argc, char* argv[]) {
                                 break;
                             } else {
                                 log_debug("Successfully ran APT_WakeupApplication");
+                                printf("Successfully ran APT_WakeupApplication\n");
                             }
 
                             isForefront = false;

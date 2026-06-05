@@ -14,7 +14,7 @@ TitleInfo:
 SystemControlInfo:
   JumpId: 0
   RemasterVersion: 0
-  StackSize: 0x1000
+  StackSize: 0x4000
   Dependency:
     ns: 0x0004013000008002
     hwcd: 0x0004013000001c02
