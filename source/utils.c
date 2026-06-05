@@ -62,16 +62,12 @@ bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nam
 
     Handle fileHandle;
 
-    // printf("About to run FSUSER_OpenFile\n");
-
     res = FSUSER_OpenFile(&fileHandle, archive, filePath, FS_OPEN_READ, 0);
     if (R_FAILED(res)) {
         print_error_code_verbose("FSUSER_OpenFile",  res);
         FSUSER_CloseArchive(archive);
         return false;
     }
-
-    // printf("Ran FSUSER_OpenFile\n");
 
     // Read the SMDH data
     u32 bytesRead;

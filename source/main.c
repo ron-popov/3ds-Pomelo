@@ -28,6 +28,9 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
+#define SHOULD_ITERATE_NAND false
+#define SHOULD_ITERATE_SDCARD true
+
 // Homemenu heap size is different from regular app heap size
 u32 __ctru_heap_size        = 0x304000;
 u32 __ctru_linear_heap_size = 0xb64000;
@@ -323,7 +326,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Iterate over nand titles and fetch name of each installed title
-    if (false) {
+    if (SHOULD_ITERATE_NAND) {
         log_debug("Iterating over NAND titles");
         printf("Iterating over NAND games\n");
 
@@ -377,7 +380,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Iterate over sdcard titles and fetch name of each installed title
-    {
+    if (SHOULD_ITERATE_SDCARD) {
         log_debug("Iterating over sdcard titles");
         printf("Iterating over sdcard games\n");
 
