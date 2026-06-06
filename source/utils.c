@@ -21,7 +21,7 @@ void remove_non_ascii(char *str) {
 
 // Get the name of a title, from the "icon" file in the ExeFS section of the title
 bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nameLen) {
-    SMDH smdh;
+    SMDH *smdh = malloc(sizeof(SMDH));
     
     log_debug("Get name of title %#018llx (media 0x%x)", titleId, mediaType);
 
@@ -37,7 +37,7 @@ bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nam
     Result res = FSUSER_OpenArchive(&archive, ARCHIVE_SAVEDATA_AND_CONTENT, archivePath);
     if (R_FAILED(res)) {
         print_error_code_verbose("FSUSER_OpenArchive", res);
-        return false;
+        goto cleanup_fail;
     }
 
     // printf("Ran FSUSER_OpenArchive\n");
@@ -66,23 +66,23 @@ bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nam
     if (R_FAILED(res)) {
         print_error_code_verbose("FSUSER_OpenFile",  res);
         FSUSER_CloseArchive(archive);
-        return false;
+        goto cleanup_fail;
     }
 
     // Read the SMDH data
     u32 bytesRead;
-    res = FSFILE_Read(fileHandle, &bytesRead, 0, &smdh, sizeof(SMDH));
+    res = FSFILE_Read(fileHandle, &bytesRead, 0, smdh, sizeof(SMDH));
     FSFILE_Close(fileHandle);
     FSUSER_CloseArchive(archive);
 
     if (R_FAILED(res)) {
-        return false;
+        goto cleanup_fail;
     }
 
     // Validate SMDH magic ("SMDH")
-    if (smdh.magic != 0x48444D53) {
+    if (smdh->magic != 0x48444D53) {
         printf("File magic does not match SMDH\n");
-        return false;
+        goto cleanup_fail;
     }
 
     // Pick language (use English = 1, or CFG_LANGUAGE_EN)
@@ -90,14 +90,19 @@ bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nam
     
     // The short description is a UTF-16 string (0x40 u16 chars)
     // Convert to UTF-8 for easier use
-    utf16_to_utf8((uint8_t*)nameOut, smdh.titles[lang].shortDescription, nameLen - 1);
+    utf16_to_utf8((uint8_t*)nameOut, smdh->titles[lang].shortDescription, nameLen - 1);
     nameOut[nameLen - 1] = '\0';
 
 
     // Remove non ascii chars
     remove_non_ascii(nameOut);
 
+    free(smdh);
     return true;
+
+    cleanup_fail:
+    free(smdh);
+    return false;
 }
 
 // Should title be displayed in the homemenu and launchable

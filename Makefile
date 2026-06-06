@@ -51,7 +51,7 @@ CFLAGS	:=	-g -Wall -O2 -mword-relocations \
 			$(ARCH)
 
 # CFLAGS	+=	$(INCLUDE) -DARM11 -D_3DS
-CFLAGS	+=	$(INCLUDE) -D__3DS__ -DSTB_SPRINTF_IMPLEMENTATION
+CFLAGS	+=	$(INCLUDE) -D__3DS__ -DSTB_SPRINTF_IMPLEMENTATION -fstack-usage -Wstack-usage=4096
 
 CXXFLAGS	:= $(CFLAGS) -fno-rtti -fno-exceptions -std=gnu++11
 

@@ -517,6 +517,9 @@ int main(int argc, char* argv[]) {
 
                     // Query whether an application is already registered/running
                     while (true) {
+                        // TODO: Move this code to check user input while waiting for new app to register
+                        // This should allow us to turn off the console while waiting for apps to start
+
                         bool registered = 0;
                         APT_IsRegistered(APPID_APPLICATION, &registered);
 
