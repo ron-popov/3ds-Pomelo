@@ -18,7 +18,7 @@ void print_error_code_verbose(char* desc, Result res) {
 
 // Write log message to SDMC
 void log_debug_hardware(const char* text) {
-  if (!text) return;
+    if (!text) return;
 
     Handle fileHandle = 0;
     u64 fileSize = 0;
@@ -63,6 +63,8 @@ void log_debug_hardware(const char* text) {
 
     cleanup:
     free(text_with_newline);
+
+    // if (textLength == 50) svcBreak(USERBREAK_USER);
 }
 
 void log_debug(const char* format, ...) {
