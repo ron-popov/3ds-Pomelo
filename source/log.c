@@ -64,8 +64,6 @@ void log_debug_hardware(const char* text) {
 
     cleanup:
     free(text_with_newline);
-
-    // if (textLength == 50) svcBreak(USERBREAK_USER);
 }
 
 void log_debug(const char* format, ...) {

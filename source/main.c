@@ -11,6 +11,7 @@
 #include "log.h"
 #include "utils.h"
 #include "patch_fixes.h"
+#include "state.h"
 
 
 #define SCREEN_WIDTH 400
@@ -37,7 +38,6 @@ u32 __ctru_linear_heap_size = 0xb64000;
 
 static aptHookCookie homemenuAptHookCookie;
 static PrintConsole topScreen, bottomScreen;
-static bool isForefront = true; // Is the homemenu in the forefront right now?
 
 typedef struct {
     u64 titleId;
@@ -140,8 +140,7 @@ int main(int argc, char* argv[]) {
 
     consoleSelect(&topScreen);
 
-    isForefront = true;
-
+    SetState(STATE_FOREGROUND);
 
 
     // Setup debug logging stuff
@@ -450,7 +449,7 @@ int main(int argc, char* argv[]) {
 
         // If the homemenu is not in the forefront, meaning there is an application / applet running
         // don't handle key inputs, as it will result in weird behaviour
-        if (!isForefront) { 
+        if (GetState() == STATE_BACKGROUND) { 
             continue;
         }
 
@@ -513,6 +512,8 @@ int main(int argc, char* argv[]) {
                             printf("Successfully ran APT_StartApplication\n");
                             log_debug("Successfully ran APT_StartApplication");
                         }
+
+                        SetState(STATE_WAIT_TO_REGISTER);
                     }
 
                     // Query whether an application is already registered/running
@@ -546,7 +547,7 @@ int main(int argc, char* argv[]) {
                                 printf("Successfully ran APT_WakeupApplication\n");
                             }
 
-                            isForefront = false;
+                            SetState(STATE_BACKGROUND);
 
                             break; // Break from APT_IsRegistered Loop
                         }
