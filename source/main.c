@@ -447,143 +447,137 @@ int main(int argc, char* argv[]) {
 
         aptMainLoop();
 
-        // If the homemenu is not in the forefront, meaning there is an application / applet running
-        // don't handle key inputs, as it will result in weird behaviour
-        if (GetState() == STATE_BACKGROUND) { 
-            continue;
-        }
+        switch (GetState()) {
+            case STATE_NONE:
+                log_debug("Invalid state reached");
+                svcBreak(USERBREAK_USER);
+                break;
+            case STATE_BACKGROUND:
+                continue;
+            case STATE_WAIT_TO_REGISTER:
+                bool registered = 0;
+                APT_IsRegistered(APPID_APPLICATION, &registered);
 
-        hidScanInput();
-        u32 kDown = hidKeysDown();
-        
-        if (kDown || is_first_run) {
-            is_first_run = false;
+                if (registered) {
+                    log_debug("Is App Registered %d", registered);
+                    log_debug("Terminating GFX");
 
-            // Handle kDown
-            switch (kDown) {
-                case KEY_DDOWN: // Go down in menu
-                    selected_game_index++;
-                    selected_game_index = MIN(selected_game_index, games_counter - 1);
-                    break;
-                case KEY_DUP: // Go up in menu
-                    selected_game_index--;
-                    selected_game_index = MAX(selected_game_index, 0);
-                    break;
-                case KEY_START: // Turn off console
-                    log_debug("Initiating shutdown due to start button press");
-                    hardwareTimerSleep(2); // Give the console a moment to flush the log
-                    ptmSysmInit();
-                    PTMSYSM_ShutdownAsync(0);
-                    break;
-                case KEY_A: // Launch selected game
-                    printf("Launching title id %#018llx\n", games[selected_game_index].titleId);
-                    log_debug("Launching title id %#018llx", games[selected_game_index].titleId);
+                    printf("Is App Registered %d\n", registered);
+                    printf("Terminating GFX\n");
 
-                    titleGame *selectedTitleGame = &games[selected_game_index];
- 
-                    FS_ProgramInfo selectedGameProgramInfo = {
-                        .programId = selectedTitleGame->titleId,
-                        .mediaType = selectedTitleGame->mediaType
-                    };
+                    // Terminate gfx
+                    gfxExit();
 
-                    // Start game using apt:startapplication
-                    {
-                        log_debug("Calling APT_PrepareToStartApplication");
-                        printf("Calling APT_PrepareToStartApplication\n");
-                        temp_res = APT_PrepareToStartApplication(&selectedGameProgramInfo, 0x00);
-                        if (R_FAILED(temp_res)) {
-                            print_error_code_verbose("APT_PrepareToStartApplication", temp_res);
-                            printf("Continuing even tho error\n");
-                            // break;
-                        } else {
-                            printf("Successfully ran APT_PrepareToStartApplication\n");
-                            log_debug("Successfully ran APT_PrepareToStartApplication");
-                        }
-
-                        u8 parameter[0x300] = {0};
-                        
-                        log_debug("Calling APT_StartApplication");
-                        printf("Calling APT_StartApplication\n");
-                        temp_res = APT_StartApplication(0x300, 0x00, true, &parameter, NULL);
-                        if (R_FAILED(temp_res)) {
-                            print_error_code_verbose("APT_StartApplication", temp_res);
-                            break;
-                        } else {
-                            printf("Successfully ran APT_StartApplication\n");
-                            log_debug("Successfully ran APT_StartApplication");
-                        }
-
-                        SetState(STATE_WAIT_TO_REGISTER);
+                    log_debug("Waking Up Application");
+                    printf("Waking Up Application\n");
+                    
+                    // Waking up application
+                    temp_res = APT_WakeupApplication();
+                    if (R_FAILED(temp_res)) {
+                        print_error_code_verbose("APT_WakeupApplication", temp_res);
+                        break;
+                    } else {
+                        log_debug("Successfully ran APT_WakeupApplication");
+                        printf("Successfully ran APT_WakeupApplication\n");
                     }
 
-                    // Query whether an application is already registered/running
-                    while (true) {
-                        // TODO: Move this code to check user input while waiting for new app to register
-                        // This should allow us to turn off the console while waiting for apps to start
-
-                        bool registered = 0;
-                        APT_IsRegistered(APPID_APPLICATION, &registered);
-
-                        if (registered) {
-                            log_debug("Is App Registered %d", registered);
-                            log_debug("Terminating GFX");
-
-                            printf("Is App Registered %d\n", registered);
-                            printf("Terminating GFX\n");
-
-                            // Terminate gfx
-                            gfxExit();
-
-                            log_debug("Waking Up Application");
-                            printf("Waking Up Application\n");
-                            
-                            // Waking up application
-                            temp_res = APT_WakeupApplication();
-                            if (R_FAILED(temp_res)) {
-                                print_error_code_verbose("APT_WakeupApplication", temp_res);
-                                break;
-                            } else {
-                                log_debug("Successfully ran APT_WakeupApplication");
-                                printf("Successfully ran APT_WakeupApplication\n");
-                            }
-
-                            SetState(STATE_BACKGROUND);
-
-                            break; // Break from APT_IsRegistered Loop
-                        }
-                    }
-
-                    break; // Break from handleStart case
-            }
-
-            // Update only if some key was pressed
-            // The contents can't change otherwise
-            consoleSelect(&bottomScreen);
-            consoleClear();
-            for (int i = 0; i < MAX_TITLES_TO_DISPLAY; i++) {
-                titleGame game = games[i];
-                if (game.name[0] == 0) {
-                    // No more games to display
+                    SetState(STATE_BACKGROUND);
+                }
+            case STATE_FOREGROUND:
+                hidScanInput();
+                u32 kDown = hidKeysDown();     
+                
+                if (kDown == 0x00 && !is_first_run) { // If no keys were pressed and it's not the first run, skip this flow
                     break;
                 }
 
+                is_first_run = false;
 
-                if (i == selected_game_index) {
-                    printf("* %s\n", game.name);
-                } else {
-                    printf("  %s\n", game.name);
-                }                
+                // Handle kDown
+                switch (kDown) {
+                    case KEY_DDOWN: // Go down in menu
+                        selected_game_index++;
+                        selected_game_index = MIN(selected_game_index, games_counter - 1);
+                        break;
+                    case KEY_DUP: // Go up in menu
+                        selected_game_index--;
+                        selected_game_index = MAX(selected_game_index, 0);
+                        break;
+                    case KEY_START: // Turn off console
+                        log_debug("Initiating shutdown due to start button press");
+                        hardwareTimerSleep(2); // Give the console a moment to flush the log
+                        ptmSysmInit();
+                        PTMSYSM_ShutdownAsync(0);
+                        break;
+                    case KEY_A: // Launch selected game
+                        printf("Launching title id %#018llx\n", games[selected_game_index].titleId);
+                        log_debug("Launching title id %#018llx", games[selected_game_index].titleId);
+
+                        titleGame *selectedTitleGame = &games[selected_game_index];
+    
+                        FS_ProgramInfo selectedGameProgramInfo = {
+                            .programId = selectedTitleGame->titleId,
+                            .mediaType = selectedTitleGame->mediaType
+                        };
+
+                        // Start game using apt:startapplication
+                        {
+                            log_debug("Calling APT_PrepareToStartApplication");
+                            printf("Calling APT_PrepareToStartApplication\n");
+                            temp_res = APT_PrepareToStartApplication(&selectedGameProgramInfo, 0x00);
+                            if (R_FAILED(temp_res)) {
+                                print_error_code_verbose("APT_PrepareToStartApplication", temp_res);
+                                printf("Continuing even tho error\n");
+                                // break;
+                            } else {
+                                printf("Successfully ran APT_PrepareToStartApplication\n");
+                                log_debug("Successfully ran APT_PrepareToStartApplication");
+                            }
+
+                            u8 parameter[0x300] = {0};
+                            
+                            log_debug("Calling APT_StartApplication");
+                            printf("Calling APT_StartApplication\n");
+                            temp_res = APT_StartApplication(0x300, 0x00, true, &parameter, NULL);
+                            if (R_FAILED(temp_res)) {
+                                print_error_code_verbose("APT_StartApplication", temp_res);
+                                break;
+                            } else {
+                                printf("Successfully ran APT_StartApplication\n");
+                                log_debug("Successfully ran APT_StartApplication");
+                            }
+
+                            SetState(STATE_WAIT_TO_REGISTER);
+                        }
+
+                        break; // Break from handleStart case
+                }
+
+                // Update only if some key was pressed
+                // The contents can't change otherwise
+                consoleSelect(&bottomScreen);
+                consoleClear();
+                for (int i = 0; i < MAX_TITLES_TO_DISPLAY; i++) {
+                    titleGame game = games[i];
+                    if (game.name[0] == 0) {
+                        // No more games to display
+                        break;
+                    }
+
+
+                    if (i == selected_game_index) {
+                        printf("* %s\n", game.name);
+                    } else {
+                        printf("  %s\n", game.name);
+                    }                
+                }
+                consoleSelect(&topScreen);
             }
-            consoleSelect(&topScreen);
         }
-    }
 
     gfxExit();
     aptExit();
-	return 0;
-
-    // TODO: Reaching here causes a weird error in mikage, keep this and debug sometime
-    // This is because svc index 0x51 - svcUnbindInterrupt, is not implemented
+    return 0;
 }
 
 
