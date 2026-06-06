@@ -25,7 +25,8 @@ void log_debug_hardware(const char* text) {
     u32 bytesWritten = 0;
     u32 textLength = strlen(text);
 
-    char* text_with_newline = malloc(textLength + 1);
+    // One extra for newline char, and one for null byte that is auto added by sprintf
+    char* text_with_newline = malloc(textLength + 2);
     sprintf(text_with_newline, "%s\n", text);
 
     if (textLength == 0) goto cleanup;
