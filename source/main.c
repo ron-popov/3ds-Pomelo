@@ -445,14 +445,25 @@ int main(int argc, char* argv[]) {
 
     while(true) {
 
-        aptMainLoop();
+        u32 kDown;
 
+        aptMainLoop();
         switch (GetState()) {
             case STATE_NONE:
                 log_debug("Invalid state reached");
                 svcBreak(USERBREAK_USER);
                 break;
-            case STATE_BACKGROUND:
+            case STATE_BACKGROUND:\
+                // We want to continue running in the background to handle APT events, such as shutdown
+                // continue;
+
+                hidScanInput();
+                kDown = hidKeysDown();     
+                
+                if (kDown != 0x00) { // If no keys were pressed and it's not the first run, skip this flow
+                    log_debug("kDown state : 0x%lx", kDown);
+                }
+
                 continue;
             case STATE_WAIT_TO_REGISTER:
                 bool registered = 0;
@@ -470,7 +481,7 @@ int main(int argc, char* argv[]) {
 
                     log_debug("Waking Up Application");
                     printf("Waking Up Application\n");
-                    
+
                     // Waking up application
                     temp_res = APT_WakeupApplication();
                     if (R_FAILED(temp_res)) {
@@ -481,11 +492,34 @@ int main(int argc, char* argv[]) {
                         printf("Successfully ran APT_WakeupApplication\n");
                     }
 
-                    SetState(STATE_BACKGROUND);
+                    // Call APT_NotifyToWait (inside aptHomemenuWaitForWakeup) so NS knows we
+                    // are the background home menu. On real hardware this is required for NS
+                    // to route APTCMD_WAKEUP_POWERBUTTON to us when the power button is pressed.
+                    // Without this, NS never signals our wakeup event and power button presses
+                    // are silently dropped (unlike Mikage which routes them unconditionally).
+                    log_debug("Entering background wait");
+                    APT_Command wakeup_cmd = aptHomemenuWaitForWakeup();
+                    log_debug("Received wakeup command 0x%x", wakeup_cmd);
+
+                    if (wakeup_cmd == APTCMD_WAKEUP_POWERBUTTON) {
+                        log_debug("Initiating shutdown due to power button press in background");
+                        hardwareTimerSleep(2);
+                        ptmSysmInit();
+                        PTMSYSM_ShutdownAsync(0);
+                        break;
+                    }
+
+                    // App exited or other wakeup - re-init display and return to foreground
+                    gfxInitDefault();
+                    consoleInit(GFX_TOP, &topScreen);
+                    consoleInit(GFX_BOTTOM, &bottomScreen);
+                    consoleSelect(&topScreen);
+                    is_first_run = true;
+                    SetState(STATE_FOREGROUND);
                 }
             case STATE_FOREGROUND:
                 hidScanInput();
-                u32 kDown = hidKeysDown();     
+                kDown = hidKeysDown();     
                 
                 if (kDown == 0x00 && !is_first_run) { // If no keys were pressed and it's not the first run, skip this flow
                     break;

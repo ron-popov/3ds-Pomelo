@@ -3,6 +3,7 @@
 
 #include "log.h"
 
+// When adding a new state, note to also add it to GetStateName - that how the logger gets the name of the state
 enum HomemenuState {
 	STATE_NONE = 0,                   // State hasn't been initialized
     STATE_FOREGROUND = 1,             // Currently in the foreground, user can make actions
