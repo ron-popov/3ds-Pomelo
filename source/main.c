@@ -12,6 +12,7 @@
 #include "utils.h"
 #include "patch_fixes.h"
 #include "state.h"
+#include "draw.h"
 
 
 #define SCREEN_WIDTH 400
@@ -25,13 +26,24 @@
 #define MAX_TITLES_TO_DISPLAY 26
 
 #define GRID_COLS         3
-#define GRID_CELL_HEIGHT  3
-#define GRID_CONSOLE_COLS 40
-#define GRID_CONSOLE_ROWS 30
-#define GRID_HEADER_ROWS  1
-#define GRID_VISIBLE_ROWS ((GRID_CONSOLE_ROWS - GRID_HEADER_ROWS) / GRID_CELL_HEIGHT)
-#define GRID_COL_WIDTH    (GRID_CONSOLE_COLS / GRID_COLS)
-#define GRID_NUM_COLORS   6
+#define GRID_VISIBLE_ROWS 3
+#define GRID_HEADER_H     30
+#define GRID_CELL_ROW_H   ((BOTTOM_SCREEN_HEIGHT - GRID_HEADER_H) / GRID_VISIBLE_ROWS)
+#define GRID_CELL_COL_W   (BOTTOM_SCREEN_WIDTH / GRID_COLS)
+#define GRID_CELL_GAP     4
+#define GRID_CELL_BORDER  3
+#define GRID_CHAR_SCALE   2
+
+// Colors (R, G, B)
+#define COL_BG_R   0xEF
+#define COL_BG_G   0xB0
+#define COL_BG_B   0xF5
+#define COL_CELL_R 0xA0
+#define COL_CELL_G 0xE4
+#define COL_CELL_B 0xE4
+#define COL_TEXT_R 0x22
+#define COL_TEXT_G 0x22
+#define COL_TEXT_B 0x22
 
 #define TITLE_ID_SYSTEM_MODULE_AM_EU 0x0004013000001502
 
@@ -145,7 +157,6 @@ int main(int argc, char* argv[]) {
     gfxInitDefault();
 
 	consoleInit(GFX_TOP, &topScreen);
-    consoleInit(GFX_BOTTOM, &bottomScreen);
 
     consoleSelect(&topScreen);
 
@@ -453,11 +464,6 @@ int main(int argc, char* argv[]) {
     bool is_first_run = true;
     int scroll_offset = 0;
 
-    static const char *grid_bg_colors[GRID_NUM_COLORS] = {
-        "\x1b[41m", "\x1b[42m", "\x1b[44m",
-        "\x1b[45m", "\x1b[46m", "\x1b[43m",
-    };
-
     while(true) {
 
         aptMainLoop();
@@ -482,51 +488,60 @@ int main(int argc, char* argv[]) {
 
         // Draw UI on bottom screen
         {
-            consoleSelect(&bottomScreen);
-            consoleClear();
+            u8 *fb = gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, NULL, NULL);
 
-            // Header row: full name of selected game
+            // Background
+            fb_fill(fb, COL_BG_R, COL_BG_G, COL_BG_B);
+
+            // Header: full name of selected game (or "-")
             const char *hdr_name = (games_counter > 0) ? games[selected_game_index].name : "-";
-            printf("\x1b[1;1H\x1b[1;30;47m %-38.38s \x1b[0m", hdr_name);
+            fb_string(fb, 8, (GRID_HEADER_H - FB_FONT_GLYPH_H) / 2, hdr_name, 1,
+                      COL_TEXT_R, COL_TEXT_G, COL_TEXT_B);
 
-            // Game grid (offset down by GRID_HEADER_ROWS)
+            // Game grid
             for (int vrow = 0; vrow < GRID_VISIBLE_ROWS; vrow++) {
                 for (int col = 0; col < GRID_COLS; col++) {
                     int game_idx = (scroll_offset + vrow) * GRID_COLS + col;
                     if (game_idx >= (int)games_counter) continue;
 
-                    int col_start = col * GRID_COL_WIDTH;
-                    int col_width = (col == GRID_COLS - 1)
-                        ? (GRID_CONSOLE_COLS - col_start)
-                        : GRID_COL_WIDTH;
+                    // Grid slot boundaries
+                    int slot_x = col * GRID_CELL_COL_W;
+                    int slot_w = (col == GRID_COLS - 1)
+                        ? (BOTTOM_SCREEN_WIDTH - slot_x)
+                        : GRID_CELL_COL_W;
+                    int slot_y = GRID_HEADER_H + vrow * GRID_CELL_ROW_H;
+
+                    // Cell rect (inset by gap)
+                    int cx = slot_x + GRID_CELL_GAP;
+                    int cy = slot_y + GRID_CELL_GAP;
+                    int cw = slot_w - 2 * GRID_CELL_GAP;
+                    int ch = GRID_CELL_ROW_H - 2 * GRID_CELL_GAP;
+
+                    // Faint cyan fill
+                    fb_rect(fb, cx, cy, cw, ch, COL_CELL_R, COL_CELL_G, COL_CELL_B);
+
+                    // Border: white normally, red when selected
                     bool is_selected = (game_idx == selected_game_index);
+                    if (is_selected)
+                        fb_border(fb, cx, cy, cw, ch, GRID_CELL_BORDER, 0xFF, 0x00, 0x00);
+                    else
+                        fb_border(fb, cx, cy, cw, ch, GRID_CELL_BORDER, 0xFF, 0xFF, 0xFF);
 
-                    for (int crow = 0; crow < GRID_CELL_HEIGHT; crow++) {
-                        printf("\x1b[%d;%dH",
-                            GRID_HEADER_ROWS + vrow * GRID_CELL_HEIGHT + crow + 1,
-                            col_start + 1);
+                    // First letter, centered in cell interior, at 3x scale
+                    int inner_x = cx + GRID_CELL_BORDER;
+                    int inner_y = cy + GRID_CELL_BORDER;
+                    int inner_w = cw - 2 * GRID_CELL_BORDER;
+                    int inner_h = ch - 2 * GRID_CELL_BORDER;
+                    int glyph_px = 8 * GRID_CHAR_SCALE;
+                    int lx = inner_x + (inner_w - glyph_px) / 2;
+                    int ly = inner_y + (inner_h - glyph_px) / 2;
 
-                        if (is_selected) {
-                            printf("\x1b[47m\x1b[1;30m");
-                        } else {
-                            printf("%s\x1b[1;37m", grid_bg_colors[game_idx % GRID_NUM_COLORS]);
-                        }
-
-                        if (crow == GRID_CELL_HEIGHT / 2) {
-                            int lpad = (col_width - 1) / 2;
-                            for (int p = 0; p < lpad; p++) printf(" ");
-                            printf("%c", games[game_idx].name[0]);
-                            for (int p = 0; p < col_width - 1 - lpad; p++) printf(" ");
-                        } else {
-                            for (int p = 0; p < col_width; p++) printf(" ");
-                        }
-
-                        printf("\x1b[0m");
-                    }
+                    char letter = games[game_idx].name[0];
+                    if (letter >= 'a' && letter <= 'z') letter -= 32;
+                    fb_char(fb, lx, ly, letter, GRID_CHAR_SCALE,
+                            COL_TEXT_R, COL_TEXT_G, COL_TEXT_B);
                 }
             }
-
-            consoleSelect(&topScreen);
         }
 
         gfxFlushBuffers();
