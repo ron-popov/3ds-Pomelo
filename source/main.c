@@ -24,12 +24,21 @@
 #define MAX_TITLES 64
 #define MAX_TITLES_TO_DISPLAY 26
 
+#define GRID_COLS         3
+#define GRID_CELL_HEIGHT  3
+#define GRID_CONSOLE_COLS 40
+#define GRID_CONSOLE_ROWS 30
+#define GRID_HEADER_ROWS  1
+#define GRID_VISIBLE_ROWS ((GRID_CONSOLE_ROWS - GRID_HEADER_ROWS) / GRID_CELL_HEIGHT)
+#define GRID_COL_WIDTH    (GRID_CONSOLE_COLS / GRID_COLS)
+#define GRID_NUM_COLORS   6
+
 #define TITLE_ID_SYSTEM_MODULE_AM_EU 0x0004013000001502
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
-#define SHOULD_ITERATE_NAND false
+#define SHOULD_ITERATE_NAND true
 #define SHOULD_ITERATE_SDCARD true
 
 // Homemenu heap size is different from regular app heap size
@@ -442,10 +451,87 @@ int main(int argc, char* argv[]) {
 
     int selected_game_index = 0;
     bool is_first_run = true;
+    int scroll_offset = 0;
+
+    static const char *grid_bg_colors[GRID_NUM_COLORS] = {
+        "\x1b[41m", "\x1b[42m", "\x1b[44m",
+        "\x1b[45m", "\x1b[46m", "\x1b[43m",
+    };
 
     while(true) {
 
         aptMainLoop();
+
+        hidScanInput();
+        u32 kDown = hidKeysDown();
+
+        // Navigate selection with D-Pad
+        if (games_counter > 0) {
+            if (kDown & KEY_DRIGHT) selected_game_index = MIN(selected_game_index + 1, (int)games_counter - 1);
+            if (kDown & KEY_DLEFT)  selected_game_index = MAX(selected_game_index - 1, 0);
+            if (kDown & KEY_DDOWN)  selected_game_index = MIN(selected_game_index + GRID_COLS, (int)games_counter - 1);
+            if (kDown & KEY_DUP)    selected_game_index = MAX(selected_game_index - GRID_COLS, 0);
+
+            // Auto-scroll to keep selection visible
+            int sel_row = selected_game_index / GRID_COLS;
+            if (sel_row < scroll_offset)
+                scroll_offset = sel_row;
+            if (sel_row >= scroll_offset + GRID_VISIBLE_ROWS)
+                scroll_offset = sel_row - GRID_VISIBLE_ROWS + 1;
+        }
+
+        // Draw UI on bottom screen
+        {
+            consoleSelect(&bottomScreen);
+            consoleClear();
+
+            // Header row: full name of selected game
+            const char *hdr_name = (games_counter > 0) ? games[selected_game_index].name : "-";
+            printf("\x1b[1;1H\x1b[1;30;47m %-38.38s \x1b[0m", hdr_name);
+
+            // Game grid (offset down by GRID_HEADER_ROWS)
+            for (int vrow = 0; vrow < GRID_VISIBLE_ROWS; vrow++) {
+                for (int col = 0; col < GRID_COLS; col++) {
+                    int game_idx = (scroll_offset + vrow) * GRID_COLS + col;
+                    if (game_idx >= (int)games_counter) continue;
+
+                    int col_start = col * GRID_COL_WIDTH;
+                    int col_width = (col == GRID_COLS - 1)
+                        ? (GRID_CONSOLE_COLS - col_start)
+                        : GRID_COL_WIDTH;
+                    bool is_selected = (game_idx == selected_game_index);
+
+                    for (int crow = 0; crow < GRID_CELL_HEIGHT; crow++) {
+                        printf("\x1b[%d;%dH",
+                            GRID_HEADER_ROWS + vrow * GRID_CELL_HEIGHT + crow + 1,
+                            col_start + 1);
+
+                        if (is_selected) {
+                            printf("\x1b[47m\x1b[1;30m");
+                        } else {
+                            printf("%s\x1b[1;37m", grid_bg_colors[game_idx % GRID_NUM_COLORS]);
+                        }
+
+                        if (crow == GRID_CELL_HEIGHT / 2) {
+                            int lpad = (col_width - 1) / 2;
+                            for (int p = 0; p < lpad; p++) printf(" ");
+                            printf("%c", games[game_idx].name[0]);
+                            for (int p = 0; p < col_width - 1 - lpad; p++) printf(" ");
+                        } else {
+                            for (int p = 0; p < col_width; p++) printf(" ");
+                        }
+
+                        printf("\x1b[0m");
+                    }
+                }
+            }
+
+            consoleSelect(&topScreen);
+        }
+
+        gfxFlushBuffers();
+        gfxSwapBuffers();
+        gspWaitForVBlank();
 
         
 
@@ -581,6 +667,8 @@ int main(int argc, char* argv[]) {
         //         consoleSelect(&topScreen);
         //     }
         // }
+
+    }
 
     gfxExit();
     aptExit();
