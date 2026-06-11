@@ -14,3 +14,7 @@ void fb_rect  (u8 *fb, int x, int y, int w, int h, u8 r, u8 g, u8 b);
 void fb_border(u8 *fb, int x, int y, int w, int h, int t, u8 r, u8 g, u8 b);
 void fb_char  (u8 *fb, int x, int y, char c, int scale, u8 r, u8 g, u8 b);
 void fb_string(u8 *fb, int x, int y, const char *s, int scale, u8 r, u8 g, u8 b);
+
+u8 get_red(u32 color);
+u8 get_green(u32 color);
+u8 get_blue(u32 color);

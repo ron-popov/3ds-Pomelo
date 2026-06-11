@@ -25,25 +25,22 @@
 #define MAX_TITLES 64
 #define MAX_TITLES_TO_DISPLAY 26
 
-#define GRID_COLS         3
-#define GRID_VISIBLE_ROWS 3
-#define GRID_HEADER_H     30
+#define GRID_COLS         2
+#define GRID_VISIBLE_ROWS 2
+#define GRID_HEADER_H     40
 #define GRID_CELL_ROW_H   ((BOTTOM_SCREEN_HEIGHT - GRID_HEADER_H) / GRID_VISIBLE_ROWS)
 #define GRID_CELL_COL_W   (BOTTOM_SCREEN_WIDTH / GRID_COLS)
 #define GRID_CELL_GAP     4
 #define GRID_CELL_BORDER  3
-#define GRID_CHAR_SCALE   2
+#define GRID_NAME_SCALE   1
 
 // Colors (R, G, B)
-#define COL_BG_R   0xEF
-#define COL_BG_G   0xB0
-#define COL_BG_B   0xF5
-#define COL_CELL_R 0xA0
-#define COL_CELL_G 0xE4
-#define COL_CELL_B 0xE4
-#define COL_TEXT_R 0x22
-#define COL_TEXT_G 0x22
-#define COL_TEXT_B 0x22
+#define COL_BG                  0xE8E4DC
+#define COL_CELL                0xD4CFC5
+#define COL_CELL_SELECTED       0xFFFFFF
+#define COL_TEXT                0x222222
+#define COL_BORDER              0xB8B3A8
+#define COL_BORDER_SELECTED     0x636e72
 
 #define TITLE_ID_SYSTEM_MODULE_AM_EU 0x0004013000001502
 
@@ -491,12 +488,12 @@ int main(int argc, char* argv[]) {
             u8 *fb = gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, NULL, NULL);
 
             // Background
-            fb_fill(fb, COL_BG_R, COL_BG_G, COL_BG_B);
+            fb_fill(fb, get_red(COL_BG), get_green(COL_BG), get_blue(COL_BG));
 
             // Header: full name of selected game (or "-")
             const char *hdr_name = (games_counter > 0) ? games[selected_game_index].name : "-";
-            fb_string(fb, 8, (GRID_HEADER_H - FB_FONT_GLYPH_H) / 2, hdr_name, 1,
-                      COL_TEXT_R, COL_TEXT_G, COL_TEXT_B);
+            fb_string(fb, 8, (GRID_HEADER_H - FB_FONT_GLYPH_H) / 2, hdr_name, 2,
+                      get_red(COL_TEXT), get_green(COL_TEXT), get_blue(COL_TEXT));
 
             // Game grid
             for (int vrow = 0; vrow < GRID_VISIBLE_ROWS; vrow++) {
@@ -517,29 +514,29 @@ int main(int argc, char* argv[]) {
                     int cw = slot_w - 2 * GRID_CELL_GAP;
                     int ch = GRID_CELL_ROW_H - 2 * GRID_CELL_GAP;
 
-                    // Faint cyan fill
-                    fb_rect(fb, cx, cy, cw, ch, COL_CELL_R, COL_CELL_G, COL_CELL_B);
 
                     // Border: white normally, red when selected
                     bool is_selected = (game_idx == selected_game_index);
+
                     if (is_selected)
-                        fb_border(fb, cx, cy, cw, ch, GRID_CELL_BORDER, 0xFF, 0x00, 0x00);
+                        fb_rect(fb, cx, cy, cw, ch, get_red(COL_CELL_SELECTED), get_green(COL_CELL_SELECTED), get_blue(COL_CELL_SELECTED));
                     else
-                        fb_border(fb, cx, cy, cw, ch, GRID_CELL_BORDER, 0xFF, 0xFF, 0xFF);
+                        fb_rect(fb, cx, cy, cw, ch, get_red(COL_CELL), get_green(COL_CELL), get_blue(COL_CELL));
+
+                    if (is_selected)
+                        fb_border(fb, cx, cy, cw, ch, GRID_CELL_BORDER, get_red(COL_BORDER_SELECTED), get_green(COL_BORDER_SELECTED), get_blue(COL_BORDER_SELECTED));
+                    else
+                        fb_border(fb, cx, cy, cw, ch, GRID_CELL_BORDER, get_red(COL_BORDER), get_green(COL_BORDER), get_blue(COL_BORDER));
 
                     // First letter, centered in cell interior, at 3x scale
-                    int inner_x = cx + GRID_CELL_BORDER;
+                    int inner_x = cx + GRID_CELL_BORDER * 3;
                     int inner_y = cy + GRID_CELL_BORDER;
-                    int inner_w = cw - 2 * GRID_CELL_BORDER;
-                    int inner_h = ch - 2 * GRID_CELL_BORDER;
-                    int glyph_px = 8 * GRID_CHAR_SCALE;
-                    int lx = inner_x + (inner_w - glyph_px) / 2;
-                    int ly = inner_y + (inner_h - glyph_px) / 2;
+                    // int inner_w = cw - 2 * GRID_CELL_BORDER;
+                    // int inner_h = ch - 2 * GRID_CELL_BORDER;
 
-                    char letter = games[game_idx].name[0];
-                    if (letter >= 'a' && letter <= 'z') letter -= 32;
-                    fb_char(fb, lx, ly, letter, GRID_CHAR_SCALE,
-                            COL_TEXT_R, COL_TEXT_G, COL_TEXT_B);
+                    const char *game_name = games[game_idx].name;
+                    fb_string(fb, inner_x, inner_y, game_name, GRID_NAME_SCALE,
+                      get_red(COL_TEXT), get_green(COL_TEXT), get_blue(COL_TEXT));
                 }
             }
         }
@@ -689,5 +686,6 @@ int main(int argc, char* argv[]) {
     aptExit();
     return 0;
 }
+
 
 

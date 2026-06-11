@@ -62,3 +62,22 @@ void fb_string(u8 *fb, int x, int y, const char *s, int scale, u8 r, u8 g, u8 b)
         s++;
     }
 }
+
+
+
+u8 get_red(u32 color) {
+    u32 temp = color & 0xff0000;
+    u8 red_color = temp >> 16;
+    return red_color;
+}
+
+u8 get_green(u32 color) {
+    u32 temp = color & 0x00ff00;
+    u8 green_color = temp >> 8;
+    return green_color;
+}
+
+u8 get_blue(u32 color) {
+    u32 temp = color & 0x0000ff;
+    return temp;
+}
