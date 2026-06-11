@@ -21,7 +21,6 @@
 #define BOTTOM_SCREEN_WIDTH 320
 #define BOTTOM_SCREEN_HEIGHT 240
 
-#define MAX_TITLE_NAME 255
 #define MAX_TITLES 64
 #define MAX_TITLES_TO_DISPLAY 26
 
@@ -56,12 +55,6 @@ u32 __ctru_linear_heap_size = 0xb64000;
 
 static aptHookCookie homemenuAptHookCookie;
 static PrintConsole topScreen, bottomScreen;
-
-typedef struct {
-    u64 titleId;
-    FS_MediaType mediaType;
-    char name[MAX_TITLE_NAME];
-} titleGame;
 
 
 // This handles apt callbacks to our process
@@ -324,16 +317,12 @@ int main(int argc, char* argv[]) {
             log_debug("Gamecard has title id %#018llx", gamecard_title_id[0]);
 
             // Get gamecard title name
-            char title_name_gamecard[MAX_TITLE_NAME];
-            temp_res = getTitleName(gamecard_title_id[0], MEDIATYPE_GAME_CARD, title_name_gamecard, MAX_TITLE_NAME);
+            temp_res = loadTitleGame(gamecard_title_id[0], MEDIATYPE_GAME_CARD, &gamecardTitleGame);
 
             if (temp_res) {
-                log_debug("Found Gamecard title %#018llx - %s", gamecard_title_id[0], title_name_gamecard);
-
-                gamecardTitleGame.titleId = gamecard_title_id[0];
-                strncpy(gamecardTitleGame.name, title_name_gamecard, MAX_TITLE_NAME);
+                log_debug("Found Gamecard title %#018llx - %s", gamecardTitleGame.titleId, gamecardTitleGame.name);
             } else {
-                log_debug("Gamecard title %#018llx - failed to get name", gamecard_title_id[0]);
+                log_debug("Gamecard title %#018llx - failed to get name", gamecardTitleGame.titleId);
             }
         }
 
@@ -371,25 +360,20 @@ int main(int argc, char* argv[]) {
                 continue;
             }
 
-            char title_name[MAX_TITLE_NAME] = {0};
-            temp_res = getTitleName(title_ids[i], MEDIATYPE_NAND, title_name, MAX_TITLE_NAME);
+            titleGame nandTitleGame = {
+                .titleId = title_ids[i],
+                .mediaType = MEDIATYPE_NAND,
+                .name = ""
+            };
+
+            temp_res = loadTitleGame(title_ids[i], MEDIATYPE_NAND, &nandTitleGame);
             if (temp_res) {
-                // printf("%02lu title %#018llx - %s\n", i, title_ids[i], title_name);
-                titleGame nandTitleGame = {
-                    .titleId = title_ids[i],
-                    .mediaType = MEDIATYPE_NAND,
-                    .name = ""
-                };
-
-                strncpy(nandTitleGame.name, title_name, MAX_TITLE_NAME);
-
                 log_debug("Found NAND title %#018llx : %s", nandTitleGame.titleId, nandTitleGame.name);
 
                 games[games_counter] = nandTitleGame;
                 games_counter++;
 
             } else {
-                // printf("%02lu title %#018llx - failed to get name\n", i, title_ids[i]);
                 log_debug("%02lu title %#018llx - failed to get name", i, title_ids[i]);
             }
         }
@@ -425,25 +409,19 @@ int main(int argc, char* argv[]) {
                 continue;
             }
 
-            char title_name[MAX_TITLE_NAME] = {0};
-            temp_res = getTitleName(title_ids[i], MEDIATYPE_SD, title_name, MAX_TITLE_NAME);
+            titleGame sdTitleGame = {
+                .titleId = title_ids[i],
+                .mediaType = MEDIATYPE_SD,
+                .name = ""
+            };
+            temp_res = loadTitleGame(title_ids[i], MEDIATYPE_SD, &sdTitleGame);
             if (temp_res) {
-                // printf("%02lu title %#018llx - %s\n", i, title_ids[i], title_name);
-                titleGame sdTitleGame = {
-                    .titleId = title_ids[i],
-                    .mediaType = MEDIATYPE_SD,
-                    .name = ""
-                };
-
-                strncpy(sdTitleGame.name, title_name, MAX_TITLE_NAME);
-
                 log_debug("Found SD title %#018llx : %s", sdTitleGame.titleId, sdTitleGame.name);
 
                 games[games_counter] = sdTitleGame;
                 games_counter++;
 
             } else {
-                // printf("%02lu title %#018llx - failed to get name\n", i, title_ids[i]);
                 log_debug("%02lu title %#018llx - failed to get name", i, title_ids[i]);
             }
         }
@@ -537,6 +515,9 @@ int main(int argc, char* argv[]) {
                     const char *game_name = games[game_idx].name;
                     fb_string(fb, inner_x, inner_y, game_name, GRID_NAME_SCALE,
                       get_red(COL_TEXT), get_green(COL_TEXT), get_blue(COL_TEXT));
+
+
+                    // Put icon of titleGame at index game_idx
                 }
             }
         }

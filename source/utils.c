@@ -20,7 +20,7 @@ void remove_non_ascii(char *str) {
 }
 
 // Get the name of a title, from the "icon" file in the ExeFS section of the title
-bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nameLen) {
+bool loadTitleGame(u64 titleId, FS_MediaType mediaType, titleGame* titleGameOut) {
     SMDH *smdh = malloc(sizeof(SMDH));
     
     log_debug("Get name of title %#018llx (media 0x%x)", titleId, mediaType);
@@ -88,14 +88,17 @@ bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nam
     // Pick language (use English = 1, or CFG_LANGUAGE_EN)
     u8 lang = 1; // CFG_LANGUAGE_EN
     
+    // Clean the name before we override it
+    memset(titleGameOut->name, 0, sizeof(titleGameOut->name)); 
+
     // The short description is a UTF-16 string (0x40 u16 chars)
     // Convert to UTF-8 for easier use
-    utf16_to_utf8((uint8_t*)nameOut, smdh->titles[lang].shortDescription, nameLen - 1);
-    nameOut[nameLen - 1] = '\0';
+    utf16_to_utf8((uint8_t*)titleGameOut->name, smdh->titles[lang].shortDescription, MAX_TITLE_NAME - 1);
+    titleGameOut->name[MAX_TITLE_NAME - 1] = '\0';
 
 
     // Remove non ascii chars
-    remove_non_ascii(nameOut);
+    remove_non_ascii(titleGameOut->name);
 
     free(smdh);
     return true;

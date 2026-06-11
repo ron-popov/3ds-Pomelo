@@ -8,6 +8,8 @@
 
 #include "log.h"
 
+#define MAX_TITLE_NAME 255
+
 // Structs for parsing title names from
 typedef struct {
     u16 shortDescription[0x40];  // The title name (UTF-16)
@@ -26,8 +28,16 @@ typedef struct {
     // ... icon data follows
 } SMDH; // struct size must be 0x36c0 - mikage doesn't allow to read partial sections
 
+typedef struct {
+    u64 titleId;
+    FS_MediaType mediaType;
+    char name[MAX_TITLE_NAME];
+    u8* small_icon_buffer;
+    u8* large_icon_buffer;
+} titleGame;
+
 // Parses title names from the "icon" file in the ExeFS of the title
-bool getTitleName(u64 titleId, FS_MediaType mediaType, char *nameOut, size_t nameLen);
+bool loadTitleGame(u64 titleId, FS_MediaType mediaType, titleGame* titleGameOut);
 
 // Filters out system and un-startable titles
 bool shouldDisplayTitle(u64 title_id);
