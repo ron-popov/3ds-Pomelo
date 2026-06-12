@@ -34,10 +34,8 @@ include $(DEVKITARM)/3ds_rules
 TARGET		:=	pomelo
 BUILD		:=	build
 SOURCES		:=	source
-SOURCES		+=	source/citro2d
 DATA		:=	data
 INCLUDES	:=	include
-INCLUDES	+=	citro2d
 GRAPHICS	:=	gfx
 #GFXBUILD	:=	$(BUILD)
 ROMFS		:=	romfs
@@ -61,10 +59,10 @@ ASFLAGS	:=	-g $(ARCH)
 LDFLAGS	=	-specs=3dsx.specs -g $(ARCH) -Wl,-Map,$(notdir $*.map)
 
 # This compiles with citro2d citro3d, more explanation in the LIBDIRS variable
-# LIBS	:= -lcitro2d -lcitro3d -lctru -lm
+LIBS	:= -lcitro2d -lcitro3d -lctru -lm
 
 # This compiles without citro2d citro3d
-LIBS	:= -lctru -lm
+# LIBS	:= -lctru -lm
 
 #---------------------------------------------------------------------------------
 # list of directories containing libraries, this must be the top level containing
@@ -73,7 +71,7 @@ LIBS	:= -lctru -lm
 # Usually points to a path in /opt/devkitPRO, this project must use a custom libctru
 # So LIBDIRS is defined during compilation and points to custom build
 LIBDIRS	:= $(CURDIR)/libctru/libctru
-LIBDIRS	+= $(CURDIR)/citro3d
+LIBDIRS	+= $(CTRULIB)
 
 
 #---------------------------------------------------------------------------------
@@ -93,8 +91,6 @@ export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
 export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 
 CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
-$(info    CFILES is $(CFILES))
-$(info    SOURCES is $(SOURCES))
 CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
 SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
 PICAFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.v.pica)))
@@ -169,15 +165,11 @@ libctru:
 	@echo Building custom libctru
 	@$(MAKE) -C $(CURDIR)/libctru/libctru
 
-citro3d:
-	@echo Building custom libctru
-	@$(MAKE) -C $(CURDIR)/citro3d all
-
 project_ctr:
 	CC=gcc CXX=g++ CFLAGS="" LDFLAGS="" make -C $(CURDIR)/project_ctr
 
 #---------------------------------------------------------------------------------
-3dsx: libctru project_ctr citro3d
+3dsx: libctru project_ctr
 	@mkdir -p $(BUILD) $(GFXBUILD)
 	@$(MAKE) --no-print-directory -B -C $(BUILD) -f $(CURDIR)/Makefile
 
@@ -194,7 +186,6 @@ code.bin: cxi
 clean:
 	@echo clean ...
 	@$(MAKE) -C $(CURDIR)/libctru/libctru clean
-	@$(MAKE) -C $(CURDIR)/citro3d clean
 # 	@$(MAKE) -C $(CURDIR)/project_ctr clean
 	@rm -fr $(BUILD) $(TARGET).3dsx $(OUTPUT).smdh $(TARGET).elf $(OUTPUT).cxi $(OUTPUT).3dsx.ncch code.bin $(OUTPUT).code.bin pomelo.*
 
