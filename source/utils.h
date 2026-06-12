@@ -24,8 +24,8 @@ typedef struct {
     SMDH_ApplicationTitle titles[16];   // One per language
     u8 application_settings[0x30]; // not used, only for filler purposes
     u8 reserved_2[0x08]; // not used, only for filler purposes
-    u8 icon_graphics[0x1680]; // not used, only for filler purposes
-    // ... icon data follows
+    u8 small_icon[0x480]; // not used, only for filler purposes
+    u8 large_icon[0x1200]; // not used, only for filler purposes
 } SMDH; // struct size must be 0x36c0 - mikage doesn't allow to read partial sections
 
 typedef struct {

@@ -96,9 +96,11 @@ bool loadTitleGame(u64 titleId, FS_MediaType mediaType, titleGame* titleGameOut)
     utf16_to_utf8((uint8_t*)titleGameOut->name, smdh->titles[lang].shortDescription, MAX_TITLE_NAME - 1);
     titleGameOut->name[MAX_TITLE_NAME - 1] = '\0';
 
-
     // Remove non ascii chars
     remove_non_ascii(titleGameOut->name);
+
+    // Copy large icon
+    // titleGameOut->large_icon_buffer = malloc()
 
     free(smdh);
     return true;

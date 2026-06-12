@@ -54,7 +54,7 @@ u32 __ctru_heap_size        = 0x304000;
 u32 __ctru_linear_heap_size = 0xb64000;
 
 static aptHookCookie homemenuAptHookCookie;
-static PrintConsole topScreen, bottomScreen;
+static PrintConsole topScreen;
 
 
 // This handles apt callbacks to our process
@@ -145,6 +145,7 @@ int main(int argc, char* argv[]) {
 
     // Init gfx stuff
     gfxInitDefault();
+    // gfxInit(GSP_RGBA8_OES, GSP_RGBA8_OES, false);
 
 	consoleInit(GFX_TOP, &topScreen);
 
@@ -441,227 +442,199 @@ int main(int argc, char* argv[]) {
 
     while(true) {
 
-        aptMainLoop();
+        aptMainLoop();     
 
-        hidScanInput();
-        u32 kDown = hidKeysDown();
+        switch (GetState()) {
+            case STATE_NONE:
+                log_debug("Invalid state reached");
+                svcBreak(USERBREAK_USER);
+                break;
+            case STATE_BACKGROUND:\
+                // We want to continue running in the background to handle APT events, such as shutdown
+                continue;
+            case STATE_WAIT_TO_REGISTER:
+                bool registered = 0;
+                APT_IsRegistered(APPID_APPLICATION, &registered);
 
-        // Navigate selection with D-Pad
-        if (games_counter > 0) {
-            if (kDown & KEY_DRIGHT) selected_game_index = MIN(selected_game_index + 1, (int)games_counter - 1);
-            if (kDown & KEY_DLEFT)  selected_game_index = MAX(selected_game_index - 1, 0);
-            if (kDown & KEY_DDOWN)  selected_game_index = MIN(selected_game_index + GRID_COLS, (int)games_counter - 1);
-            if (kDown & KEY_DUP)    selected_game_index = MAX(selected_game_index - GRID_COLS, 0);
+                if (registered) {
+                    log_debug("Is App Registered %d", registered);
+                    log_debug("Terminating GFX");
 
-            // Auto-scroll to keep selection visible
-            int sel_row = selected_game_index / GRID_COLS;
-            if (sel_row < scroll_offset)
-                scroll_offset = sel_row;
-            if (sel_row >= scroll_offset + GRID_VISIBLE_ROWS)
-                scroll_offset = sel_row - GRID_VISIBLE_ROWS + 1;
-        }
+                    printf("Is App Registered %d\n", registered);
+                    printf("Terminating GFX\n");
 
-        // Draw UI on bottom screen
-        {
-            u8 *fb = gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, NULL, NULL);
+                    // Terminate gfx
+                    gfxExit();
 
-            // Background
-            fb_fill(fb, get_red(COL_BG), get_green(COL_BG), get_blue(COL_BG));
+                    log_debug("Waking Up Application");
+                    printf("Waking Up Application\n");
 
-            // Header: full name of selected game (or "-")
-            const char *hdr_name = (games_counter > 0) ? games[selected_game_index].name : "-";
-            fb_string(fb, 8, (GRID_HEADER_H - FB_FONT_GLYPH_H) / 2, hdr_name, 2,
-                      get_red(COL_TEXT), get_green(COL_TEXT), get_blue(COL_TEXT));
+                    // Waking up application
+                    temp_res = APT_WakeupApplication();
+                    if (R_FAILED(temp_res)) {
+                        print_error_code_verbose("APT_WakeupApplication", temp_res);
+                        break;
+                    } else {
+                        log_debug("Successfully ran APT_WakeupApplication");
+                        printf("Successfully ran APT_WakeupApplication\n");
 
-            // Game grid
-            for (int vrow = 0; vrow < GRID_VISIBLE_ROWS; vrow++) {
-                for (int col = 0; col < GRID_COLS; col++) {
-                    int game_idx = (scroll_offset + vrow) * GRID_COLS + col;
-                    if (game_idx >= (int)games_counter) continue;
+                        SetState(STATE_BACKGROUND);
+                    }
+                }
+            case STATE_FOREGROUND:
+                hidScanInput();
+                u32 kDown = hidKeysDown();
+                
+                if (kDown == 0x00 && !is_first_run) { // If no keys were pressed and it's not the first run, skip this flow
+                    break;
+                }
 
-                    // Grid slot boundaries
-                    int slot_x = col * GRID_CELL_COL_W;
-                    int slot_w = (col == GRID_COLS - 1)
-                        ? (BOTTOM_SCREEN_WIDTH - slot_x)
-                        : GRID_CELL_COL_W;
-                    int slot_y = GRID_HEADER_H + vrow * GRID_CELL_ROW_H;
+                is_first_run = false;
 
-                    // Cell rect (inset by gap)
-                    int cx = slot_x + GRID_CELL_GAP;
-                    int cy = slot_y + GRID_CELL_GAP;
-                    int cw = slot_w - 2 * GRID_CELL_GAP;
-                    int ch = GRID_CELL_ROW_H - 2 * GRID_CELL_GAP;
+                // Handle kDown
+                switch (kDown) {
+                    case KEY_DDOWN: // Go down in menu
+                        selected_game_index = MIN(selected_game_index + GRID_COLS, (int)games_counter - 1);
+                        break;
+                    case KEY_DUP: // Go up in menu
+                        selected_game_index = MAX(selected_game_index - GRID_COLS, 0);
+                        break;
+                    case KEY_DLEFT:
+                        selected_game_index = MAX(selected_game_index - 1, 0);
+                        break;
+                    case KEY_DRIGHT:
+                        selected_game_index = MIN(selected_game_index + 1, (int)games_counter - 1);
+                        break;
+                    case KEY_START: // Turn off console
+                        log_debug("Initiating shutdown due to start button press");
+                        hardwareTimerSleep(2); // Give the console a moment to flush the log
+                        ptmSysmInit();
+                        PTMSYSM_ShutdownAsync(0);
+                        break;
+                    case KEY_A: // Launch selected game
+                        printf("Launching title id %#018llx\n", games[selected_game_index].titleId);
+                        log_debug("Launching title id %#018llx", games[selected_game_index].titleId);
+
+                        titleGame *selectedTitleGame = &games[selected_game_index];
+    
+                        FS_ProgramInfo selectedGameProgramInfo = {
+                            .programId = selectedTitleGame->titleId,
+                            .mediaType = selectedTitleGame->mediaType
+                        };
+
+                        // Start game using apt:startapplication
+                        {
+                            log_debug("Calling APT_PrepareToStartApplication");
+                            printf("Calling APT_PrepareToStartApplication\n");
+                            temp_res = APT_PrepareToStartApplication(&selectedGameProgramInfo, 0x00);
+                            if (R_FAILED(temp_res)) {
+                                print_error_code_verbose("APT_PrepareToStartApplication", temp_res);
+                                printf("Continuing even tho error\n");
+                                // break;
+                            } else {
+                                printf("Successfully ran APT_PrepareToStartApplication\n");
+                                log_debug("Successfully ran APT_PrepareToStartApplication");
+                            }
+
+                            u8 parameter[0x300] = {0};
+                            
+                            log_debug("Calling APT_StartApplication");
+                            printf("Calling APT_StartApplication\n");
+                            temp_res = APT_StartApplication(0x300, 0x00, true, &parameter, NULL);
+                            if (R_FAILED(temp_res)) {
+                                print_error_code_verbose("APT_StartApplication", temp_res);
+                                break;
+                            } else {
+                                printf("Successfully ran APT_StartApplication\n");
+                                log_debug("Successfully ran APT_StartApplication");
+                            }
+
+                            SetState(STATE_WAIT_TO_REGISTER);
+                        }
+
+                        // I used to have aptWaitForWakeUp(TR_ENABLE) over here, which kinda helped the shutdown to work
+                        // while pomelo is in the background, I didn't see it get triggered, instead the regular flow just worked
+                        // Maybe the aptWaitForWakeUp caused the regular flow to work while in the background
+
+                        break; // Break from handleStart case
+                }
+
+                // Auto-scroll to keep selection visible
+                {
+                    int sel_row = selected_game_index / GRID_COLS;
+                    if (sel_row < scroll_offset)
+                        scroll_offset = sel_row;
+                    if (sel_row >= scroll_offset + GRID_VISIBLE_ROWS)
+                        scroll_offset = sel_row - GRID_VISIBLE_ROWS + 1;
+                }
+                
+
+                // Re-render the screen
+                {
+                    u8 *fb = gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, NULL, NULL);
+
+                    // Background
+                    fb_fill(fb, get_red(COL_BG), get_green(COL_BG), get_blue(COL_BG));
+
+                    // Header: full name of selected game (or "-")
+                    const char *hdr_name = (games_counter > 0) ? games[selected_game_index].name : "-";
+                    fb_string(fb, 8, (GRID_HEADER_H - FB_FONT_GLYPH_H) / 2, hdr_name, 2,
+                            get_red(COL_TEXT), get_green(COL_TEXT), get_blue(COL_TEXT));
+
+                    // Game grid
+                    for (int vrow = 0; vrow < GRID_VISIBLE_ROWS; vrow++) {
+                        for (int col = 0; col < GRID_COLS; col++) {
+                            int game_idx = (scroll_offset + vrow) * GRID_COLS + col;
+                            if (game_idx >= (int)games_counter) continue;
+
+                            // Grid slot boundaries
+                            int slot_x = col * GRID_CELL_COL_W;
+                            int slot_w = (col == GRID_COLS - 1)
+                                ? (BOTTOM_SCREEN_WIDTH - slot_x)
+                                : GRID_CELL_COL_W;
+                            int slot_y = GRID_HEADER_H + vrow * GRID_CELL_ROW_H;
+
+                            // Cell rect (inset by gap)
+                            int cx = slot_x + GRID_CELL_GAP;
+                            int cy = slot_y + GRID_CELL_GAP;
+                            int cw = slot_w - 2 * GRID_CELL_GAP;
+                            int ch = GRID_CELL_ROW_H - 2 * GRID_CELL_GAP;
 
 
-                    // Border: white normally, red when selected
-                    bool is_selected = (game_idx == selected_game_index);
+                            // Border: white normally, red when selected
+                            bool is_selected = (game_idx == selected_game_index);
 
-                    if (is_selected)
-                        fb_rect(fb, cx, cy, cw, ch, get_red(COL_CELL_SELECTED), get_green(COL_CELL_SELECTED), get_blue(COL_CELL_SELECTED));
-                    else
-                        fb_rect(fb, cx, cy, cw, ch, get_red(COL_CELL), get_green(COL_CELL), get_blue(COL_CELL));
+                            if (is_selected)
+                                fb_rect(fb, cx, cy, cw, ch, get_red(COL_CELL_SELECTED), get_green(COL_CELL_SELECTED), get_blue(COL_CELL_SELECTED));
+                            else
+                                fb_rect(fb, cx, cy, cw, ch, get_red(COL_CELL), get_green(COL_CELL), get_blue(COL_CELL));
 
-                    if (is_selected)
-                        fb_border(fb, cx, cy, cw, ch, GRID_CELL_BORDER, get_red(COL_BORDER_SELECTED), get_green(COL_BORDER_SELECTED), get_blue(COL_BORDER_SELECTED));
-                    else
-                        fb_border(fb, cx, cy, cw, ch, GRID_CELL_BORDER, get_red(COL_BORDER), get_green(COL_BORDER), get_blue(COL_BORDER));
+                            if (is_selected)
+                                fb_border(fb, cx, cy, cw, ch, GRID_CELL_BORDER, get_red(COL_BORDER_SELECTED), get_green(COL_BORDER_SELECTED), get_blue(COL_BORDER_SELECTED));
+                            else
+                                fb_border(fb, cx, cy, cw, ch, GRID_CELL_BORDER, get_red(COL_BORDER), get_green(COL_BORDER), get_blue(COL_BORDER));
 
-                    // First letter, centered in cell interior, at 3x scale
-                    int inner_x = cx + GRID_CELL_BORDER * 3;
-                    int inner_y = cy + GRID_CELL_BORDER;
-                    // int inner_w = cw - 2 * GRID_CELL_BORDER;
-                    // int inner_h = ch - 2 * GRID_CELL_BORDER;
+                            // First letter, centered in cell interior, at 3x scale
+                            int inner_x = cx + GRID_CELL_BORDER * 3;
+                            int inner_y = cy + GRID_CELL_BORDER;
+                            // int inner_w = cw - 2 * GRID_CELL_BORDER;
+                            // int inner_h = ch - 2 * GRID_CELL_BORDER;
 
-                    const char *game_name = games[game_idx].name;
-                    fb_string(fb, inner_x, inner_y, game_name, GRID_NAME_SCALE,
-                      get_red(COL_TEXT), get_green(COL_TEXT), get_blue(COL_TEXT));
+                            const char *game_name = games[game_idx].name;
+                            fb_string(fb, inner_x, inner_y, game_name, GRID_NAME_SCALE,
+                            get_red(COL_TEXT), get_green(COL_TEXT), get_blue(COL_TEXT));
 
 
-                    // Put icon of titleGame at index game_idx
+                            // Put icon of titleGame at index game_idx
+                        }
+                    }
+
+                    gfxFlushBuffers();
+                    gfxSwapBuffers();
+                    gspWaitForVBlank();
                 }
             }
         }
-
-        gfxFlushBuffers();
-        gfxSwapBuffers();
-        gspWaitForVBlank();
-
-        
-
-        // switch (GetState()) {
-        //     case STATE_NONE:
-        //         log_debug("Invalid state reached");
-        //         svcBreak(USERBREAK_USER);
-        //         break;
-        //     case STATE_BACKGROUND:\
-        //         // We want to continue running in the background to handle APT events, such as shutdown
-        //         continue;
-        //     case STATE_WAIT_TO_REGISTER:
-        //         bool registered = 0;
-        //         APT_IsRegistered(APPID_APPLICATION, &registered);
-
-        //         if (registered) {
-        //             log_debug("Is App Registered %d", registered);
-        //             log_debug("Terminating GFX");
-
-        //             printf("Is App Registered %d\n", registered);
-        //             printf("Terminating GFX\n");
-
-        //             // Terminate gfx
-        //             gfxExit();
-
-        //             log_debug("Waking Up Application");
-        //             printf("Waking Up Application\n");
-
-        //             // Waking up application
-        //             temp_res = APT_WakeupApplication();
-        //             if (R_FAILED(temp_res)) {
-        //                 print_error_code_verbose("APT_WakeupApplication", temp_res);
-        //                 break;
-        //             } else {
-        //                 log_debug("Successfully ran APT_WakeupApplication");
-        //                 printf("Successfully ran APT_WakeupApplication\n");
-
-        //                 SetState(STATE_BACKGROUND);
-        //             }
-        //         }
-        //     case STATE_FOREGROUND:
-        //         hidScanInput();
-        //         u32 kDown = hidKeysDown();
-                
-        //         if (kDown == 0x00 && !is_first_run) { // If no keys were pressed and it's not the first run, skip this flow
-        //             break;
-        //         }
-
-        //         is_first_run = false;
-
-        //         // Handle kDown
-        //         switch (kDown) {
-        //             case KEY_DDOWN: // Go down in menu
-        //                 selected_game_index++;
-        //                 selected_game_index = MIN(selected_game_index, games_counter - 1);
-        //                 break;
-        //             case KEY_DUP: // Go up in menu
-        //                 selected_game_index--;
-        //                 selected_game_index = MAX(selected_game_index, 0);
-        //                 break;
-        //             case KEY_START: // Turn off console
-        //                 log_debug("Initiating shutdown due to start button press");
-        //                 hardwareTimerSleep(2); // Give the console a moment to flush the log
-        //                 ptmSysmInit();
-        //                 PTMSYSM_ShutdownAsync(0);
-        //                 break;
-        //             case KEY_A: // Launch selected game
-        //                 printf("Launching title id %#018llx\n", games[selected_game_index].titleId);
-        //                 log_debug("Launching title id %#018llx", games[selected_game_index].titleId);
-
-        //                 titleGame *selectedTitleGame = &games[selected_game_index];
-    
-        //                 FS_ProgramInfo selectedGameProgramInfo = {
-        //                     .programId = selectedTitleGame->titleId,
-        //                     .mediaType = selectedTitleGame->mediaType
-        //                 };
-
-        //                 // Start game using apt:startapplication
-        //                 {
-        //                     log_debug("Calling APT_PrepareToStartApplication");
-        //                     printf("Calling APT_PrepareToStartApplication\n");
-        //                     temp_res = APT_PrepareToStartApplication(&selectedGameProgramInfo, 0x00);
-        //                     if (R_FAILED(temp_res)) {
-        //                         print_error_code_verbose("APT_PrepareToStartApplication", temp_res);
-        //                         printf("Continuing even tho error\n");
-        //                         // break;
-        //                     } else {
-        //                         printf("Successfully ran APT_PrepareToStartApplication\n");
-        //                         log_debug("Successfully ran APT_PrepareToStartApplication");
-        //                     }
-
-        //                     u8 parameter[0x300] = {0};
-                            
-        //                     log_debug("Calling APT_StartApplication");
-        //                     printf("Calling APT_StartApplication\n");
-        //                     temp_res = APT_StartApplication(0x300, 0x00, true, &parameter, NULL);
-        //                     if (R_FAILED(temp_res)) {
-        //                         print_error_code_verbose("APT_StartApplication", temp_res);
-        //                         break;
-        //                     } else {
-        //                         printf("Successfully ran APT_StartApplication\n");
-        //                         log_debug("Successfully ran APT_StartApplication");
-        //                     }
-
-        //                     SetState(STATE_WAIT_TO_REGISTER);
-        //                 }
-
-        //                 // I used to have aptWaitForWakeUp(TR_ENABLE) over here, which kinda helped the shutdown to work
-        //                 // while pomelo is in the background, I didn't see it get triggered, instead the regular flow just worked
-        //                 // Maybe the aptWaitForWakeUp caused the regular flow to work while in the background
-
-        //                 break; // Break from handleStart case
-        //         }
-
-        //         // Update only if some key was pressed
-        //         // The contents can't change otherwise
-        //         consoleSelect(&bottomScreen);
-        //         consoleClear();
-        //         for (int i = 0; i < MAX_TITLES_TO_DISPLAY; i++) {
-        //             titleGame game = games[i];
-        //             if (game.name[0] == 0) {
-        //                 // No more games to display
-        //                 break;
-        //             }
-
-
-        //             if (i == selected_game_index) {
-        //                 printf("* %s\n", game.name);
-        //             } else {
-        //                 printf("  %s\n", game.name);
-        //             }                
-        //         }
-        //         consoleSelect(&topScreen);
-        //     }
-        // }
-
-    }
 
     gfxExit();
     aptExit();
