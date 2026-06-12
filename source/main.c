@@ -24,13 +24,13 @@
 #define MAX_TITLES 64
 #define MAX_TITLES_TO_DISPLAY 26
 
-#define GRID_COLS         3
-#define GRID_VISIBLE_ROWS 2
-#define GRID_HEADER_H     40
+#define GRID_COLS         5
+#define GRID_VISIBLE_ROWS 3
+#define GRID_HEADER_H     48
 #define GRID_CELL_ROW_H   ((BOTTOM_SCREEN_HEIGHT - GRID_HEADER_H) / GRID_VISIBLE_ROWS)
 #define GRID_CELL_COL_W   (BOTTOM_SCREEN_WIDTH / GRID_COLS)
 #define GRID_CELL_GAP     4
-#define GRID_CELL_BORDER  3
+#define GRID_CELL_BORDER  4
 #define GRID_NAME_SCALE   1
 
 // Colors (R, G, B)
@@ -46,7 +46,7 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
-#define SHOULD_ITERATE_NAND false
+#define SHOULD_ITERATE_NAND true
 #define SHOULD_ITERATE_SDCARD true
 
 // Homemenu heap size is different from regular app heap size
@@ -623,7 +623,8 @@ int main(int argc, char* argv[]) {
                             // get_red(COL_TEXT), get_green(COL_TEXT), get_blue(COL_TEXT));
 
                             // Show game icon
-                            fb_image(fb, cx + GRID_CELL_BORDER * 8 , cy + GRID_CELL_BORDER * 8, games[game_idx].large_icon_bgr8, 48, 48);
+                            // fb_image(fb, cx + GRID_CELL_BORDER * 8 , cy + GRID_CELL_BORDER * 8, 2, games[game_idx].large_icon_bgr8, 48, 48);
+                            fb_image(fb, cx + GRID_CELL_BORDER , cy + GRID_CELL_BORDER, 1, games[game_idx].large_icon_bgr8, 48, 48);
 
                             // Put icon of titleGame at index game_idx
                         }
@@ -640,6 +641,7 @@ int main(int argc, char* argv[]) {
     aptExit();
     return 0;
 }
+
 
 
 
