@@ -34,8 +34,10 @@ include $(DEVKITARM)/3ds_rules
 TARGET		:=	pomelo
 BUILD		:=	build
 SOURCES		:=	source
+SOURCES		+=	citro2d/source
 DATA		:=	data
 INCLUDES	:=	include
+INCLUDES	+=	citro2d/include
 GRAPHICS	:=	gfx
 #GFXBUILD	:=	$(BUILD)
 ROMFS		:=	romfs
@@ -91,6 +93,8 @@ export VPATH	:=	$(foreach dir,$(SOURCES),$(CURDIR)/$(dir)) \
 export DEPSDIR	:=	$(CURDIR)/$(BUILD)
 
 CFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.c)))
+$(info    CFILES is $(CFILES))
+$(info    SOURCES is $(SOURCES))
 CPPFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.cpp)))
 SFILES		:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.s)))
 PICAFILES	:=	$(foreach dir,$(SOURCES),$(notdir $(wildcard $(dir)/*.v.pica)))
@@ -167,13 +171,13 @@ libctru:
 
 citro3d:
 	@echo Building custom libctru
-	@$(MAKE) -C $(CURDIR)/citro3d
+	@$(MAKE) -C $(CURDIR)/citro3d all
 
 project_ctr:
 	CC=gcc CXX=g++ CFLAGS="" LDFLAGS="" make -C $(CURDIR)/project_ctr
 
 #---------------------------------------------------------------------------------
-3dsx: libctru project_ctr
+3dsx: libctru project_ctr citro3d
 	@mkdir -p $(BUILD) $(GFXBUILD)
 	@$(MAKE) --no-print-directory -B -C $(BUILD) -f $(CURDIR)/Makefile
 
