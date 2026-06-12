@@ -316,6 +316,7 @@ int main(int argc, char* argv[]) {
 
         if (title_found_gamecard) {
             log_debug("Gamecard has title id %#018llx", gamecard_title_id[0]);
+            gamecardTitleGame.titleId = gamecard_title_id[0];
 
             // Get gamecard title name
             temp_res = loadTitleGame(gamecard_title_id[0], MEDIATYPE_GAME_CARD, &gamecardTitleGame);
@@ -358,6 +359,7 @@ int main(int argc, char* argv[]) {
             }
 
             if (!shouldDisplayTitle(title_ids[i])){
+                log_debug("Skipping nand title %#018llx", title_ids[i]);
                 continue;
             }
 
@@ -375,7 +377,7 @@ int main(int argc, char* argv[]) {
                 games_counter++;
 
             } else {
-                log_debug("%02lu title %#018llx - failed to get name", i, title_ids[i]);
+                log_debug("%02lu nand title %#018llx - failed to get name", i, title_ids[i]);
             }
         }
     }
@@ -407,6 +409,7 @@ int main(int argc, char* argv[]) {
             }
 
             if (!shouldDisplayTitle(title_ids[i])){
+                log_debug("Skipping sdcard title %#018llx", title_ids[i]);
                 continue;
             }
 
@@ -423,7 +426,7 @@ int main(int argc, char* argv[]) {
                 games_counter++;
 
             } else {
-                log_debug("%02lu title %#018llx - failed to get name", i, title_ids[i]);
+                log_debug("%02lu sdcard title %#018llx - failed to get name", i, title_ids[i]);
             }
         }
     }

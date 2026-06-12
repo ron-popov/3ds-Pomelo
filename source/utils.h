@@ -24,16 +24,16 @@ typedef struct {
     SMDH_ApplicationTitle titles[16];   // One per language
     u8 application_settings[0x30]; // not used, only for filler purposes
     u8 reserved_2[0x08]; // not used, only for filler purposes
-    u8 small_icon[0x480]; // not used, only for filler purposes
-    u8 large_icon[0x1200]; // not used, only for filler purposes
+    u8 small_icon_rgb565[0x480]; // not used, only for filler purposes
+    u8 large_icon_rgb565[0x1200]; // not used, only for filler purposes
 } SMDH; // struct size must be 0x36c0 - mikage doesn't allow to read partial sections
 
 typedef struct {
     u64 titleId;
     FS_MediaType mediaType;
     char name[MAX_TITLE_NAME];
-    u8* small_icon_buffer;
-    u8* large_icon_buffer;
+    u8* small_icon_bgr8;
+    u8* large_icon_bgr8;
 } titleGame;
 
 // Parses title names from the "icon" file in the ExeFS of the title
