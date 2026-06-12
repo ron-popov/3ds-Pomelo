@@ -71,6 +71,7 @@ LIBS	:= -lctru -lm
 # Usually points to a path in /opt/devkitPRO, this project must use a custom libctru
 # So LIBDIRS is defined during compilation and points to custom build
 LIBDIRS	:= $(CURDIR)/libctru/libctru
+LIBDIRS	+= $(CURDIR)/citro3d
 
 
 #---------------------------------------------------------------------------------
@@ -164,6 +165,10 @@ libctru:
 	@echo Building custom libctru
 	@$(MAKE) -C $(CURDIR)/libctru/libctru
 
+citro3d:
+	@echo Building custom libctru
+	@$(MAKE) -C $(CURDIR)/citro3d
+
 project_ctr:
 	CC=gcc CXX=g++ CFLAGS="" LDFLAGS="" make -C $(CURDIR)/project_ctr
 
@@ -185,6 +190,7 @@ code.bin: cxi
 clean:
 	@echo clean ...
 	@$(MAKE) -C $(CURDIR)/libctru/libctru clean
+	@$(MAKE) -C $(CURDIR)/citro3d clean
 # 	@$(MAKE) -C $(CURDIR)/project_ctr clean
 	@rm -fr $(BUILD) $(TARGET).3dsx $(OUTPUT).smdh $(TARGET).elf $(OUTPUT).cxi $(OUTPUT).3dsx.ncch code.bin $(OUTPUT).code.bin pomelo.*
 
