@@ -24,7 +24,7 @@
 #define MAX_TITLES 64
 #define MAX_TITLES_TO_DISPLAY 26
 
-#define GRID_COLS         2
+#define GRID_COLS         3
 #define GRID_VISIBLE_ROWS 2
 #define GRID_HEADER_H     40
 #define GRID_CELL_ROW_H   ((BOTTOM_SCREEN_HEIGHT - GRID_HEADER_H) / GRID_VISIBLE_ROWS)
@@ -46,7 +46,7 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
-#define SHOULD_ITERATE_NAND true
+#define SHOULD_ITERATE_NAND false
 #define SHOULD_ITERATE_SDCARD true
 
 // Homemenu heap size is different from regular app heap size
@@ -617,16 +617,13 @@ int main(int argc, char* argv[]) {
                             else
                                 fb_border(fb, cx, cy, cw, ch, GRID_CELL_BORDER, get_red(COL_BORDER), get_green(COL_BORDER), get_blue(COL_BORDER));
 
-                            // First letter, centered in cell interior, at 3x scale
-                            int inner_x = cx + GRID_CELL_BORDER * 3;
-                            int inner_y = cy + GRID_CELL_BORDER;
-                            // int inner_w = cw - 2 * GRID_CELL_BORDER;
-                            // int inner_h = ch - 2 * GRID_CELL_BORDER;
-
+                            // Print game title
                             const char *game_name = games[game_idx].name;
-                            fb_string(fb, inner_x, inner_y, game_name, GRID_NAME_SCALE,
+                            fb_string(fb, cx + GRID_CELL_BORDER * 2, cy + GRID_CELL_BORDER, game_name, GRID_NAME_SCALE,
                             get_red(COL_TEXT), get_green(COL_TEXT), get_blue(COL_TEXT));
 
+                            // Show game icon
+                            fb_image(fb, cx + GRID_CELL_BORDER * 6 , cy + GRID_CELL_BORDER * 10, games[game_idx].large_icon_bgr8, 48, 48);
 
                             // Put icon of titleGame at index game_idx
                         }

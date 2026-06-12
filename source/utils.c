@@ -156,7 +156,7 @@ bool loadTitleGame(u64 titleId, FS_MediaType mediaType, titleGame* titleGameOut)
     titleGameOut->large_icon_bgr8 = malloc(LARGE_ICON_H * LARGE_ICON_W * 3); 
 
     // Copy large icon
-    smdh_icon_rgb565_to_bgr8((uint16_t*)&smdh->large_icon_rgb565, (uint8_t*)&titleGameOut->large_icon_bgr8, LARGE_ICON_H, LARGE_ICON_W);
+    smdh_icon_rgb565_to_bgr8((uint16_t*)&smdh->large_icon_rgb565, (uint8_t*)titleGameOut->large_icon_bgr8, LARGE_ICON_H, LARGE_ICON_W);
 
     free(smdh);
     return true;
@@ -199,6 +199,8 @@ bool shouldDisplayTitle(u64 title_id) {
         case 0x0004001000021a00: // System transfer - name in "icon" is "???"
             return false;
         case 0x0004001000021f00: // System updates in safe mode - no name
+            return false;
+        case 0x000400102002cf00: // Homemenu
             return false;
         case 0x0000000000000000: // Empty title id
             return false;
