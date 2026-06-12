@@ -15,11 +15,11 @@ extern "C" {
 #include <citro3d.h>
 #include <tex3ds.h>
 
-#include "include/base.h"
-#include "include/spritesheet.h"
-#include "include/sprite.h"
-#include "include/text.h"
-#include "include/font.h"
+#include "base.h"
+#include "spritesheet.h"
+#include "sprite.h"
+#include "text.h"
+#include "font.h"
 
 #ifdef __cplusplus
 }

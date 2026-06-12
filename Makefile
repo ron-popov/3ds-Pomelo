@@ -34,10 +34,10 @@ include $(DEVKITARM)/3ds_rules
 TARGET		:=	pomelo
 BUILD		:=	build
 SOURCES		:=	source
-SOURCES		+=	citro2d/source
+SOURCES		+=	source/citro2d
 DATA		:=	data
 INCLUDES	:=	include
-INCLUDES	+=	citro2d/include
+INCLUDES	+=	citro2d
 GRAPHICS	:=	gfx
 #GFXBUILD	:=	$(BUILD)
 ROMFS		:=	romfs
