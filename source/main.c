@@ -618,12 +618,12 @@ int main(int argc, char* argv[]) {
                                 fb_border(fb, cx, cy, cw, ch, GRID_CELL_BORDER, get_red(COL_BORDER), get_green(COL_BORDER), get_blue(COL_BORDER));
 
                             // Print game title
-                            const char *game_name = games[game_idx].name;
-                            fb_string(fb, cx + GRID_CELL_BORDER * 2, cy + GRID_CELL_BORDER, game_name, GRID_NAME_SCALE,
-                            get_red(COL_TEXT), get_green(COL_TEXT), get_blue(COL_TEXT));
+                            // const char *game_name = games[game_idx].name;
+                            // fb_string(fb, cx + GRID_CELL_BORDER * 2, cy + GRID_CELL_BORDER, game_name, GRID_NAME_SCALE,
+                            // get_red(COL_TEXT), get_green(COL_TEXT), get_blue(COL_TEXT));
 
                             // Show game icon
-                            fb_image(fb, cx + GRID_CELL_BORDER * 6 , cy + GRID_CELL_BORDER * 10, games[game_idx].large_icon_bgr8, 48, 48);
+                            fb_image(fb, cx + GRID_CELL_BORDER * 8 , cy + GRID_CELL_BORDER * 8, games[game_idx].large_icon_bgr8, 48, 48);
 
                             // Put icon of titleGame at index game_idx
                         }

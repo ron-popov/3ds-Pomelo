@@ -68,15 +68,16 @@ void fb_string(u8 *fb, int x, int y, const char *s, int scale, u8 r, u8 g, u8 b)
 void fb_image(u8 *fb, int x, int y, u8 *img, int img_w, int img_h) {
     for (int iy = 0; iy < img_h; iy++) {
         int dy = y + iy;
+        
         if ((unsigned)dy >= FB_H) continue;
+
         for (int ix = 0; ix < img_w; ix++) {
             int dx = x + ix;
+
             if ((unsigned)dx >= FB_W) continue;
+
             int src = (iy * img_w + ix) * 3;
-            int dst = (dx * FB_H + (FB_H - 1 - dy)) * 3;
-            fb[dst + 0] = img[src + 0]; // B
-            fb[dst + 1] = img[src + 1]; // G
-            fb[dst + 2] = img[src + 2]; // R
+            set_pixel(fb, dx, dy, img[src + 2], img[src + 1], img[src + 0]);
         }
     }
 }
