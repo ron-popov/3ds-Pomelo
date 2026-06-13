@@ -612,7 +612,7 @@ int main(int argc, char* argv[]) {
                                 .subtex = &icon_subtex
                             };
 
-                            C2D_DrawImageAt(image, cell_start_x + GRID_CELL_BORDER, cell_Start_y + GRID_CELL_BORDER, 0.5f, NULL, 1.0f, 1.0f);
+                            C2D_DrawImageAt(image, cell_start_x + GRID_CELL_BORDER, cell_Start_y + GRID_CELL_BORDER, 1.0f, NULL, 1.0f, 1.0f);
                         }
                     }
 

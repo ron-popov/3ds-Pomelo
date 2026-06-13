@@ -22,6 +22,49 @@ void remove_non_ascii(char *str) {
     *dst = '\0'; // Null-terminate the cleaned string
 }
 
+static void copy_icon_to_tex64(uint16_t* dst, const uint16_t* src) {
+    // detile from 48x48 Morton into linear
+    uint16_t* linear = malloc(48 * 48);
+    for (int ty = 0; ty < 6; ty++) {
+        for (int tx = 0; tx < 6; tx++) {
+            int tile_index = ty * 6 + tx;
+            for (int i = 0; i < 64; i++) {
+                int lx = 0, ly = 0;
+                for (int bit = 0; bit < 3; bit++) {
+                    lx |= ((i >> (2 * bit))     & 1) << bit;
+                    ly |= ((i >> (2 * bit + 1)) & 1) << bit;
+                }
+                int px = tx * 8 + lx;
+                int py = ty * 8 + ly;
+                linear[py * 48 + px] = src[tile_index * 64 + i];
+            }
+        }
+    }
+
+    // retile into 64x64 Morton layout
+    for (int ty = 0; ty < 8; ty++) {
+        for (int tx = 0; tx < 8; tx++) {
+            int tile_index = ty * 8 + tx;
+            for (int i = 0; i < 64; i++) {
+                int lx = 0, ly = 0;
+                for (int bit = 0; bit < 3; bit++) {
+                    lx |= ((i >> (2 * bit))     & 1) << bit;
+                    ly |= ((i >> (2 * bit + 1)) & 1) << bit;
+                }
+                int px = tx * 8 + lx;
+                int py = ty * 8 + ly;
+
+                if (px < 48 && py < 48)
+                    dst[tile_index * 64 + i] = linear[py * 48 + px];
+                else
+                    dst[tile_index * 64 + i] = 0;
+            }
+        }
+    }
+
+    free(linear);
+}
+
 // Get the name of a title, from the "icon" file in the ExeFS section of the title
 bool loadTitleGame(u64 titleId, FS_MediaType mediaType, titleGame* titleGameOut) {
     SMDH *smdh = malloc(sizeof(SMDH));
@@ -110,9 +153,8 @@ bool loadTitleGame(u64 titleId, FS_MediaType mediaType, titleGame* titleGameOut)
 
     log_debug("Copying tex content");
 
-    // Copy large icon
-    // smdh_icon_rgb565_to_bgr8((uint16_t*)&smdh->large_icon_rgb565, (uint8_t*)titleGameOut->large_icon_bgr8, LARGE_ICON_H, LARGE_ICON_W);
-    memcpy(titleGameOut->large_icon_tex.data, smdh->large_icon_rgb565, 48 * 48 * sizeof(uint16_t));
+    // Copy large icon and fix the ordering
+    copy_icon_to_tex64((uint16_t*)titleGameOut->large_icon_tex.data, (uint16_t*)smdh->large_icon_rgb565);
 
     log_debug("Flushing tex content");
 
