@@ -10,6 +10,15 @@
 
 #define MAX_TITLE_NAME 255
 
+__attribute__((used)) static Tex3DS_SubTexture icon_subtex = {
+    .width  = 48,
+    .height = 48,
+    .left   = 0.0f,
+    .top    = 1.0f,            // flipped: 3DS UVs are bottom-up
+    .right  = 48.0f / 64.0f,  // icon is 48px inside a 64px power-of-two tex
+    .bottom = 1.0f - (48.0f / 64.0f),
+};
+
 // Structs for parsing title names from
 typedef struct {
     u16 shortDescription[0x40];  // The title name (UTF-16)
@@ -32,8 +41,8 @@ typedef struct {
     u64 titleId;
     FS_MediaType mediaType;
     char name[MAX_TITLE_NAME];
-    u8* small_icon_bgr8;
-    u8* large_icon_bgr8;
+    C3D_Tex small_icon_tex;
+    C3D_Tex large_icon_tex;
 } titleGame;
 
 // Parses title names from the "icon" file in the ExeFS of the title

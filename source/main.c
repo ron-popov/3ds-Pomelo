@@ -598,12 +598,21 @@ int main(int argc, char* argv[]) {
 
                             u32 cell_color = game_index == selected_game_index ? rgb_to_C2D_Color32(COL_CELL_SELECTED) : rgb_to_C2D_Color32(COL_CELL);
 
+                            float cell_start_x = GRID_CELL_GAP_W + grid_x * (GRID_CELL_GAP_W + GRID_CELL_W);
+                            float cell_Start_y = GRID_HEADER_H + GRID_CELL_GAP_H + grid_y * (GRID_CELL_GAP_H + GRID_CELL_H);
+
                             C2D_Pomelo_DrawRectangleSingleColor(
-                                GRID_CELL_GAP_W + grid_x * (GRID_CELL_GAP_W + GRID_CELL_W), // X Position
-                                GRID_HEADER_H + GRID_CELL_GAP_H + grid_y * (GRID_CELL_GAP_H + GRID_CELL_H), // Y Position
+                                cell_start_x, cell_Start_y,
                                 GRID_CELL_W, GRID_CELL_H, 
                                 cell_color
                             );
+
+                            C2D_Image image = {
+                                .tex = &games[game_index].large_icon_tex,
+                                .subtex = &icon_subtex
+                            };
+
+                            C2D_DrawImageAt(image, cell_start_x + GRID_CELL_BORDER, cell_Start_y + GRID_CELL_BORDER, 0.5f, NULL, 1.0f, 1.0f);
                         }
                     }
 

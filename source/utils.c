@@ -1,57 +1,7 @@
+#include <citro2d.h>
+
 #include "utils.h"
-
-#define LARGE_ICON_H 48
-#define LARGE_ICON_W 48
-#define SMALL_ICON_H 24
-#define SMALL_ICON_W 24
-
-
-// Converts a single RGB565 pixel to BGR8 (3 bytes: B, G, R)
-static inline void rgb565_pixel_to_bgr8(uint16_t pixel, uint8_t *out) {
-    uint8_t r = (pixel >> 11) & 0x1F;
-    uint8_t g = (pixel >> 5)  & 0x3F;
-    uint8_t b =  pixel        & 0x1F;
-
-    // Scale up to 8 bits
-    // R/B: 5-bit -> 8-bit  (x << 3) | (x >> 2)
-    // G:   6-bit -> 8-bit  (x << 2) | (x >> 4)
-    out[0] = (b << 3) | (b >> 2);  // B
-    out[1] = (g << 2) | (g >> 4);  // G
-    out[2] = (r << 3) | (r >> 2);  // R
-}
-
-// Converts a full RGB565 tiled icon to a flat BGR8 buffer.
-// src:    RGB565 Morton-tiled pixel data (as stored in SMDH)
-// dst:    output buffer, must be width * height * 3 bytes
-// width/height: icon dimensions (48 or 24)
-void smdh_icon_rgb565_to_bgr8(const uint16_t *src, uint8_t *dst,
-                               int width, int height) {
-    int tiles_x = width  / 8;
-    int tiles_y = height / 8;
-
-    for (int ty = 0; ty < tiles_y; ty++) {
-        for (int tx = 0; tx < tiles_x; tx++) {
-            int tile_index = ty * tiles_x + tx;
-
-            for (int i = 0; i < 64; i++) {
-                // Decode Morton index back to local (lx, ly) within tile
-                int lx = 0, ly = 0;
-                for (int bit = 0; bit < 3; bit++) {
-                    lx |= ((i >> (2 * bit))     & 1) << bit;
-                    ly |= ((i >> (2 * bit + 1)) & 1) << bit;
-                }
-
-                // Absolute pixel position in the image
-                int px = tx * 8 + lx;
-                int py = ty * 8 + ly;
-
-                uint16_t pixel = src[tile_index * 64 + i];
-                uint8_t *out   = dst + (py * width + px) * 3;
-                rgb565_pixel_to_bgr8(pixel, out);
-            }
-        }
-    }
-}
+#include "log.h"
 
 bool is_ascii_char(char c) {
     return (c >= 0x20 && c <= 0x7E);
@@ -152,11 +102,23 @@ bool loadTitleGame(u64 titleId, FS_MediaType mediaType, titleGame* titleGameOut)
     // Remove non ascii chars
     remove_non_ascii(titleGameOut->name);
 
-    // Encoded using bgr8, meaning we need 3 bytes per pixel
-    titleGameOut->large_icon_bgr8 = malloc(LARGE_ICON_H * LARGE_ICON_W * 3); 
+    log_debug("Initiating tex");
+
+    // PICA200 requires power-of-two dimensions, so allocate 64x64 for a 48x48 icon
+    if (!C3D_TexInit(&titleGameOut->large_icon_tex, 64, 64, GPU_RGB565))
+        goto cleanup_fail;
+
+    log_debug("Copying tex content");
 
     // Copy large icon
-    smdh_icon_rgb565_to_bgr8((uint16_t*)&smdh->large_icon_rgb565, (uint8_t*)titleGameOut->large_icon_bgr8, LARGE_ICON_H, LARGE_ICON_W);
+    // smdh_icon_rgb565_to_bgr8((uint16_t*)&smdh->large_icon_rgb565, (uint8_t*)titleGameOut->large_icon_bgr8, LARGE_ICON_H, LARGE_ICON_W);
+    memcpy(titleGameOut->large_icon_tex.data, smdh->large_icon_rgb565, 48 * 48 * sizeof(uint16_t));
+
+    log_debug("Flushing tex content");
+
+    // Flush and don't blur
+    C3D_TexFlush(&titleGameOut->large_icon_tex);
+    C3D_TexSetFilter(&titleGameOut->large_icon_tex, GPU_NEAREST, GPU_NEAREST);
 
     free(smdh);
     return true;

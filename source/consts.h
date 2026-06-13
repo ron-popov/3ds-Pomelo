@@ -28,6 +28,12 @@
 // The scale of the header text
 #define TEXT_HEADER_SCALE       0.8f
 
+// App icon sizes
+#define LARGE_ICON_H 48
+#define LARGE_ICON_W 48
+#define SMALL_ICON_H 24
+#define SMALL_ICON_W 24
+
 // The size of the icon plus it's border, width and heigh are the same
 #define GRID_CELL_H             (GRID_CELL_BORDER + GRID_CELL_ICON_SIZE + GRID_CELL_BORDER)
 #define GRID_CELL_W             (GRID_CELL_BORDER + GRID_CELL_ICON_SIZE + GRID_CELL_BORDER)
