@@ -1,5 +1,5 @@
 #include "draw.h"
-#include "font.h"
+#include "custom_font.h"
 
 #define FB_W 320
 #define FB_H 240

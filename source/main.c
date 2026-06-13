@@ -456,6 +456,9 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
+    // Initialize text buffer
+    C2D_TextBuf buf = C2D_TextBufNew(4096); // glyph buffer
+
     // Load font
     C2D_Font font = C2D_FontLoadSystem(CFG_REGION_USA);
     // C2D_Font font = C2D_FontLoadFromMem(&font, 96*13); // system font
@@ -665,8 +668,6 @@ int main(int argc, char* argv[]) {
                     log_debug("Rendering header text");
 
                     // Render the header text - app name
-                    C2D_TextBuf buf = C2D_TextBufNew(4096); // glyph buffer
-
                     log_debug("Building text buffer");
 
                     C2D_Text text;
