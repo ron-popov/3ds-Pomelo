@@ -574,47 +574,35 @@ int main(int argc, char* argv[]) {
                     C2D_TargetClear(bottom, rgb_to_C2D_Color32(COL_BG));
                     C2D_SceneBegin(bottom);
 
-                    C2D_Text header_text;
-                    C2D_TextFontParse(&header_text, font, buf, "Hello from Pomelo");
-                    C2D_TextOptimize(&header_text);
-
-                    C2D_DrawText(&header_text, C2D_WithColor, 10, 10, 0, TEXT_HEADER_SCALE, TEXT_HEADER_SCALE, rgb_to_C2D_Color32(COL_TEXT));
-
                     // Draw seperating line from header to grid
-                    C2D_DrawRectangle(
-                        0, GRID_HEADER_H - 1, 0, BOTTOM_SCREEN_WIDTH, 1,
-                        rgb_to_C2D_Color32(0x00), rgb_to_C2D_Color32(0x00), 
-                        rgb_to_C2D_Color32(0x00), rgb_to_C2D_Color32(0x00)
+                    C2D_Pomelo_DrawRectangleSingleColor(
+                        0, 0, 
+                        BOTTOM_SCREEN_WIDTH, GRID_HEADER_H,
+                        rgb_to_C2D_Color32(COL_CELL)
                     );
 
+                    // Draw header text
+                    C2D_Text header_text;
+                    C2D_TextFontParse(&header_text, font, buf, "Mario Kart 7");
+                    C2D_TextOptimize(&header_text);
+
+                    C2D_DrawText(&header_text, C2D_WithColor, GRID_CELL_GAP_W + 2, 8, 0, TEXT_HEADER_SCALE, TEXT_HEADER_SCALE, rgb_to_C2D_Color32(COL_TEXT));
+
+                    // Draw grid of cells, not including icons, just the background color of the cells
                     for (int grid_x = 0; grid_x < GRID_COLS; grid_x++) {
-                        C2D_Pomelo_DrawRectangleSingleColor(
-                            GRID_CELL_GAP_W + grid_x * (GRID_CELL_GAP_W + GRID_CELL_W), // X Position
-                            GRID_HEADER_H + GRID_CELL_GAP_H, // Y Position
-                            GRID_CELL_W, GRID_CELL_H, 
-                            rgb_to_C2D_Color32(COL_CELL)
-                        );
+                        for (int grid_y = 0; grid_y < GRID_VISIBLE_ROWS; grid_y++) {
+                            C2D_Pomelo_DrawRectangleSingleColor(
+                                GRID_CELL_GAP_W + grid_x * (GRID_CELL_GAP_W + GRID_CELL_W), // X Position
+                                GRID_HEADER_H + GRID_CELL_GAP_H + grid_y * (GRID_CELL_GAP_H + GRID_CELL_H), // Y Position
+                                GRID_CELL_W, GRID_CELL_H, 
+                                rgb_to_C2D_Color32(COL_CELL)
+                            );
+                        }
                     }
 
-                    // C2D_DrawTriangle(0, 0, clrWhite, 
-                    //     100,  0, clrTri1,
-                    //     50, 50, clrTri2,
-                    //     0
-                    // );
-                    // C2D_DrawRectangle(BOTTOM_SCREEN_WIDTH - 50, 0, 0, 50, 50, clrRec1, clrRec2, clrRec3, clrRec4);
-                    
 
-                    // // Circles require a state change (an expensive operation) within citro2d's internals, so draw them last.
-                    // // Although it is possible to draw them in the middle of drawing non-circular objects
-                    // // (sprites, images, triangles, rectangles, etc.) this is not recommended. They should either
-                    // // be drawn before all non-circular objects, or afterwards.
-                    // C2D_DrawEllipse(0, 0, 0, BOTTOM_SCREEN_WIDTH, BOTTOM_SCREEN_HEIGHT, clrCircle1, clrCircle2, clrCircle3, clrWhite);
-                    // C2D_DrawCircle(BOTTOM_SCREEN_WIDTH / 2, BOTTOM_SCREEN_HEIGHT / 2, 0, 50, clrCircle3, clrWhite, clrCircle1, clrCircle2);
-                    // C2D_DrawCircle(25, 25, 0, 25, 
-                    //     clrRed, clrBlue, clrGreen, clrWhite);
-                    // C2D_DrawCircleSolid(BOTTOM_SCREEN_WIDTH - 25, BOTTOM_SCREEN_HEIGHT - 25, 0, 25, clrSolidCircle);
+
                     C3D_FrameEnd(0);
-
                     log_debug("Finished rendering");
                 }
             }

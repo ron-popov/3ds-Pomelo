@@ -17,7 +17,7 @@
 #define GRID_VISIBLE_ROWS       3.f
 
 // The height of the header where the game name will be displayed
-#define GRID_HEADER_H           48.f
+#define GRID_HEADER_H           40.f
 
 // Size of the icon itself inside the grid cell
 #define GRID_CELL_ICON_SIZE     48.f
