@@ -14,41 +14,10 @@
 #include "patch_fixes.h"
 #include "state.h"
 #include "draw.h"
-
-
-#define TOP_SCREEN_WIDTH 400
-#define TOP_SCREEN_HEIGHT 240
-
-#define BOTTOM_SCREEN_WIDTH 320
-#define BOTTOM_SCREEN_HEIGHT 240
-
-#define MAX_TITLES 64
-#define MAX_TITLES_TO_DISPLAY 26
-
-#define GRID_COLS         5
-#define GRID_VISIBLE_ROWS 3
-#define GRID_HEADER_H     48
-#define GRID_CELL_ROW_H   ((BOTTOM_SCREEN_HEIGHT - GRID_HEADER_H) / GRID_VISIBLE_ROWS)
-#define GRID_CELL_COL_W   (BOTTOM_SCREEN_WIDTH / GRID_COLS)
-#define GRID_CELL_GAP     4
-#define GRID_CELL_BORDER  4
-#define GRID_NAME_SCALE   1
-
-// Colors (R, G, B)
-#define COL_BG                  0xE8E4DC
-#define COL_CELL                0xD4CFC5
-#define COL_CELL_SELECTED       0xFFFFFF
-#define COL_TEXT                0x222222
-#define COL_BORDER              0xB8B3A8
-#define COL_BORDER_SELECTED     0x636e72
-
-#define TITLE_ID_SYSTEM_MODULE_AM_EU 0x0004013000001502
+#include "consts.h"
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
-
-#define SHOULD_ITERATE_NAND true
-#define SHOULD_ITERATE_SDCARD true
 
 // Homemenu heap size is different from regular app heap size
 u32 __ctru_heap_size        = 0x304000;
@@ -360,7 +329,7 @@ int main(int argc, char* argv[]) {
             }
 
             if (!shouldDisplayTitle(title_ids[i])){
-                log_debug("Skipping nand title %#018llx", title_ids[i]);
+                // log_debug("Skipping nand title %#018llx", title_ids[i]);
                 continue;
             }
 
@@ -410,7 +379,7 @@ int main(int argc, char* argv[]) {
             }
 
             if (!shouldDisplayTitle(title_ids[i])){
-                log_debug("Skipping sdcard title %#018llx", title_ids[i]);
+                // log_debug("Skipping sdcard title %#018llx", title_ids[i]);
                 continue;
             }
 
@@ -460,10 +429,13 @@ int main(int argc, char* argv[]) {
     C2D_TextBuf buf = C2D_TextBufNew(4096); // glyph buffer
 
     // Load font
-    C2D_Font font = C2D_FontLoadSystem(CFG_REGION_USA);
+    // C2D_Font font = C2D_FontLoadSystem(CFG_REGION_USA);
     // C2D_Font font = C2D_FontLoadFromMem(&font, 96*13); // system font
     // or load a custom font:
-    // C2D_Font font = C2D_FontLoad("romfs:/myfont.bcfnt");
+    C2D_Font font = C2D_FontLoad("sdmc:/monogram.bcfnt"); // TODO: Inject this into the binary?
+
+    float GRID_CELL_GAP_W = (BOTTOM_SCREEN_WIDTH - (GRID_CELL_W * GRID_COLS)) / (GRID_COLS + 1);
+    float GRID_CELL_GAP_H = (BOTTOM_SCREEN_HEIGHT - GRID_HEADER_H - (GRID_CELL_H * GRID_VISIBLE_ROWS)) / (GRID_VISIBLE_ROWS + 1);
 
     while(true) {
 
@@ -593,70 +565,7 @@ int main(int argc, char* argv[]) {
                         scroll_offset = sel_row - GRID_VISIBLE_ROWS + 1;
                 }
                 
-
-                // Re-render the screen using framebuffers
-                if (false) {
-                    u8 *fb = gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, NULL, NULL);
-
-                    // Background
-                    fb_fill(fb, get_red(COL_BG), get_green(COL_BG), get_blue(COL_BG));
-
-                    // Header: full name of selected game (or "-")
-                    const char *hdr_name = (games_counter > 0) ? games[selected_game_index].name : "-";
-                    fb_string(fb, 8, (GRID_HEADER_H - FB_FONT_GLYPH_H) / 2, hdr_name, 2,
-                            get_red(COL_TEXT), get_green(COL_TEXT), get_blue(COL_TEXT));
-
-                    // Game grid
-                    for (int vrow = 0; vrow < GRID_VISIBLE_ROWS; vrow++) {
-                        for (int col = 0; col < GRID_COLS; col++) {
-                            int game_idx = (scroll_offset + vrow) * GRID_COLS + col;
-                            if (game_idx >= (int)games_counter) continue;
-
-                            // Grid slot boundaries
-                            int slot_x = col * GRID_CELL_COL_W;
-                            int slot_w = (col == GRID_COLS - 1)
-                                ? (BOTTOM_SCREEN_WIDTH - slot_x)
-                                : GRID_CELL_COL_W;
-                            int slot_y = GRID_HEADER_H + vrow * GRID_CELL_ROW_H;
-
-                            // Cell rect (inset by gap)
-                            int cx = slot_x + GRID_CELL_GAP;
-                            int cy = slot_y + GRID_CELL_GAP;
-                            int cw = slot_w - 2 * GRID_CELL_GAP;
-                            int ch = GRID_CELL_ROW_H - 2 * GRID_CELL_GAP;
-
-
-                            // Border: white normally, red when selected
-                            bool is_selected = (game_idx == selected_game_index);
-
-                            if (is_selected)
-                                fb_rect(fb, cx, cy, cw, ch, get_red(COL_CELL_SELECTED), get_green(COL_CELL_SELECTED), get_blue(COL_CELL_SELECTED));
-                            else
-                                fb_rect(fb, cx, cy, cw, ch, get_red(COL_CELL), get_green(COL_CELL), get_blue(COL_CELL));
-
-                            if (is_selected)
-                                fb_border(fb, cx, cy, cw, ch, GRID_CELL_BORDER, get_red(COL_BORDER_SELECTED), get_green(COL_BORDER_SELECTED), get_blue(COL_BORDER_SELECTED));
-                            else
-                                fb_border(fb, cx, cy, cw, ch, GRID_CELL_BORDER, get_red(COL_BORDER), get_green(COL_BORDER), get_blue(COL_BORDER));
-
-                            // Print game title
-                            // const char *game_name = games[game_idx].name;
-                            // fb_string(fb, cx + GRID_CELL_BORDER * 2, cy + GRID_CELL_BORDER, game_name, GRID_NAME_SCALE,
-                            // get_red(COL_TEXT), get_green(COL_TEXT), get_blue(COL_TEXT));
-
-                            // Show game icon
-                            // fb_image(fb, cx + GRID_CELL_BORDER * 8 , cy + GRID_CELL_BORDER * 8, 2, games[game_idx].large_icon_bgr8, 48, 48);
-                            fb_image(fb, cx + GRID_CELL_BORDER , cy + GRID_CELL_BORDER, 1, games[game_idx].large_icon_bgr8, 48, 48);
-
-                            // Put icon of titleGame at index game_idx
-                        }
-                    }
-
-                    gfxFlushBuffers();
-                    gfxSwapBuffers();
-                    gspWaitForVBlank();
-                }
-
+                // Render UI using citro2d
                 {
                     log_debug("Starting to render");
 
@@ -665,18 +574,27 @@ int main(int argc, char* argv[]) {
                     C2D_TargetClear(bottom, rgb_to_C2D_Color32(COL_BG));
                     C2D_SceneBegin(bottom);
 
-                    log_debug("Rendering header text");
+                    C2D_Text header_text;
+                    C2D_TextFontParse(&header_text, font, buf, "Hello from Pomelo");
+                    C2D_TextOptimize(&header_text);
 
-                    // Render the header text - app name
-                    log_debug("Building text buffer");
+                    C2D_DrawText(&header_text, C2D_WithColor, 10, 10, 0, TEXT_HEADER_SCALE, TEXT_HEADER_SCALE, rgb_to_C2D_Color32(COL_TEXT));
 
-                    C2D_Text text;
-                    C2D_TextFontParse(&text, font, buf, "Hello from Pomelo");
-                    C2D_TextOptimize(&text);
+                    // Draw seperating line from header to grid
+                    C2D_DrawRectangle(
+                        0, GRID_HEADER_H - 1, 0, BOTTOM_SCREEN_WIDTH, 1,
+                        rgb_to_C2D_Color32(0x00), rgb_to_C2D_Color32(0x00), 
+                        rgb_to_C2D_Color32(0x00), rgb_to_C2D_Color32(0x00)
+                    );
 
-                    log_debug("Drawing text");
-
-                    C2D_DrawText(&text, C2D_WithColor, 10, 10, 0, 1, 1, rgb_to_C2D_Color32(COL_TEXT));
+                    for (int grid_x = 0; grid_x < GRID_COLS; grid_x++) {
+                        C2D_Pomelo_DrawRectangleSingleColor(
+                            GRID_CELL_GAP_W + grid_x * (GRID_CELL_GAP_W + GRID_CELL_W), // X Position
+                            GRID_HEADER_H + GRID_CELL_GAP_H, // Y Position
+                            GRID_CELL_W, GRID_CELL_H, 
+                            rgb_to_C2D_Color32(COL_CELL)
+                        );
+                    }
 
                     // C2D_DrawTriangle(0, 0, clrWhite, 
                     //     100,  0, clrTri1,
@@ -684,7 +602,7 @@ int main(int argc, char* argv[]) {
                     //     0
                     // );
                     // C2D_DrawRectangle(BOTTOM_SCREEN_WIDTH - 50, 0, 0, 50, 50, clrRec1, clrRec2, clrRec3, clrRec4);
-                    // C2D_DrawRectangle(0, 0, 0, 50, 50, clrRec1, clrRec2, clrRec3, clrRec4);
+                    
 
                     // // Circles require a state change (an expensive operation) within citro2d's internals, so draw them last.
                     // // Although it is possible to draw them in the middle of drawing non-circular objects
