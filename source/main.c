@@ -591,11 +591,18 @@ int main(int argc, char* argv[]) {
                     // Draw grid of cells, not including icons, just the background color of the cells
                     for (int grid_x = 0; grid_x < GRID_COLS; grid_x++) {
                         for (int grid_y = 0; grid_y < GRID_VISIBLE_ROWS; grid_y++) {
+                            int game_index = grid_y * GRID_COLS + grid_x;
+
+                            if (game_index >= games_counter)
+                                break;
+
+                            u32 cell_color = game_index == selected_game_index ? rgb_to_C2D_Color32(COL_CELL_SELECTED) : rgb_to_C2D_Color32(COL_CELL);
+
                             C2D_Pomelo_DrawRectangleSingleColor(
                                 GRID_CELL_GAP_W + grid_x * (GRID_CELL_GAP_W + GRID_CELL_W), // X Position
                                 GRID_HEADER_H + GRID_CELL_GAP_H + grid_y * (GRID_CELL_GAP_H + GRID_CELL_H), // Y Position
                                 GRID_CELL_W, GRID_CELL_H, 
-                                rgb_to_C2D_Color32(COL_CELL)
+                                cell_color
                             );
                         }
                     }
