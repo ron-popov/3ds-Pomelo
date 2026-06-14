@@ -48,7 +48,7 @@ bool loadTitleGame(u64 titleId, FS_MediaType mediaType, titleGame* titleGameOut)
     };
     FS_Path archivePath = { PATH_BINARY, sizeof(archiveProgramInfo), (void*)&archiveProgramInfo };
 
-    // printf("About to run FSUSER_OpenArchive\n");
+    log_debug("Opening FSUSER archive");
 
     FS_Archive archive;
     Result res = FSUSER_OpenArchive(&archive, ARCHIVE_SAVEDATA_AND_CONTENT, archivePath);
@@ -79,12 +79,16 @@ bool loadTitleGame(u64 titleId, FS_MediaType mediaType, titleGame* titleGameOut)
 
     Handle fileHandle;
 
+    log_debug("Opening FSUSER file");
+
     res = FSUSER_OpenFile(&fileHandle, archive, filePath, FS_OPEN_READ, 0);
     if (R_FAILED(res)) {
         print_error_code_verbose("FSUSER_OpenFile",  res);
         FSUSER_CloseArchive(archive);
         goto cleanup_fail;
     }
+
+    log_debug("Reading FSUSER file");
 
     // Read the SMDH data
     u32 bytesRead;
