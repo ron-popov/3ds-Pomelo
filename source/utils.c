@@ -124,12 +124,10 @@ bool loadTitleGame(u64 titleId, FS_MediaType mediaType, titleGame* titleGameOut)
 
     log_debug("Copying tex content");
 
-    // Copy large icon and fix the ordering
+    // The icon is a 48px by 48px morton encoded icon, however, c3d can only have powers of two texture
+    // Which means we need to convert the 48px morton icon to a 64px morton texture
+    // This function takes care of that
     copy_icon_to_tex64((uint16_t*)titleGameOut->large_icon_tex.data, (uint16_t*)smdh->large_icon_rgb565);
-
-    // Flush
-    log_debug("Flushing tex content");
-    C3D_TexFlush(&titleGameOut->large_icon_tex);
 
     // Don't blur
     log_debug("Setting filter to tex");
