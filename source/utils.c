@@ -133,6 +133,11 @@ bool loadTitleGame(u64 titleId, FS_MediaType mediaType, titleGame* titleGameOut)
     // This function takes care of that
     copy_icon_to_tex64((uint16_t*)titleGameOut->large_icon_tex.data, (uint16_t*)smdh->large_icon_rgb565);
 
+    // Flush tex icon
+    log_debug("Flushing tex");
+    C3D_TexFlush(&titleGameOut->large_icon_tex);
+
+
     // Don't blur
     log_debug("Setting filter to tex");
     C3D_TexSetFilter(&titleGameOut->large_icon_tex, GPU_NEAREST, GPU_NEAREST);

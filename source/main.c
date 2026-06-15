@@ -116,7 +116,11 @@ int main(int argc, char* argv[]) {
 
     // Init gfx stuff
     gfxInitDefault();
-    // gfxInit(GSP_RGBA8_OES, GSP_RGBA8_OES, false);
+
+    // Init rendering stuff
+    C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
+	C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
+	C2D_Prepare();
 
 	consoleInit(GFX_TOP, &topScreen);
     consoleSelect(&topScreen);
@@ -412,11 +416,6 @@ int main(int argc, char* argv[]) {
     int selected_game_index = 0;
     bool is_first_run = true;
     int scroll_offset = 0;
-
-    // Init rendering stuff
-    C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
-	C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
-	C2D_Prepare();
 
     // Init render target
     C3D_RenderTarget* bottom = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
