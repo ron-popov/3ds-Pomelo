@@ -1,4 +1,5 @@
 #include <citro2d.h>
+#include <malloc.h>
 
 #include "utils.h"
 #include "log.h"
@@ -41,6 +42,7 @@ bool loadTitleGame(u64 titleId, FS_MediaType mediaType, titleGame* titleGameOut)
     SMDH *smdh = malloc(sizeof(SMDH));
     
     log_debug("Get name of title %#018llx (media 0x%x)", titleId, mediaType);
+    printf("Get name of title %#018llx (media 0x%x)\n", titleId, mediaType);
 
     const FS_ProgramInfo archiveProgramInfo = {
         .programId = titleId, 
@@ -146,6 +148,7 @@ bool loadTitleGame(u64 titleId, FS_MediaType mediaType, titleGame* titleGameOut)
     return true;
 
     cleanup_fail:
+    log_debug("Something failed during getTitleName");
     free(smdh);
     return false;
 }
@@ -251,4 +254,23 @@ void systemModelName(u8 systemModel, char* nameOut) {
         default:
             strcpy(nameOut, "Unknown Systme Model"); break;
     }
+}
+
+
+void logMemInfo() {
+    // Get heap usage
+    struct mallinfo mi = mallinfo();
+    float heap_used_kb = mi.uordblks / 1024;
+
+    // Get linear heap usage
+    float linear_free_kb = linearSpaceFree() / 1024;
+
+    // Get from 3ds the memory usage and total
+    float total_used_kb  = osGetMemRegionUsed(MEMREGION_APPLICATION) / 1024;
+    float total_available_kb = osGetMemRegionSize(MEMREGION_APPLICATION) / 1024;
+
+    log_debug("Heap Used %.1fkb / %.1fkb | Linear Heap Free %.1fkb / %.1fkb | Total Mem Used %.1fkb / %.1fkb", 
+        heap_used_kb, (0x304000f / 1024.f),
+        linear_free_kb, (0xb64000f / 1024.f),
+        total_used_kb, total_available_kb);
 }

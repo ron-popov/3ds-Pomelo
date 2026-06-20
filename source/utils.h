@@ -60,4 +60,6 @@ bool isRunningInEmulator(void);
 
 void systemModelName(u8 systemModel, char* nameOut);
 
+void logMemInfo();
+
 #endif

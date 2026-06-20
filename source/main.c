@@ -268,6 +268,8 @@ int main(int argc, char* argv[]) {
         } 
     }
 
+    C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+
     // Iterate over gamecard games - single one
     {
         log_debug("Iterating over gamecard games");
@@ -306,6 +308,9 @@ int main(int argc, char* argv[]) {
         games_counter++;
     }
 
+    C3D_FrameEnd(0);
+    C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+
     // Iterate over nand titles and fetch name of each installed title
     if (SHOULD_ITERATE_NAND) {
         log_debug("Iterating over NAND titles");
@@ -333,7 +338,7 @@ int main(int argc, char* argv[]) {
             }
 
             if (!shouldDisplayTitle(title_ids[i])){
-                // log_debug("Skipping nand title %#018llx", title_ids[i]);
+                log_debug("Skipping nand title %#018llx", title_ids[i]);
                 continue;
             }
 
@@ -342,6 +347,15 @@ int main(int argc, char* argv[]) {
                 .mediaType = MEDIATYPE_NAND,
                 .name = ""
             };
+
+            if (games_counter % 2 == 0) {
+                log_debug("Restarting frame");
+                C3D_FrameEnd(0);
+                C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+            }
+
+
+            logMemInfo();
 
             temp_res = loadTitleGame(title_ids[i], MEDIATYPE_NAND, &nandTitleGame);
             if (temp_res) {
@@ -355,6 +369,9 @@ int main(int argc, char* argv[]) {
             }
         }
     }
+
+    C3D_FrameEnd(0);
+    C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
 
     // Iterate over sdcard titles and fetch name of each installed title
     if (SHOULD_ITERATE_SDCARD) {
@@ -404,6 +421,8 @@ int main(int argc, char* argv[]) {
             }
         }
     }
+
+    C3D_FrameEnd(0);
 
     log_debug("Finished iterating");
     printf("Finished iterating\n");
@@ -568,7 +587,7 @@ int main(int argc, char* argv[]) {
                 {
                     log_debug("Starting to render");
 
-                    // Render the scene
+                    // Render the scene 
                     C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
                     C2D_TargetClear(bottom, rgb_to_C2D_Color32(COL_BG));
                     C2D_SceneBegin(bottom);
