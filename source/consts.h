@@ -33,6 +33,7 @@
 #define LARGE_ICON_W 48
 #define SMALL_ICON_H 24
 #define SMALL_ICON_W 24
+#define LARGE_ICON_RGB565_CONTENT_SIZE 0x1200
 
 // The size of the icon plus it's border, width and heigh are the same
 #define GRID_CELL_H             (GRID_CELL_BORDER + GRID_CELL_ICON_SIZE + GRID_CELL_BORDER)

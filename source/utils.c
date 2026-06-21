@@ -128,12 +128,20 @@ bool loadTitleGame(u64 titleId, FS_MediaType mediaType, titleGame* titleGameOut)
     if (!C3D_TexInit(&titleGameOut->large_icon_tex, 64, 64, GPU_RGB565))
         goto cleanup_fail;
 
-    log_debug("Copying tex content");
+    log_debug("Reencoding texture");
 
     // The icon is a 48px by 48px morton encoded icon, however, c3d can only have powers of two texture
     // Which means we need to convert the 48px morton icon to a 64px morton texture
     // This function takes care of that
-    copy_icon_to_tex64((uint16_t*)titleGameOut->large_icon_tex.data, (uint16_t*)smdh->large_icon_rgb565);
+    uint16_t* reencoded_texture_data = malloc(64 * 64 * sizeof(uint16_t));
+    copy_icon_to_tex64(reencoded_texture_data, (uint16_t*)smdh->large_icon_rgb565);
+
+    log_debug("Copying tex content");
+
+    // Load the data into the texture
+    C3D_TexUpload(&titleGameOut->large_icon_tex, reencoded_texture_data);
+
+    free(reencoded_texture_data);
 
     // Flush tex icon
     log_debug("Flushing tex");
