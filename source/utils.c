@@ -125,7 +125,7 @@ bool loadTitleGame(u64 titleId, FS_MediaType mediaType, titleGame* titleGameOut)
     log_debug("Initiating tex");
 
     // PICA200 requires power-of-two dimensions, so allocate 64x64 for a 48x48 icon
-    if (!C3D_TexInitVRAM(&titleGameOut->large_icon_tex, 64, 64, GPU_RGB565))
+    if (!C3D_TexInit(&titleGameOut->large_icon_tex, 64, 64, GPU_RGB565))
         goto cleanup_fail;
 
     log_debug("Reencoding texture");

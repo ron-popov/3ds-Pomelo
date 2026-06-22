@@ -366,6 +366,10 @@ int main(int argc, char* argv[]) {
             printf("CmdBuf Usage (Before Split) %.2f\n", C3D_GetCmdBufUsage());
             C3D_FrameSplit(0);
             printf("CmdBuf Usage (After Split) %.2f\n", C3D_GetCmdBufUsage());
+
+            if (games_counter == 1) {
+                break;
+            }
         }
     }
 
@@ -502,6 +506,9 @@ int main(int argc, char* argv[]) {
 
                 is_first_run = false;
 
+                log_debug("Button press 0x%lx", kDown);
+                printf("Button press 0x%lx\n", kDown);
+
                 // Handle kDown
                 switch (kDown) {
                     case KEY_DDOWN: // Go down in menu
@@ -579,62 +586,62 @@ int main(int argc, char* argv[]) {
                         scroll_offset = sel_row - GRID_VISIBLE_ROWS + 1;
                 }
                 
-                // Render UI using citro2d
-                {
-                    log_debug("Starting to render");
+                // // Render UI using citro2d
+                // {
+                //     log_debug("Starting to render");
 
-                    // Render the scene 
-                    C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
-                    C2D_TargetClear(bottom, rgb_to_C2D_Color32(COL_BG));
-                    C2D_SceneBegin(bottom);
+                //     // Render the scene 
+                //     C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+                //     C2D_TargetClear(bottom, rgb_to_C2D_Color32(COL_BG));
+                //     C2D_SceneBegin(bottom);
 
-                    // Draw seperating line from header to grid
-                    C2D_Pomelo_DrawRectangleSingleColor(
-                        0, 0, 
-                        BOTTOM_SCREEN_WIDTH, GRID_HEADER_H,
-                        rgb_to_C2D_Color32(COL_CELL)
-                    );
+                //     // Draw seperating line from header to grid
+                //     C2D_Pomelo_DrawRectangleSingleColor(
+                //         0, 0, 
+                //         BOTTOM_SCREEN_WIDTH, GRID_HEADER_H,
+                //         rgb_to_C2D_Color32(COL_CELL)
+                //     );
 
-                    // Draw header text
-                    C2D_Text header_text;
-                    C2D_TextFontParse(&header_text, font, buf, "Mario Kart 7");
-                    C2D_TextOptimize(&header_text);
+                //     // Draw header text
+                //     C2D_Text header_text;
+                //     C2D_TextFontParse(&header_text, font, buf, "Mario Kart 7");
+                //     C2D_TextOptimize(&header_text);
 
-                    C2D_DrawText(&header_text, C2D_WithColor, GRID_CELL_GAP_W + 2, 8, 0, TEXT_HEADER_SCALE, TEXT_HEADER_SCALE, rgb_to_C2D_Color32(COL_TEXT));
+                //     C2D_DrawText(&header_text, C2D_WithColor, GRID_CELL_GAP_W + 2, 8, 0, TEXT_HEADER_SCALE, TEXT_HEADER_SCALE, rgb_to_C2D_Color32(COL_TEXT));
 
-                    // Draw grid of cells, not including icons, just the background color of the cells
-                    for (int grid_x = 0; grid_x < GRID_COLS; grid_x++) {
-                        for (int grid_y = 0; grid_y < GRID_VISIBLE_ROWS; grid_y++) {
-                            int game_index = grid_y * GRID_COLS + grid_x;
+                //     // Draw grid of cells, not including icons, just the background color of the cells
+                //     for (int grid_x = 0; grid_x < GRID_COLS; grid_x++) {
+                //         for (int grid_y = 0; grid_y < GRID_VISIBLE_ROWS; grid_y++) {
+                //             int game_index = grid_y * GRID_COLS + grid_x;
 
-                            if (game_index >= games_counter)
-                                break;
+                //             if (game_index >= games_counter)
+                //                 break;
 
-                            u32 cell_color = game_index == selected_game_index ? rgb_to_C2D_Color32(COL_CELL_SELECTED) : rgb_to_C2D_Color32(COL_CELL);
+                //             u32 cell_color = game_index == selected_game_index ? rgb_to_C2D_Color32(COL_CELL_SELECTED) : rgb_to_C2D_Color32(COL_CELL);
 
-                            float cell_start_x = GRID_CELL_GAP_W + grid_x * (GRID_CELL_GAP_W + GRID_CELL_W);
-                            float cell_Start_y = GRID_HEADER_H + GRID_CELL_GAP_H + grid_y * (GRID_CELL_GAP_H + GRID_CELL_H);
+                //             float cell_start_x = GRID_CELL_GAP_W + grid_x * (GRID_CELL_GAP_W + GRID_CELL_W);
+                //             float cell_Start_y = GRID_HEADER_H + GRID_CELL_GAP_H + grid_y * (GRID_CELL_GAP_H + GRID_CELL_H);
 
-                            C2D_Pomelo_DrawRectangleSingleColor(
-                                cell_start_x, cell_Start_y,
-                                GRID_CELL_W, GRID_CELL_H, 
-                                cell_color
-                            );
+                //             C2D_Pomelo_DrawRectangleSingleColor(
+                //                 cell_start_x, cell_Start_y,
+                //                 GRID_CELL_W, GRID_CELL_H, 
+                //                 cell_color
+                //             );
 
-                            C2D_Image image = {
-                                .tex = &games[game_index]->large_icon_tex,
-                                .subtex = &icon_subtex
-                            };
+                //             C2D_Image image = {
+                //                 .tex = &games[game_index]->large_icon_tex,
+                //                 .subtex = &icon_subtex
+                //             };
 
-                            C2D_DrawImageAt(image, cell_start_x + GRID_CELL_BORDER, cell_Start_y + GRID_CELL_BORDER, 1.0f, NULL, 1.0f, 1.0f);
-                        }
-                    }
+                //             C2D_DrawImageAt(image, cell_start_x + GRID_CELL_BORDER, cell_Start_y + GRID_CELL_BORDER, 1.0f, NULL, 1.0f, 1.0f);
+                //         }
+                //     }
 
 
 
-                    C3D_FrameEnd(0);
-                    log_debug("Finished rendering");
-                }
+                //     C3D_FrameEnd(0);
+                //     log_debug("Finished rendering");
+                // }
             }
         }
 
