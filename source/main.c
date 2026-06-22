@@ -118,9 +118,12 @@ int main(int argc, char* argv[]) {
     gfxInitDefault();
 
     // Init rendering stuff
-    C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
+    // C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
+    C3D_Init(0x80000); // For testing crash stuff
 	C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
 	C2D_Prepare();
+
+    C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
 
 	consoleInit(GFX_TOP, &topScreen);
     consoleSelect(&topScreen);
@@ -337,7 +340,7 @@ int main(int argc, char* argv[]) {
                 continue;
             }
 
-            titleGame* nandTitleGame = linearAlloc(sizeof(titleGame));
+            titleGame* nandTitleGame = malloc(sizeof(titleGame));
 
             nandTitleGame->titleId = title_ids[i];
             nandTitleGame->mediaType = MEDIATYPE_NAND;
@@ -359,6 +362,10 @@ int main(int argc, char* argv[]) {
             } else {
                 log_debug("%02lu nand title %#018llx - failed to get name", i, title_ids[i]);
             }
+
+            printf("CmdBuf Usage (Before Split) %.2f\n", C3D_GetCmdBufUsage());
+            C3D_FrameSplit(0);
+            printf("CmdBuf Usage (After Split) %.2f\n", C3D_GetCmdBufUsage());
         }
     }
 
@@ -410,6 +417,8 @@ int main(int argc, char* argv[]) {
     //         }
     //     }
     // }
+
+    C3D_FrameEnd(0);
 
     log_debug("Finished iterating");
     printf("Finished iterating\n");

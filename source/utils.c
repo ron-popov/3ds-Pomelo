@@ -39,7 +39,7 @@ static void copy_icon_to_tex64(uint16_t* dst, const uint16_t* src) {
 
 // Get the name of a title, from the "icon" file in the ExeFS section of the title
 bool loadTitleGame(u64 titleId, FS_MediaType mediaType, titleGame* titleGameOut) {
-    SMDH *smdh = linearAlloc(sizeof(SMDH));
+    SMDH *smdh = malloc(sizeof(SMDH));
     
     log_debug("Get name of title %#018llx (media 0x%x)", titleId, mediaType);
     printf("Get name of title %#018llx (media 0x%x)\n", titleId, mediaType);
@@ -133,7 +133,7 @@ bool loadTitleGame(u64 titleId, FS_MediaType mediaType, titleGame* titleGameOut)
     // The icon is a 48px by 48px morton encoded icon, however, c3d can only have powers of two texture
     // Which means we need to convert the 48px morton icon to a 64px morton texture
     // This function takes care of that
-    uint16_t* reencoded_texture_data = linearAlloc(64 * 64 * sizeof(uint16_t));
+    uint16_t* reencoded_texture_data = vramAlloc(64 * 64 * sizeof(uint16_t));
     copy_icon_to_tex64(reencoded_texture_data, (uint16_t*)smdh->large_icon_rgb565);
 
     log_debug("Copying tex content");
@@ -141,7 +141,7 @@ bool loadTitleGame(u64 titleId, FS_MediaType mediaType, titleGame* titleGameOut)
     // Load the data into the texture
     C3D_TexUpload(&titleGameOut->large_icon_tex, reencoded_texture_data);
 
-    linearFree(reencoded_texture_data);
+    vramFree(reencoded_texture_data);
 
     // Flush tex icon
     log_debug("Flushing tex");
@@ -151,12 +151,12 @@ bool loadTitleGame(u64 titleId, FS_MediaType mediaType, titleGame* titleGameOut)
     log_debug("Setting filter to tex");
     C3D_TexSetFilter(&titleGameOut->large_icon_tex, GPU_NEAREST, GPU_NEAREST);
 
-    linearFree(smdh);
+    free(smdh);
     return true;
 
     cleanup_fail:
     log_debug("Something failed during getTitleName");
-    linearFree(smdh);
+    free(smdh);
     return false;
 }
 
