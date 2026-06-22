@@ -339,6 +339,10 @@ int main(int argc, char* argv[]) {
 
             titleGame* nandTitleGame = linearAlloc(sizeof(titleGame));
 
+            nandTitleGame->titleId = title_ids[i];
+            nandTitleGame->mediaType = MEDIATYPE_NAND;
+            strncpy(nandTitleGame->name, "", MAX_TITLE_NAME);
+
             // titleGame nandTitleGame = {
             //     .titleId = title_ids[i],
             //     .mediaType = MEDIATYPE_NAND,

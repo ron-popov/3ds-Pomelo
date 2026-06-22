@@ -9,8 +9,6 @@
 #include "log.h"
 #include "consts.h"
 
-#define MAX_TITLE_NAME 255
-
 __attribute__((used)) static Tex3DS_SubTexture icon_subtex = {
     .width  = 48,
     .height = 48,

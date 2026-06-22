@@ -53,3 +53,4 @@
 #define SHOULD_ITERATE_NAND true
 #define SHOULD_ITERATE_SDCARD false
 
+#define MAX_TITLE_NAME 255
