@@ -218,6 +218,7 @@ int main(int argc, char* argv[]) {
                 char *error_message = (char*)malloc(256);
                 sprintf(error_message, "launch required title (%#018llx)", titleIdsToLaunch[i]);
                 print_error_code_verbose(error_message, temp_res);
+                free(error_message);
             }
         }
 
@@ -269,7 +270,7 @@ int main(int argc, char* argv[]) {
     }
 
     // Iterate over gamecard games - single one
-    {
+    if (SHOULD_ITERATE_GAMECARD) {
         log_debug("Iterating over gamecard games");
         printf("Iterating over gamecard games\n");
 
@@ -281,7 +282,6 @@ int main(int argc, char* argv[]) {
             print_error_code_verbose("AM_GetTitleList GAMECARD", temp_res);
         }
 
-        // Get name for the title
         titleGame gamecardTitleGame = {
             .titleId = 0x00,
             .mediaType = MEDIATYPE_GAME_CARD,
@@ -293,7 +293,7 @@ int main(int argc, char* argv[]) {
             gamecardTitleGame.titleId = gamecard_title_id[0];
 
             // Get gamecard title name
-            temp_res = loadTitleGame(gamecard_title_id[0], MEDIATYPE_GAME_CARD, &gamecardTitleGame);
+            temp_res = loadTitleGame(gamecard_title_id[0], MEDIATYPE_GAME_CARD, gamecardTitleGame);
 
             if (temp_res) {
                 log_debug("Found Gamecard title %#018llx - %s", gamecardTitleGame.titleId, gamecardTitleGame.name);
@@ -336,6 +336,8 @@ int main(int argc, char* argv[]) {
                 log_debug("Skipping nand title %#018llx", title_ids[i]);
                 continue;
             }
+
+
 
             titleGame nandTitleGame = {
                 .titleId = title_ids[i],
