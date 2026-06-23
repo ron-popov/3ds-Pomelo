@@ -428,20 +428,14 @@ int main(int argc, char* argv[]) {
     float GRID_CELL_GAP_W = (BOTTOM_SCREEN_WIDTH - (GRID_CELL_W * GRID_COLS)) / (GRID_COLS + 1);
     float GRID_CELL_GAP_H = (BOTTOM_SCREEN_HEIGHT - GRID_HEADER_H - (GRID_CELL_H * GRID_VISIBLE_ROWS)) / (GRID_VISIBLE_ROWS + 1);
 
+
+    log_debug("Starting apt loop");
+
     while(true) {
-        
+
         gspWaitForVBlank();
         aptMainLoop();
-        hidScanInput();
-        u32 kDown = hidKeysDown();
         
-        if (kDown == 0x00) { // If no keys were pressed and it's not the first run, skip this flow
-            continue;
-        }
-
-        log_debug("Button press 0x%lx", kDown);
-        printf("Button press 0x%lx\n", kDown);
-
         switch (GetState()) {
             case STATE_NONE:
                 log_debug("Invalid state reached");
