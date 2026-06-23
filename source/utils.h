@@ -9,6 +9,10 @@
 #include "log.h"
 #include "consts.h"
 
+// static inline u32 rgb_to_C2D_Color32(u32 color) {
+//     return C2D_Color32(get_red(color), get_blue(color), get_green(color), 0xff);
+// }
+
 __attribute__((used)) static Tex3DS_SubTexture icon_subtex = {
     .width  = 48,
     .height = 48,

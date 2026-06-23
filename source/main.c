@@ -26,10 +26,6 @@ u32 __ctru_linear_heap_size = 0xb64000;
 static aptHookCookie homemenuAptHookCookie;
 static PrintConsole topScreen;
 
-static inline u32 rgb_to_C2D_Color32(u32 color) {
-    return C2D_Color32(get_red(color), get_blue(color), get_green(color), 0xff);
-}
-
 // This handles apt callbacks to our process
 void aptCallback(APT_HookType hook, void* param) {
     log_debug("Got APT callback");
@@ -117,79 +113,79 @@ int main(int argc, char* argv[]) {
     // Init gfx stuff
     gfxInitDefault();
 
-    // Init rendering stuff
-    // C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
-    C3D_Init(0x80000); // For testing crash stuff
-	C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
-	C2D_Prepare();
+    // // Init rendering stuff
+    // // C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
+    // C3D_Init(0x80000); // For testing crash stuff
+	// C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
+	// C2D_Prepare();
 
-    C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+    // C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
 
 	consoleInit(GFX_TOP, &topScreen);
     consoleSelect(&topScreen);
 
-    SetState(STATE_FOREGROUND);
+    // SetState(STATE_FOREGROUND);
 
 
     // Setup debug logging stuff
-    consoleDebugInit(debugDevice_NULL);
+    // consoleDebugInit(debugDevice_NULL);
     log_debug("Starting Pomelo!");
 
     printf("Starting Pomelo!\n\n");
 
     log_debug("Compiled using C Version %ld", __STDC_VERSION__);
 
-    // Check if we are running on real hardware or mikage
-    bool is_mikage = isRunningInEmulator();
-    if (is_mikage) {
-        printf("Running in Mikage\n");
-        log_debug("Running in mikage");
+    // // Check if we are running on real hardware or mikage
+    // bool is_mikage = isRunningInEmulator();
+    // if (is_mikage) {
+    //     printf("Running in Mikage\n");
+    //     log_debug("Running in mikage");
 
-        printf("System Model : %s\n", "Emulator");
-        log_debug("System Model : %s", "Emulator");
-    } else {
-        printf("Running on Real Hardware\n");
-        log_debug("Running on Real Hardware");
+    //     printf("System Model : %s\n", "Emulator");
+    //     log_debug("System Model : %s", "Emulator");
+    // } else {
+    //     printf("Running on Real Hardware\n");
+    //     log_debug("Running on Real Hardware");
 
-        temp_res = cfguInit();
-        if (R_FAILED(temp_res)) {
-            print_error_code_verbose("cfguInit for system model", temp_res);
-            return 0;
-        }
+    //     temp_res = cfguInit();
+    //     if (R_FAILED(temp_res)) {
+    //         print_error_code_verbose("cfguInit for system model", temp_res);
+    //         return 0;
+    //     }
 
-        u8 system_model;
-        temp_res = CFGU_GetSystemModel(&system_model);
-        if (R_FAILED(temp_res)) {
-            print_error_code_verbose("GetSystemModel", temp_res);
-        } else {
-            char system_name[32];
-            systemModelName(system_model, (char*)&system_name);
+    //     u8 system_model;
+    //     temp_res = CFGU_GetSystemModel(&system_model);
+    //     if (R_FAILED(temp_res)) {
+    //         print_error_code_verbose("GetSystemModel", temp_res);
+    //     } else {
+    //         char system_name[32];
+    //         systemModelName(system_model, (char*)&system_name);
 
-            log_debug("System Model Id : %x", system_model);
+    //         log_debug("System Model Id : %x", system_model);
 
-            printf("System Model : %s\n", system_name);
-            log_debug("System Model : %s", system_name);
-        }
+    //         printf("System Model : %s\n", system_name);
+    //         log_debug("System Model : %s", system_name);
+    //     }
 
-        cfguExit();
-    }
+    //     cfguExit();
+    // }
 
 
 
 
 
     // Configure APT stuff and hooks
-    aptHook(&homemenuAptHookCookie, aptCallback, NULL);
-    aptSetMessageCallback(&aptMessageCallback, NULL);
-    aptSetSignalCallback(&aptSignalCallback);
+    // aptHook(&homemenuAptHookCookie, aptCallback, NULL);
+    // aptSetMessageCallback(&aptMessageCallback, NULL);
+    // aptSetSignalCallback(&aptSignalCallback);
 
 
 
 
 
     // Start doing homemenu stuff - enumerating titles and their names
-    titleGame* games[MAX_TITLES];
-    u8 games_counter = 0;
+    // titleGame* games[MAX_TITLES];
+    // u8 games_counter = 0;
     
 
     // Launch a bunch of titles required for the homescreen
@@ -236,41 +232,41 @@ int main(int argc, char* argv[]) {
 
     // Run the "am" system module title, before getting it's handle
     // It is used to iterate the installed titles
-    {
-        log_debug("Launching AM system module");
-        // Get handle to PM system module
-        // PM is used to initialize the AM module
-        {
-            // Initialize "Process Application Manager" system module
-            // It is useful for launching more titles / system modules
-            temp_res = pmAppInit();
-            if (temp_res != 0) {
-                print_error_code_verbose("pmappInit", temp_res);
-            } 
-        }
+    // {
+    //     log_debug("Launching AM system module");
+    //     // Get handle to PM system module
+    //     // PM is used to initialize the AM module
+    //     {
+    //         // Initialize "Process Application Manager" system module
+    //         // It is useful for launching more titles / system modules
+    //         temp_res = pmAppInit();
+    //         if (temp_res != 0) {
+    //             print_error_code_verbose("pmappInit", temp_res);
+    //         } 
+    //     }
 
-        const FS_ProgramInfo amProgramInfo = {
-            .programId = TITLE_ID_SYSTEM_MODULE_AM_EU, 
-            .mediaType = MEDIATYPE_NAND
-        };
+    //     const FS_ProgramInfo amProgramInfo = {
+    //         .programId = TITLE_ID_SYSTEM_MODULE_AM_EU, 
+    //         .mediaType = MEDIATYPE_NAND
+    //     };
 
-        temp_res = PMAPP_LaunchTitle(&amProgramInfo, 0x00);
-        if (R_FAILED(temp_res)) {
-            print_error_code_verbose("launch application manager", temp_res);
-        }
+    //     temp_res = PMAPP_LaunchTitle(&amProgramInfo, 0x00);
+    //     if (R_FAILED(temp_res)) {
+    //         print_error_code_verbose("launch application manager", temp_res);
+    //     }
 
-        pmAppExit();
-    }
+    //     pmAppExit();
+    // }
 
-    // Get handle to AM system module
-    {
-        log_debug("Getting handle to AM system module");
-        // Initialize "application manager" system module - it is used to fetch the list of installed titles
-        temp_res = amInit();
-        if (temp_res != 0) {
-            print_error_code_verbose("amInit", temp_res);
-        } 
-    }
+    // // Get handle to AM system module
+    // {
+    //     log_debug("Getting handle to AM system module");
+    //     // Initialize "application manager" system module - it is used to fetch the list of installed titles
+    //     temp_res = amInit();
+    //     if (temp_res != 0) {
+    //         print_error_code_verbose("amInit", temp_res);
+    //     } 
+    // }
 
     // Iterate over gamecard games - single one
     // if (SHOULD_ITERATE_GAMECARD) {
@@ -310,68 +306,68 @@ int main(int argc, char* argv[]) {
     // }
 
     // Iterate over nand titles and fetch name of each installed title
-    if (SHOULD_ITERATE_NAND) {
-        log_debug("Iterating over NAND titles");
-        printf("Iterating over NAND games\n");
+    // if (SHOULD_ITERATE_NAND) {
+    //     log_debug("Iterating over NAND titles");
+    //     printf("Iterating over NAND games\n");
 
-        // Get list of installed titles
-        u32 titles_found_nand = 0;
-        u64 title_ids[128];
-        temp_res = AM_GetTitleList(&titles_found_nand, MEDIATYPE_NAND, 128, title_ids);
-        if (temp_res != 0) {
-            log_debug("AM_GetTitleList Failed, Result 0x%lx", temp_res);
-            print_error_code_verbose("AM_GetTitleList", temp_res);
-            return 0;
-        }
+    //     // Get list of installed titles
+    //     u32 titles_found_nand = 0;
+    //     u64 title_ids[128];
+    //     temp_res = AM_GetTitleList(&titles_found_nand, MEDIATYPE_NAND, 128, title_ids);
+    //     if (temp_res != 0) {
+    //         log_debug("AM_GetTitleList Failed, Result 0x%lx", temp_res);
+    //         print_error_code_verbose("AM_GetTitleList", temp_res);
+    //         return 0;
+    //     }
 
-        log_debug("Found %lu title ids in NAND", titles_found_nand);
+    //     log_debug("Found %lu title ids in NAND", titles_found_nand);
 
-        // Get name of each title
-        for(u32 i = 0; i < titles_found_nand; i++){
+    //     // Get name of each title
+    //     for(u32 i = 0; i < titles_found_nand; i++){
 
-            if (games_counter == MAX_TITLES){
-                printf("Finished games limit in nand\n");
-                log_debug("Finished games limit in nand");
-                break;
-            }
+    //         if (games_counter == MAX_TITLES){
+    //             printf("Finished games limit in nand\n");
+    //             log_debug("Finished games limit in nand");
+    //             break;
+    //         }
 
-            if (!shouldDisplayTitle(title_ids[i])){
-                log_debug("Skipping nand title %#018llx", title_ids[i]);
-                continue;
-            }
+    //         if (!shouldDisplayTitle(title_ids[i])){
+    //             log_debug("Skipping nand title %#018llx", title_ids[i]);
+    //             continue;
+    //         }
 
-            titleGame* nandTitleGame = malloc(sizeof(titleGame));
+    //         titleGame* nandTitleGame = malloc(sizeof(titleGame));
 
-            nandTitleGame->titleId = title_ids[i];
-            nandTitleGame->mediaType = MEDIATYPE_NAND;
-            strncpy(nandTitleGame->name, "", MAX_TITLE_NAME);
+    //         nandTitleGame->titleId = title_ids[i];
+    //         nandTitleGame->mediaType = MEDIATYPE_NAND;
+    //         strncpy(nandTitleGame->name, "", MAX_TITLE_NAME);
 
-            // titleGame nandTitleGame = {
-            //     .titleId = title_ids[i],
-            //     .mediaType = MEDIATYPE_NAND,
-            //     .name = ""
-            // };
+    //         // titleGame nandTitleGame = {
+    //         //     .titleId = title_ids[i],
+    //         //     .mediaType = MEDIATYPE_NAND,
+    //         //     .name = ""
+    //         // };
 
-            temp_res = loadTitleGame(title_ids[i], MEDIATYPE_NAND, nandTitleGame);
-            if (temp_res) {
-                log_debug("Found NAND title %#018llx : %s", nandTitleGame->titleId, nandTitleGame->name);
+    //         temp_res = loadTitleGame(title_ids[i], MEDIATYPE_NAND, nandTitleGame);
+    //         if (temp_res) {
+    //             log_debug("Found NAND title %#018llx : %s", nandTitleGame->titleId, nandTitleGame->name);
 
-                games[games_counter] = nandTitleGame;
-                games_counter++;
+    //             games[games_counter] = nandTitleGame;
+    //             games_counter++;
 
-            } else {
-                log_debug("%02lu nand title %#018llx - failed to get name", i, title_ids[i]);
-            }
+    //         } else {
+    //             log_debug("%02lu nand title %#018llx - failed to get name", i, title_ids[i]);
+    //         }
 
-            printf("CmdBuf Usage (Before Split) %.2f\n", C3D_GetCmdBufUsage());
-            C3D_FrameSplit(0);
-            printf("CmdBuf Usage (After Split) %.2f\n", C3D_GetCmdBufUsage());
+    //         printf("CmdBuf Usage (Before Split) %.2f\n", C3D_GetCmdBufUsage());
+    //         C3D_FrameSplit(0);
+    //         printf("CmdBuf Usage (After Split) %.2f\n", C3D_GetCmdBufUsage());
 
-            if (games_counter == 1) {
-                break;
-            }
-        }
-    }
+    //         if (games_counter == 1) {
+    //             break;
+    //         }
+    //     }
+    // }
 
     // Iterate over sdcard titles and fetch name of each installed title
     // if (SHOULD_ITERATE_SDCARD) {
@@ -422,169 +418,177 @@ int main(int argc, char* argv[]) {
     //     }
     // }
 
-    C3D_FrameEnd(0);
+    // C3D_FrameEnd(0);
 
     log_debug("Finished iterating");
     printf("Finished iterating\n");
 
     // Close handle to am system module
-    {
-        amExit();    
-    }
+    // {
+    //     amExit();    
+    // }
 
-    int selected_game_index = 0;
-    bool is_first_run = true;
-    int scroll_offset = 0;
+    // int selected_game_index = 0;
+    // int scroll_offset = 0;
 
-    // Init render target
-    C3D_RenderTarget* bottom = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
-    if (bottom == NULL) {
-        log_debug("Failed initializing bottom screen for rendering!");
-        return 0;
-    }
+    // // Init render target
+    // C3D_RenderTarget* bottom = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
+    // if (bottom == NULL) {
+    //     log_debug("Failed initializing bottom screen for rendering!");
+    //     return 0;
+    // }
 
-    // Initialize text buffer
-    C2D_TextBuf buf = C2D_TextBufNew(4096); // glyph buffer
+    // // Initialize text buffer
+    // C2D_TextBuf buf = C2D_TextBufNew(4096); // glyph buffer
 
-    // Load font
-    // C2D_Font font = C2D_FontLoadSystem(CFG_REGION_USA);
-    // C2D_Font font = C2D_FontLoadFromMem(&font, 96*13); // system font
-    // or load a custom font:
-    C2D_Font font = C2D_FontLoad("sdmc:/monogram.bcfnt"); // TODO: Inject this into the binary?
+    // // Load font
+    // // C2D_Font font = C2D_FontLoadSystem(CFG_REGION_USA);
+    // // C2D_Font font = C2D_FontLoadFromMem(&font, 96*13); // system font
+    // // or load a custom font:
+    // C2D_Font font = C2D_FontLoad("sdmc:/monogram.bcfnt"); // TODO: Inject this into the binary?
 
-    float GRID_CELL_GAP_W = (BOTTOM_SCREEN_WIDTH - (GRID_CELL_W * GRID_COLS)) / (GRID_COLS + 1);
-    float GRID_CELL_GAP_H = (BOTTOM_SCREEN_HEIGHT - GRID_HEADER_H - (GRID_CELL_H * GRID_VISIBLE_ROWS)) / (GRID_VISIBLE_ROWS + 1);
+    // float GRID_CELL_GAP_W = (BOTTOM_SCREEN_WIDTH - (GRID_CELL_W * GRID_COLS)) / (GRID_COLS + 1);
+    // float GRID_CELL_GAP_H = (BOTTOM_SCREEN_HEIGHT - GRID_HEADER_H - (GRID_CELL_H * GRID_VISIBLE_ROWS)) / (GRID_VISIBLE_ROWS + 1);
 
     while(true) {
 
         aptMainLoop();
+        hidScanInput();
+        u32 kDown = hidKeysDown();
         
-        switch (GetState()) {
-            case STATE_NONE:
-                log_debug("Invalid state reached");
-                svcBreak(USERBREAK_USER);
-                break;
-            case STATE_BACKGROUND:\
-                // We want to continue running in the background to handle APT events, such as shutdown
-                continue;
-            case STATE_WAIT_TO_REGISTER:
-                bool registered = 0;
-                APT_IsRegistered(APPID_APPLICATION, &registered);
+        if (kDown == 0x00) { // If no keys were pressed and it's not the first run, skip this flow
+            continue;
+        }
 
-                if (registered) {
-                    log_debug("Is App Registered %d", registered);
-                    log_debug("Terminating GFX");
+        log_debug("Button press 0x%lx", kDown);
+        printf("Button press 0x%lx\n", kDown);
 
-                    printf("Is App Registered %d\n", registered);
-                    printf("Terminating GFX\n");
+        // switch (GetState()) {
+        //     case STATE_NONE:
+        //         log_debug("Invalid state reached");
+        //         svcBreak(USERBREAK_USER);
+        //         break;
+        //     case STATE_BACKGROUND:
+        //         // We want to continue running in the background to handle APT events, such as shutdown
+        //         continue;
+        //     case STATE_WAIT_TO_REGISTER:
+        //         bool registered = 0;
+        //         APT_IsRegistered(APPID_APPLICATION, &registered);
 
-                    // Terminate gfx
-                    gfxExit();
+        //         if (registered) {
+        //             log_debug("Is App Registered %d", registered);
+        //             log_debug("Terminating GFX");
 
-                    log_debug("Waking Up Application");
-                    printf("Waking Up Application\n");
+        //             printf("Is App Registered %d\n", registered);
+        //             printf("Terminating GFX\n");
 
-                    // Waking up application
-                    temp_res = APT_WakeupApplication();
-                    if (R_FAILED(temp_res)) {
-                        print_error_code_verbose("APT_WakeupApplication", temp_res);
-                        break;
-                    } else {
-                        log_debug("Successfully ran APT_WakeupApplication");
-                        printf("Successfully ran APT_WakeupApplication\n");
+        //             // Terminate gfx
+        //             gfxExit();
 
-                        SetState(STATE_BACKGROUND);
-                    }
-                }
-            case STATE_FOREGROUND:
-                hidScanInput();
-                u32 kDown = hidKeysDown();
+        //             log_debug("Waking Up Application");
+        //             printf("Waking Up Application\n");
+
+        //             // Waking up application
+        //             temp_res = APT_WakeupApplication();
+        //             if (R_FAILED(temp_res)) {
+        //                 print_error_code_verbose("APT_WakeupApplication", temp_res);
+        //                 break;
+        //             } else {
+        //                 log_debug("Successfully ran APT_WakeupApplication");
+        //                 printf("Successfully ran APT_WakeupApplication\n");
+
+        //                 SetState(STATE_BACKGROUND);
+        //             }
+        //         }
+        //     case STATE_FOREGROUND:
+        //         hidScanInput();
+        //         u32 kDown = hidKeysDown();
                 
-                if (kDown == 0x00 && !is_first_run) { // If no keys were pressed and it's not the first run, skip this flow
-                    break;
-                }
+        //         if (kDown == 0x00 && !is_first_run) { // If no keys were pressed and it's not the first run, skip this flow
+        //             break;
+        //         }
 
-                is_first_run = false;
+        //         is_first_run = false;
 
-                log_debug("Button press 0x%lx", kDown);
-                printf("Button press 0x%lx\n", kDown);
+        //         log_debug("Button press 0x%lx", kDown);
+        //         printf("Button press 0x%lx\n", kDown);
 
-                // Handle kDown
-                switch (kDown) {
-                    case KEY_DDOWN: // Go down in menu
-                        selected_game_index = MIN(selected_game_index + GRID_COLS, (int)games_counter - 1);
-                        break;
-                    case KEY_DUP: // Go up in menu
-                        selected_game_index = MAX(selected_game_index - GRID_COLS, 0);
-                        break;
-                    case KEY_DLEFT:
-                        selected_game_index = MAX(selected_game_index - 1, 0);
-                        break;
-                    case KEY_DRIGHT:
-                        selected_game_index = MIN(selected_game_index + 1, (int)games_counter - 1);
-                        break;
-                    case KEY_START: // Turn off console
-                        log_debug("Initiating shutdown due to start button press");
-                        hardwareTimerSleep(2); // Give the console a moment to flush the log
-                        ptmSysmInit();
-                        PTMSYSM_ShutdownAsync(0);
-                        break;
-                    case KEY_A: // Launch selected game
-                        printf("Launching title id %#018llx\n", games[selected_game_index]->titleId);
-                        log_debug("Launching title id %#018llx", games[selected_game_index]->titleId);
+        //         // Handle kDown
+        //         switch (kDown) {
+        //             case KEY_DDOWN: // Go down in menu
+        //                 selected_game_index = MIN(selected_game_index + GRID_COLS, (int)games_counter - 1);
+        //                 break;
+        //             case KEY_DUP: // Go up in menu
+        //                 selected_game_index = MAX(selected_game_index - GRID_COLS, 0);
+        //                 break;
+        //             case KEY_DLEFT:
+        //                 selected_game_index = MAX(selected_game_index - 1, 0);
+        //                 break;
+        //             case KEY_DRIGHT:
+        //                 selected_game_index = MIN(selected_game_index + 1, (int)games_counter - 1);
+        //                 break;
+        //             case KEY_START: // Turn off console
+        //                 log_debug("Initiating shutdown due to start button press");
+        //                 hardwareTimerSleep(2); // Give the console a moment to flush the log
+        //                 ptmSysmInit();
+        //                 PTMSYSM_ShutdownAsync(0);
+        //                 break;
+        //             case KEY_A: // Launch selected game
+        //                 printf("Launching title id %#018llx\n", games[selected_game_index]->titleId);
+        //                 log_debug("Launching title id %#018llx", games[selected_game_index]->titleId);
 
-                        titleGame *selectedTitleGame = games[selected_game_index];
+        //                 titleGame *selectedTitleGame = games[selected_game_index];
     
-                        FS_ProgramInfo selectedGameProgramInfo = {
-                            .programId = selectedTitleGame->titleId,
-                            .mediaType = selectedTitleGame->mediaType
-                        };
+        //                 FS_ProgramInfo selectedGameProgramInfo = {
+        //                     .programId = selectedTitleGame->titleId,
+        //                     .mediaType = selectedTitleGame->mediaType
+        //                 };
 
-                        // Start game using apt:startapplication
-                        {
-                            log_debug("Calling APT_PrepareToStartApplication");
-                            printf("Calling APT_PrepareToStartApplication\n");
-                            temp_res = APT_PrepareToStartApplication(&selectedGameProgramInfo, 0x00);
-                            if (R_FAILED(temp_res)) {
-                                print_error_code_verbose("APT_PrepareToStartApplication", temp_res);
-                                printf("Continuing even tho error\n");
-                                // break;
-                            } else {
-                                printf("Successfully ran APT_PrepareToStartApplication\n");
-                                log_debug("Successfully ran APT_PrepareToStartApplication");
-                            }
+        //                 // Start game using apt:startapplication
+        //                 {
+        //                     log_debug("Calling APT_PrepareToStartApplication");
+        //                     printf("Calling APT_PrepareToStartApplication\n");
+        //                     temp_res = APT_PrepareToStartApplication(&selectedGameProgramInfo, 0x00);
+        //                     if (R_FAILED(temp_res)) {
+        //                         print_error_code_verbose("APT_PrepareToStartApplication", temp_res);
+        //                         printf("Continuing even tho error\n");
+        //                         // break;
+        //                     } else {
+        //                         printf("Successfully ran APT_PrepareToStartApplication\n");
+        //                         log_debug("Successfully ran APT_PrepareToStartApplication");
+        //                     }
 
-                            u8 parameter[0x300] = {0};
+        //                     u8 parameter[0x300] = {0};
                             
-                            log_debug("Calling APT_StartApplication");
-                            printf("Calling APT_StartApplication\n");
-                            temp_res = APT_StartApplication(0x300, 0x00, true, &parameter, NULL);
-                            if (R_FAILED(temp_res)) {
-                                print_error_code_verbose("APT_StartApplication", temp_res);
-                                break;
-                            } else {
-                                printf("Successfully ran APT_StartApplication\n");
-                                log_debug("Successfully ran APT_StartApplication");
-                            }
+        //                     log_debug("Calling APT_StartApplication");
+        //                     printf("Calling APT_StartApplication\n");
+        //                     temp_res = APT_StartApplication(0x300, 0x00, true, &parameter, NULL);
+        //                     if (R_FAILED(temp_res)) {
+        //                         print_error_code_verbose("APT_StartApplication", temp_res);
+        //                         break;
+        //                     } else {
+        //                         printf("Successfully ran APT_StartApplication\n");
+        //                         log_debug("Successfully ran APT_StartApplication");
+        //                     }
 
-                            SetState(STATE_WAIT_TO_REGISTER);
-                        }
+        //                     SetState(STATE_WAIT_TO_REGISTER);
+        //                 }
 
-                        // I used to have aptWaitForWakeUp(TR_ENABLE) over here, which kinda helped the shutdown to work
-                        // while pomelo is in the background, I didn't see it get triggered, instead the regular flow just worked
-                        // Maybe the aptWaitForWakeUp caused the regular flow to work while in the background
+        //                 // I used to have aptWaitForWakeUp(TR_ENABLE) over here, which kinda helped the shutdown to work
+        //                 // while pomelo is in the background, I didn't see it get triggered, instead the regular flow just worked
+        //                 // Maybe the aptWaitForWakeUp caused the regular flow to work while in the background
 
-                        break; // Break from handleStart case
-                }
+        //                 break; // Break from handleStart case
+        //         }
 
-                // Auto-scroll to keep selection visible
-                {
-                    int sel_row = selected_game_index / GRID_COLS;
-                    if (sel_row < scroll_offset)
-                        scroll_offset = sel_row;
-                    if (sel_row >= scroll_offset + GRID_VISIBLE_ROWS)
-                        scroll_offset = sel_row - GRID_VISIBLE_ROWS + 1;
-                }
+                // // Auto-scroll to keep selection visible
+                // {
+                //     int sel_row = selected_game_index / GRID_COLS;
+                //     if (sel_row < scroll_offset)
+                //         scroll_offset = sel_row;
+                //     if (sel_row >= scroll_offset + GRID_VISIBLE_ROWS)
+                //         scroll_offset = sel_row - GRID_VISIBLE_ROWS + 1;
+                // }
                 
                 // // Render UI using citro2d
                 // {
@@ -642,7 +646,7 @@ int main(int argc, char* argv[]) {
                 //     C3D_FrameEnd(0);
                 //     log_debug("Finished rendering");
                 // }
-            }
+            // }
         }
 
     gfxExit();
