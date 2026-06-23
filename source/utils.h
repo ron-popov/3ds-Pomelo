@@ -1,5 +1,4 @@
-#ifndef POMELO_UTILS
-#define POMELO_UTILS
+#pragma once
 
 
 #include <3ds.h>
@@ -8,10 +7,11 @@
 
 #include "log.h"
 #include "consts.h"
+#include "draw.h"
 
-// static inline u32 rgb_to_C2D_Color32(u32 color) {
-//     return C2D_Color32(get_red(color), get_blue(color), get_green(color), 0xff);
-// }
+static inline u32 rgb_to_C2D_Color32(u32 color) {
+    return C2D_Color32(get_red(color), get_blue(color), get_green(color), 0xff);
+}
 
 __attribute__((used)) static Tex3DS_SubTexture icon_subtex = {
     .width  = 48,
@@ -64,5 +64,3 @@ bool isRunningInEmulator(void);
 void systemModelName(u8 systemModel, char* nameOut);
 
 void logMemInfo();
-
-#endif
