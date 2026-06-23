@@ -42,7 +42,7 @@ bool loadTitleGame(u64 titleId, FS_MediaType mediaType, titleGame* titleGameOut)
     SMDH *smdh = malloc(sizeof(SMDH));
     
     log_debug("Get name of title %#018llx (media 0x%x)", titleId, mediaType);
-    printf("Get name of title %#018llx (media 0x%x)\n", titleId, mediaType);
+    // printf("Get name of title %#018llx (media 0x%x)\n", titleId, mediaType);
 
     const FS_ProgramInfo archiveProgramInfo = {
         .programId = titleId, 
@@ -50,7 +50,7 @@ bool loadTitleGame(u64 titleId, FS_MediaType mediaType, titleGame* titleGameOut)
     };
     FS_Path archivePath = { PATH_BINARY, sizeof(archiveProgramInfo), (void*)&archiveProgramInfo };
 
-    log_debug("Opening FSUSER archive");
+    // log_debug("Opening FSUSER archive");
 
     FS_Archive archive;
     Result res = FSUSER_OpenArchive(&archive, ARCHIVE_SAVEDATA_AND_CONTENT, archivePath);
@@ -81,7 +81,7 @@ bool loadTitleGame(u64 titleId, FS_MediaType mediaType, titleGame* titleGameOut)
 
     Handle fileHandle;
 
-    log_debug("Opening FSUSER file");
+    // log_debug("Opening FSUSER file");
 
     res = FSUSER_OpenFile(&fileHandle, archive, filePath, FS_OPEN_READ, 0);
     if (R_FAILED(res)) {
@@ -90,7 +90,7 @@ bool loadTitleGame(u64 titleId, FS_MediaType mediaType, titleGame* titleGameOut)
         goto cleanup_fail;
     }
 
-    log_debug("Reading FSUSER file");
+    // log_debug("Reading FSUSER file");
 
     // Read the SMDH data
     u32 bytesRead;
@@ -122,13 +122,13 @@ bool loadTitleGame(u64 titleId, FS_MediaType mediaType, titleGame* titleGameOut)
     // Remove non ascii chars
     remove_non_ascii(titleGameOut->name);
 
-    log_debug("Initiating tex");
+    // log_debug("Initiating tex");
 
     // PICA200 requires power-of-two dimensions, so allocate 64x64 for a 48x48 icon
     if (!C3D_TexInit(&titleGameOut->large_icon_tex, 64, 64, GPU_RGB565))
         goto cleanup_fail;
 
-    log_debug("Reencoding texture");
+    // log_debug("Reencoding texture");
 
     // The icon is a 48px by 48px morton encoded icon, however, c3d can only have powers of two texture
     // Which means we need to convert the 48px morton icon to a 64px morton texture
@@ -136,7 +136,7 @@ bool loadTitleGame(u64 titleId, FS_MediaType mediaType, titleGame* titleGameOut)
     uint16_t* reencoded_texture_data = linearAlloc(64 * 64 * sizeof(uint16_t));
     copy_icon_to_tex64(reencoded_texture_data, (uint16_t*)smdh->large_icon_rgb565);
 
-    log_debug("Copying tex content");
+    // log_debug("Copying tex content");
 
     // Load the data into the texture
     C3D_TexUpload(&titleGameOut->large_icon_tex, reencoded_texture_data);
@@ -144,11 +144,11 @@ bool loadTitleGame(u64 titleId, FS_MediaType mediaType, titleGame* titleGameOut)
     linearFree(reencoded_texture_data);
 
     // Flush tex icon
-    log_debug("Flushing tex");
+    // log_debug("Flushing tex");
     C3D_TexFlush(&titleGameOut->large_icon_tex);
 
     // Don't blur
-    log_debug("Setting filter to tex");
+    // log_debug("Setting filter to tex");
     C3D_TexSetFilter(&titleGameOut->large_icon_tex, GPU_NEAREST, GPU_NEAREST);
 
     free(smdh);

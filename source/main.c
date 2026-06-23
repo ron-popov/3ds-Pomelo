@@ -27,7 +27,7 @@ u32 __ctru_linear_heap_size = 0xb64000;
 static aptHookCookie homemenuAptHookCookie;
 static PrintConsole topScreen;
 
-bool loadTitles(FS_MediaType mediaType, titleGame** games, u8* games_counter) {
+bool loadTitles(FS_MediaType mediaType, u8 maxTitleCount, titleGame** games, u8* games_counter) {
     Result temp_res;
 
     log_debug("Iterating over titles (media type 0x%x)", mediaType);
@@ -35,12 +35,12 @@ bool loadTitles(FS_MediaType mediaType, titleGame** games, u8* games_counter) {
 
     // Get list of installed titles
     u32 titles_found_count = 0;
-    u64 title_ids[128];
-    temp_res = AM_GetTitleList(&titles_found_count, mediaType, 128, title_ids);
+    u64* title_ids = malloc(maxTitleCount * sizeof(u64));
+    temp_res = AM_GetTitleList(&titles_found_count, mediaType, maxTitleCount, title_ids);
     if (temp_res != 0) {
         log_debug("AM_GetTitleList Failed, Result 0x%lx", temp_res);
         print_error_code_verbose("AM_GetTitleList", temp_res);
-        return false;
+        goto error;
     }
 
     log_debug("Found %lu title ids", titles_found_count);
@@ -78,6 +78,10 @@ bool loadTitles(FS_MediaType mediaType, titleGame** games, u8* games_counter) {
     }
 
     return true;
+
+    error:
+    free(title_ids);
+    return false;
 }
 
 /// Main Function
@@ -247,9 +251,24 @@ int main(int argc, char* argv[]) {
         } 
     }
 
-    if (!loadTitles(MEDIATYPE_NAND, (titleGame**)&games, &games_counter)) {
+
+    // Load the games into the games list
+    if (SHOULD_ITERATE_GAMECARD && !loadTitles(MEDIATYPE_GAME_CARD, 1, (titleGame**)&games, &games_counter)) {
+        log_debug("Failed iterating over GAMECARD titles, exiting");
+        printf("Failed iterating over GAMECARD titles, exiting\n");
+        return 0;
+    }
+
+    if (SHOULD_ITERATE_NAND && !loadTitles(MEDIATYPE_NAND, 128, (titleGame**)&games, &games_counter)) {
         log_debug("Failed iterating over NAND titles, exiting");
         printf("Failed iterating over NAND titles, exiting\n");
+        return 0;
+    }
+
+
+    if (SHOULD_ITERATE_SDCARD && !loadTitles(MEDIATYPE_SD, 128, (titleGame**)&games, &games_counter)) {
+        log_debug("Failed iterating over SDCARD titles, exiting");
+        printf("Failed iterating over SDCARD titles, exiting\n");
         return 0;
     }
 
@@ -435,7 +454,7 @@ int main(int argc, char* argv[]) {
 
         gspWaitForVBlank();
         aptMainLoop();
-        
+
         switch (GetState()) {
             case STATE_NONE:
                 log_debug("Invalid state reached");
@@ -482,9 +501,6 @@ int main(int argc, char* argv[]) {
                 }
 
                 is_first_run = false;
-
-                log_debug("Button press 0x%lx", kDown);
-                printf("Button press 0x%lx\n", kDown);
 
                 // Handle kDown
                 switch (kDown) {
@@ -589,7 +605,7 @@ int main(int argc, char* argv[]) {
                     // Draw grid of cells, not including icons, just the background color of the cells
                     for (int grid_x = 0; grid_x < GRID_COLS; grid_x++) {
                         for (int grid_y = 0; grid_y < GRID_VISIBLE_ROWS; grid_y++) {
-                            int game_index = grid_y * GRID_COLS + grid_x;
+                            int game_index = (grid_y + scroll_offset) * GRID_COLS + grid_x;
 
                             if (game_index >= games_counter)
                                 break;
