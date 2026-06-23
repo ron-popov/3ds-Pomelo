@@ -27,6 +27,59 @@ u32 __ctru_linear_heap_size = 0xb64000;
 static aptHookCookie homemenuAptHookCookie;
 static PrintConsole topScreen;
 
+bool loadTitles(FS_MediaType mediaType, titleGame** games, u8* games_counter) {
+    Result temp_res;
+
+    log_debug("Iterating over titles (media type 0x%x)", mediaType);
+    printf("Iterating over games (media type 0x%x)\n", mediaType);
+
+    // Get list of installed titles
+    u32 titles_found_count = 0;
+    u64 title_ids[128];
+    temp_res = AM_GetTitleList(&titles_found_count, mediaType, 128, title_ids);
+    if (temp_res != 0) {
+        log_debug("AM_GetTitleList Failed, Result 0x%lx", temp_res);
+        print_error_code_verbose("AM_GetTitleList", temp_res);
+        return false;
+    }
+
+    log_debug("Found %lu title ids", titles_found_count);
+
+    // Get name of each title
+    for(u32 i = 0; i < titles_found_count; i++) {
+
+        if (*games_counter == MAX_TITLES){
+            printf("Finished games limit\n");
+            log_debug("Finished games limit");
+            return false;
+        }
+
+        if (!shouldDisplayTitle(title_ids[i])){
+            log_debug("Skipping title %#018llx", title_ids[i]);
+            continue;
+        }
+
+        titleGame* loadedTitleGame = malloc(sizeof(titleGame));
+
+        loadedTitleGame->titleId = title_ids[i];
+        loadedTitleGame->mediaType = mediaType;
+        strncpy(loadedTitleGame->name, "", MAX_TITLE_NAME);
+
+        temp_res = loadTitleGame(title_ids[i], MEDIATYPE_NAND, loadedTitleGame);
+        if (temp_res) {
+            log_debug("Loaded name for title %#018llx : %s", loadedTitleGame->titleId, loadedTitleGame->name);
+
+            games[*games_counter] = loadedTitleGame;
+            (*games_counter)++;
+
+        } else {
+            log_debug("%02lu nand title %#018llx - failed to get name", i, title_ids[i]);
+        }
+    }
+
+    return true;
+}
+
 /// Main Function
 int main(int argc, char* argv[]) {
 
@@ -194,155 +247,155 @@ int main(int argc, char* argv[]) {
         } 
     }
 
-    // Iterate over gamecard games - single one
-    if (SHOULD_ITERATE_GAMECARD) {
-        log_debug("Iterating over gamecard games");
-        printf("Iterating over gamecard games\n");
-
-        // Get gamecard title id
-        u32 title_found_gamecard = 0;
-        u64 gamecard_title_id[1];
-        temp_res = AM_GetTitleList(&title_found_gamecard, MEDIATYPE_GAME_CARD, 1, gamecard_title_id);
-        if (temp_res != 0) {
-            print_error_code_verbose("AM_GetTitleList GAMECARD", temp_res);
-        }
-
-        titleGame gamecardTitleGame = {
-            .titleId = 0x00,
-            .mediaType = MEDIATYPE_GAME_CARD,
-            .name = "Gamecard - No Game Inserted"
-        };
-
-        if (title_found_gamecard) {
-            log_debug("Gamecard has title id %#018llx", gamecard_title_id[0]);
-            gamecardTitleGame.titleId = gamecard_title_id[0];
-
-            // Get gamecard title name
-            temp_res = loadTitleGame(gamecard_title_id[0], MEDIATYPE_GAME_CARD, &gamecardTitleGame);
-
-            if (temp_res) {
-                log_debug("Found Gamecard title %#018llx - %s", gamecardTitleGame.titleId, gamecardTitleGame.name);
-            } else {
-                log_debug("Gamecard title %#018llx - failed to get name", gamecardTitleGame.titleId);
-            }
-        }
-
-        games[games_counter] = gamecardTitleGame;
-        games_counter++;
+    if (!loadTitles(MEDIATYPE_NAND, (titleGame**)&games, &games_counter)) {
+        log_debug("Failed iterating over NAND titles, exiting");
+        printf("Failed iterating over NAND titles, exiting\n");
+        return 0;
     }
+
+    // Iterate over gamecard games - single one
+    // if (SHOULD_ITERATE_GAMECARD) {
+    //     log_debug("Iterating over gamecard games");
+    //     printf("Iterating over gamecard games\n");
+
+    //     // Get gamecard title id
+    //     u32 title_found_gamecard = 0;
+    //     u64 gamecard_title_id[1];
+    //     temp_res = AM_GetTitleList(&title_found_gamecard, MEDIATYPE_GAME_CARD, 1, gamecard_title_id);
+    //     if (temp_res != 0) {
+    //         print_error_code_verbose("AM_GetTitleList GAMECARD", temp_res);
+    //     }
+
+    //     titleGame gamecardTitleGame = {
+    //         .titleId = 0x00,
+    //         .mediaType = MEDIATYPE_GAME_CARD,
+    //         .name = "Gamecard - No Game Inserted"
+    //     };
+
+    //     if (title_found_gamecard) {
+    //         log_debug("Gamecard has title id %#018llx", gamecard_title_id[0]);
+    //         gamecardTitleGame.titleId = gamecard_title_id[0];
+
+    //         // Get gamecard title name
+    //         temp_res = loadTitleGame(gamecard_title_id[0], MEDIATYPE_GAME_CARD, &gamecardTitleGame);
+
+    //         if (temp_res) {
+    //             log_debug("Found Gamecard title %#018llx - %s", gamecardTitleGame.titleId, gamecardTitleGame.name);
+    //         } else {
+    //             log_debug("Gamecard title %#018llx - failed to get name", gamecardTitleGame.titleId);
+    //         }
+    //     }
+
+    //     games[games_counter] = gamecardTitleGame;
+    //     games_counter++;
+    // }
 
     // Iterate over nand titles and fetch name of each installed title
-    if (SHOULD_ITERATE_NAND) {
-        log_debug("Iterating over NAND titles");
-        printf("Iterating over NAND games\n");
+    // if (SHOULD_ITERATE_NAND) {
+    //     log_debug("Iterating over NAND titles");
+    //     printf("Iterating over NAND games\n");
 
-        // Get list of installed titles
-        u32 titles_found_nand = 0;
-        u64 title_ids[128];
-        temp_res = AM_GetTitleList(&titles_found_nand, MEDIATYPE_NAND, 128, title_ids);
-        if (temp_res != 0) {
-            log_debug("AM_GetTitleList Failed, Result 0x%lx", temp_res);
-            print_error_code_verbose("AM_GetTitleList", temp_res);
-            return 0;
-        }
+    //     // Get list of installed titles
+    //     u32 titles_found_nand = 0;
+    //     u64 title_ids[128];
+    //     temp_res = AM_GetTitleList(&titles_found_nand, MEDIATYPE_NAND, 128, title_ids);
+    //     if (temp_res != 0) {
+    //         log_debug("AM_GetTitleList Failed, Result 0x%lx", temp_res);
+    //         print_error_code_verbose("AM_GetTitleList", temp_res);
+    //         return 0;
+    //     }
 
-        log_debug("Found %lu title ids in NAND", titles_found_nand);
+    //     log_debug("Found %lu title ids in NAND", titles_found_nand);
 
-        // Get name of each title
-        for(u32 i = 0; i < titles_found_nand; i++){
+    //     // Get name of each title
+    //     for(u32 i = 0; i < titles_found_nand; i++){
 
-            if (games_counter == MAX_TITLES){
-                printf("Finished games limit in nand\n");
-                log_debug("Finished games limit in nand");
-                break;
-            }
+    //         if (games_counter == MAX_TITLES){
+    //             printf("Finished games limit in nand\n");
+    //             log_debug("Finished games limit in nand");
+    //             break;
+    //         }
 
-            if (!shouldDisplayTitle(title_ids[i])){
-                log_debug("Skipping nand title %#018llx", title_ids[i]);
-                continue;
-            }
+    //         if (!shouldDisplayTitle(title_ids[i])){
+    //             log_debug("Skipping nand title %#018llx", title_ids[i]);
+    //             continue;
+    //         }
 
-            titleGame* nandTitleGame = malloc(sizeof(titleGame));
+    //         titleGame* nandTitleGame = malloc(sizeof(titleGame));
 
-            nandTitleGame->titleId = title_ids[i];
-            nandTitleGame->mediaType = MEDIATYPE_NAND;
-            strncpy(nandTitleGame->name, "", MAX_TITLE_NAME);
+    //         nandTitleGame->titleId = title_ids[i];
+    //         nandTitleGame->mediaType = MEDIATYPE_NAND;
+    //         strncpy(nandTitleGame->name, "", MAX_TITLE_NAME);
 
-            // titleGame nandTitleGame = {
-            //     .titleId = title_ids[i],
-            //     .mediaType = MEDIATYPE_NAND,
-            //     .name = ""
-            // };
+    //         temp_res = loadTitleGame(title_ids[i], MEDIATYPE_NAND, nandTitleGame);
+    //         if (temp_res) {
+    //             log_debug("Found NAND title %#018llx : %s", nandTitleGame->titleId, nandTitleGame->name);
 
-            temp_res = loadTitleGame(title_ids[i], MEDIATYPE_NAND, nandTitleGame);
-            if (temp_res) {
-                log_debug("Found NAND title %#018llx : %s", nandTitleGame->titleId, nandTitleGame->name);
+    //             games[games_counter] = nandTitleGame;
+    //             games_counter++;
 
-                games[games_counter] = nandTitleGame;
-                games_counter++;
+    //         } else {
+    //             log_debug("%02lu nand title %#018llx - failed to get name", i, title_ids[i]);
+    //         }
 
-            } else {
-                log_debug("%02lu nand title %#018llx - failed to get name", i, title_ids[i]);
-            }
+    //         printf("CmdBuf Usage (Before Split) %.2f\n", C3D_GetCmdBufUsage());
+    //         C3D_FrameSplit(0);
+    //         printf("CmdBuf Usage (After Split) %.2f\n", C3D_GetCmdBufUsage());
 
-            printf("CmdBuf Usage (Before Split) %.2f\n", C3D_GetCmdBufUsage());
-            C3D_FrameSplit(0);
-            printf("CmdBuf Usage (After Split) %.2f\n", C3D_GetCmdBufUsage());
-
-            if (games_counter == 1) {
-                break;
-            }
-        }
-    }
+    //         if (games_counter == 1) {
+    //             break;
+    //         }
+    //     }
+    // }
 
     // Iterate over sdcard titles and fetch name of each installed title
-    if (SHOULD_ITERATE_SDCARD) {
-        log_debug("Iterating over sdcard titles");
-        printf("Iterating over sdcard games\n");
+    // if (SHOULD_ITERATE_SDCARD) {
+    //     log_debug("Iterating over sdcard titles");
+    //     printf("Iterating over sdcard games\n");
 
-        // Get list of installed titles
-        u32 titles_found_sd = 0;
-        u64 title_ids[128];
-        temp_res = AM_GetTitleList(&titles_found_sd, MEDIATYPE_SD, 128, title_ids);
-        if (temp_res != 0) {
-            log_debug("AM_GetTitleList Failed, Result 0x%lx", temp_res);
-            print_error_code_verbose("AM_GetTitleList", temp_res);
-            return 0;
-        }
+    //     // Get list of installed titles
+    //     u32 titles_found_sd = 0;
+    //     u64 title_ids[128];
+    //     temp_res = AM_GetTitleList(&titles_found_sd, MEDIATYPE_SD, 128, title_ids);
+    //     if (temp_res != 0) {
+    //         log_debug("AM_GetTitleList Failed, Result 0x%lx", temp_res);
+    //         print_error_code_verbose("AM_GetTitleList", temp_res);
+    //         return 0;
+    //     }
 
-        log_debug("Found %lu title ids in SD", titles_found_sd);
+    //     log_debug("Found %lu title ids in SD", titles_found_sd);
 
-        // Get name of each title
-        for(u32 i = 0; i < titles_found_sd; i++){
+    //     // Get name of each title
+    //     for(u32 i = 0; i < titles_found_sd; i++){
 
-            if (games_counter == MAX_TITLES){
-                printf("Finished games limit in sdcard\n");
-                log_debug("Finished games limit in sdcard");
-                break;
-            }
+    //         if (games_counter == MAX_TITLES){
+    //             printf("Finished games limit in sdcard\n");
+    //             log_debug("Finished games limit in sdcard");
+    //             break;
+    //         }
 
-            if (!shouldDisplayTitle(title_ids[i])){
-                // log_debug("Skipping sdcard title %#018llx", title_ids[i]);
-                continue;
-            }
+    //         if (!shouldDisplayTitle(title_ids[i])){
+    //             // log_debug("Skipping sdcard title %#018llx", title_ids[i]);
+    //             continue;
+    //         }
 
-            titleGame sdTitleGame = {
-                .titleId = title_ids[i],
-                .mediaType = MEDIATYPE_SD,
-                .name = ""
-            };
-            temp_res = loadTitleGame(title_ids[i], MEDIATYPE_SD, &sdTitleGame);
-            if (temp_res) {
-                log_debug("Found SD title %#018llx : %s", sdTitleGame.titleId, sdTitleGame.name);
+    //         titleGame sdTitleGame = {
+    //             .titleId = title_ids[i],
+    //             .mediaType = MEDIATYPE_SD,
+    //             .name = ""
+    //         };
+    //         temp_res = loadTitleGame(title_ids[i], MEDIATYPE_SD, &sdTitleGame);
+    //         if (temp_res) {
+    //             log_debug("Found SD title %#018llx : %s", sdTitleGame.titleId, sdTitleGame.name);
 
-                games[games_counter] = sdTitleGame;
-                games_counter++;
+    //             games[games_counter] = sdTitleGame;
+    //             games_counter++;
 
-            } else {
-                log_debug("%02lu sdcard title %#018llx - failed to get name", i, title_ids[i]);
-            }
-        }
-    }
+    //         } else {
+    //             log_debug("%02lu sdcard title %#018llx - failed to get name", i, title_ids[i]);
+    //         }
+    //     }
+    // }
 
     log_debug("Finished iterating");
     printf("Finished iterating\n");
@@ -376,7 +429,7 @@ int main(int argc, char* argv[]) {
     float GRID_CELL_GAP_H = (BOTTOM_SCREEN_HEIGHT - GRID_HEADER_H - (GRID_CELL_H * GRID_VISIBLE_ROWS)) / (GRID_VISIBLE_ROWS + 1);
 
     while(true) {
-
+        
         gspWaitForVBlank();
         aptMainLoop();
         hidScanInput();
