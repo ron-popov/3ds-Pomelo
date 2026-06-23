@@ -58,9 +58,11 @@ void log_debug_hardware(const char* text) {
         
         // Step B: Write the actual log message, offset by the timestamp's length.
         // FS_WRITE_FLUSH is passed here to push BOTH writes to the physical SD card at once.
-        FSFILE_Write(fileHandle, &bytesWritten, fileSize + timeLength, 
+        FSFILE_Write(fileHandle, &bytesWritten, fileSize + timeLength,
                      (const void*)text_with_newline, textLength + 1, FS_WRITE_FLUSH);
     }
+
+    if (fileHandle) FSFILE_Close(fileHandle);
 
     cleanup:
     free(text_with_newline);

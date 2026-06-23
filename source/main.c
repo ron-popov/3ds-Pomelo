@@ -452,6 +452,7 @@ int main(int argc, char* argv[]) {
 
     while(true) {
 
+        gspWaitForVBlank();
         aptMainLoop();
         hidScanInput();
         u32 kDown = hidKeysDown();
