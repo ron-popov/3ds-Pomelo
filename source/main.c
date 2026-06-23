@@ -581,7 +581,7 @@ int main(int argc, char* argv[]) {
                 
                 // Render UI using citro2d
                 {
-                    log_debug("Starting to render");
+                    // log_debug("Starting to render");
 
                     // Render the scene 
                     C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
@@ -597,7 +597,7 @@ int main(int argc, char* argv[]) {
 
                     // Draw header text
                     C2D_Text header_text;
-                    C2D_TextFontParse(&header_text, font, buf, "Mario Kart 7");
+                    C2D_TextFontParse(&header_text, font, buf, games[selected_game_index]->name);
                     C2D_TextOptimize(&header_text);
 
                     C2D_DrawText(&header_text, C2D_WithColor, GRID_CELL_GAP_W + 2, 8, 0, TEXT_HEADER_SCALE, TEXT_HEADER_SCALE, rgb_to_C2D_Color32(COL_TEXT));
@@ -633,7 +633,7 @@ int main(int argc, char* argv[]) {
 
 
                     C3D_FrameEnd(0);
-                    log_debug("Finished rendering");
+                    // log_debug("Finished rendering");
                 }
             }
         }
