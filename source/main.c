@@ -17,15 +17,135 @@
 #include "consts.h"
 #include "apt_callbacks.h"
 
-#define MIN(a,b) (((a)<(b))?(a):(b))
-#define MAX(a,b) (((a)>(b))?(a):(b))
-
 // Homemenu heap size is different from regular app heap size
 u32 __ctru_heap_size        = 0x304000;
 u32 __ctru_linear_heap_size = 0xb64000;
 
 static aptHookCookie homemenuAptHookCookie;
 static PrintConsole topScreen;
+
+// Get the name of a title, from the "icon" file in the ExeFS section of the title
+bool loadTitleMetadata(u64 titleId, FS_MediaType mediaType, titleGame* titleGameOut) {
+    SMDH *smdh = malloc(sizeof(SMDH));
+    
+    log_debug("Get name of title %#018llx (media 0x%x)", titleId, mediaType);
+    // printf("Get name of title %#018llx (media 0x%x)\n", titleId, mediaType);
+
+    const FS_ProgramInfo archiveProgramInfo = {
+        .programId = titleId, 
+        .mediaType = mediaType
+    };
+    FS_Path archivePath = { PATH_BINARY, sizeof(archiveProgramInfo), (void*)&archiveProgramInfo };
+
+    // log_debug("Opening FSUSER archive");
+
+    FS_Archive archive;
+    Result res = FSUSER_OpenArchive(&archive, ARCHIVE_SAVEDATA_AND_CONTENT, archivePath);
+    if (R_FAILED(res)) {
+        print_error_code_verbose("FSUSER_OpenArchive", res);
+        goto cleanup_fail;
+    }
+
+    // printf("Ran FSUSER_OpenArchive\n");
+
+    // This is a comment from mikage
+    // a new path:
+        // * Word 0: NCCH (0) or save data (1)
+        // * Word 1: TMD content index or NCSD partition index
+        // * Word 2: 0 for romfs (and for save data), 1 for exefs code section, 2 for exefs non-code section
+        // * Words 3+4: ExeFS section name
+
+    // Open the SMDH (stored as exefs:/icon)
+    // Build the file path (file that inside the archive)
+    u32 filePathData[5] = {0};
+    filePathData[0] = 0x00;             // is_save_data
+    filePathData[1] = 0x00;             // content_id (in mikage), also known as NCSDPartitionId
+    filePathData[2] = 0x02;             // sub_file_type, used by the function NCCHOpenExeFSSection
+    filePathData[3] = 0x6e6f6369;       // name of the section to read (this spells "icon")
+    filePathData[4] = 0x00000000;       // name of the section to read (part2)
+
+    FS_Path filePath = { PATH_BINARY, sizeof(filePathData), filePathData };
+
+    Handle fileHandle;
+
+    // log_debug("Opening FSUSER file");
+
+    res = FSUSER_OpenFile(&fileHandle, archive, filePath, FS_OPEN_READ, 0);
+    if (R_FAILED(res)) {
+        print_error_code_verbose("FSUSER_OpenFile",  res);
+        FSUSER_CloseArchive(archive);
+        goto cleanup_fail;
+    }
+
+    // log_debug("Reading FSUSER file");
+
+    // Read the SMDH data
+    u32 bytesRead;
+    res = FSFILE_Read(fileHandle, &bytesRead, 0, smdh, sizeof(SMDH));
+    FSFILE_Close(fileHandle);
+    FSUSER_CloseArchive(archive);
+
+    if (R_FAILED(res)) {
+        goto cleanup_fail;
+    }
+
+    // Validate SMDH magic ("SMDH")
+    if (smdh->magic != 0x48444D53) {
+        printf("File magic does not match SMDH\n");
+        goto cleanup_fail;
+    }
+
+    // Pick language (use English = 1, or CFG_LANGUAGE_EN)
+    u8 lang = 1; // CFG_LANGUAGE_EN
+    
+    // Clean the name before we override it
+    memset(titleGameOut->name, 0, sizeof(titleGameOut->name)); 
+
+    // The short description is a UTF-16 string (0x40 u16 chars)
+    // Convert to UTF-8 for easier use
+    utf16_to_utf8((uint8_t*)titleGameOut->name, smdh->titles[lang].shortDescription, MAX_TITLE_NAME - 1);
+    titleGameOut->name[MAX_TITLE_NAME - 1] = '\0';
+
+    // Remove non ascii chars
+    remove_non_ascii(titleGameOut->name);
+
+    // log_debug("Initiating tex");
+
+    // PICA200 requires power-of-two dimensions, so allocate 64x64 for a 48x48 icon
+    if (!C3D_TexInit(&titleGameOut->large_icon_tex, 64, 64, GPU_RGB565))
+        goto cleanup_fail;
+
+    // log_debug("Reencoding texture");
+
+    // The icon is a 48px by 48px morton encoded icon, however, c3d can only have powers of two texture
+    // Which means we need to convert the 48px morton icon to a 64px morton texture
+    // This function takes care of that
+    uint16_t* reencoded_texture_data = linearAlloc(64 * 64 * sizeof(uint16_t));
+    copy_icon_to_tex64(reencoded_texture_data, (uint16_t*)smdh->large_icon_rgb565);
+
+    // log_debug("Copying tex content");
+
+    // Load the data into the texture
+    C3D_TexUpload(&titleGameOut->large_icon_tex, reencoded_texture_data);
+
+    linearFree(reencoded_texture_data);
+
+    // Flush tex icon
+    // log_debug("Flushing tex");
+    C3D_TexFlush(&titleGameOut->large_icon_tex);
+
+    // Don't blur
+    // log_debug("Setting filter to tex");
+    C3D_TexSetFilter(&titleGameOut->large_icon_tex, GPU_NEAREST, GPU_NEAREST);
+
+    free(smdh);
+    return true;
+
+    cleanup_fail:
+    log_debug("Something failed during getTitleName");
+    free(smdh);
+    return false;
+}
 
 bool loadTitles(FS_MediaType mediaType, u8 maxTitleCount, titleGame** games, u8* games_counter) {
     Result temp_res;
@@ -65,7 +185,7 @@ bool loadTitles(FS_MediaType mediaType, u8 maxTitleCount, titleGame** games, u8*
         loadedTitleGame->mediaType = mediaType;
         strncpy(loadedTitleGame->name, "", MAX_TITLE_NAME);
 
-        temp_res = loadTitleGame(title_ids[i], mediaType, loadedTitleGame);
+        temp_res = loadTitleMetadata(title_ids[i], mediaType, loadedTitleGame);
         if (temp_res) {
             log_debug("Loaded name for title %#018llx : %s", loadedTitleGame->titleId, loadedTitleGame->name);
 
@@ -259,16 +379,15 @@ int main(int argc, char* argv[]) {
         return 0;
     }
 
-    if (SHOULD_ITERATE_NAND && !loadTitles(MEDIATYPE_NAND, 128, (titleGame**)&games, &games_counter)) {
-        log_debug("Failed iterating over NAND titles, exiting");
-        printf("Failed iterating over NAND titles, exiting\n");
-        return 0;
-    }
-
-
     if (SHOULD_ITERATE_SDCARD && !loadTitles(MEDIATYPE_SD, 128, (titleGame**)&games, &games_counter)) {
         log_debug("Failed iterating over SDCARD titles, exiting");
         printf("Failed iterating over SDCARD titles, exiting\n");
+        return 0;
+    }
+
+    if (SHOULD_ITERATE_NAND && !loadTitles(MEDIATYPE_NAND, 128, (titleGame**)&games, &games_counter)) {
+        log_debug("Failed iterating over NAND titles, exiting");
+        printf("Failed iterating over NAND titles, exiting\n");
         return 0;
     }
 

@@ -9,9 +9,8 @@
 #include "consts.h"
 #include "draw.h"
 
-static inline u32 rgb_to_C2D_Color32(u32 color) {
-    return C2D_Color32(get_red(color), get_blue(color), get_green(color), 0xff);
-}
+#define MIN(a,b) (((a)<(b))?(a):(b))
+#define MAX(a,b) (((a)>(b))?(a):(b))
 
 __attribute__((used)) static Tex3DS_SubTexture icon_subtex = {
     .width  = 48,
@@ -48,6 +47,16 @@ typedef struct {
     C3D_Tex large_icon_tex;
 } titleGame;
 
+
+
+static inline u32 rgb_to_C2D_Color32(u32 color) {
+    return C2D_Color32(get_red(color), get_blue(color), get_green(color), 0xff);
+}
+
+static void copy_icon_to_tex64(uint16_t* dst, const uint16_t* src);
+
+
+
 // Parses title names from the "icon" file in the ExeFS of the title
 bool loadTitleGame(u64 titleId, FS_MediaType mediaType, titleGame* titleGameOut);
 
@@ -64,3 +73,5 @@ bool isRunningInEmulator(void);
 void systemModelName(u8 systemModel, char* nameOut);
 
 void logMemInfo();
+
+void remove_non_ascii(char *str);
