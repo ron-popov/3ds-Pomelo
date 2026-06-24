@@ -12,14 +12,7 @@
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))
 
-__attribute__((used)) static Tex3DS_SubTexture icon_subtex = {
-    .width  = 48,
-    .height = 48,
-    .left   = 0.0f,
-    .top    = 1.0f,            // flipped: 3DS UVs are bottom-up
-    .right  = 48.0f / 64.0f,  // icon is 48px inside a 64px power-of-two tex
-    .bottom = 1.0f - (48.0f / 64.0f),
-};
+extern const Tex3DS_SubTexture icon_subtex;
 
 // Structs for parsing title names from
 typedef struct {
@@ -53,8 +46,8 @@ static inline u32 rgb_to_C2D_Color32(u32 color) {
     return C2D_Color32(get_red(color), get_blue(color), get_green(color), 0xff);
 }
 
-static void copy_icon_to_tex64(uint16_t* dst, const uint16_t* src);
 
+void copy_icon_to_tex64(uint16_t* dst, const uint16_t* src);
 
 
 // Parses title names from the "icon" file in the ExeFS of the title

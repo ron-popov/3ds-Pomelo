@@ -4,6 +4,15 @@
 #include "utils.h"
 #include "log.h"
 
+const Tex3DS_SubTexture icon_subtex = {
+    .width  = 48,
+    .height = 48,
+    .left   = 0.0f,
+    .top    = 1.0f,            // flipped: 3DS UVs are bottom-up
+    .right  = 48.0f / 64.0f,  // icon is 48px inside a 64px power-of-two tex
+    .bottom = 1.0f - (48.0f / 64.0f),
+};
+
 bool is_ascii_char(char c) {
     return (c >= 0x20 && c <= 0x7E);
 }
@@ -23,7 +32,7 @@ void remove_non_ascii(char *str) {
     *dst = '\0'; // Null-terminate the cleaned string
 }
 
-static void copy_icon_to_tex64(uint16_t* dst, const uint16_t* src) {
+void copy_icon_to_tex64(uint16_t* dst, const uint16_t* src) {
     // Both 48x48 and 64x64 use the same 8x8 Morton tile format; only the
     // tile grid differs (6x6 vs 8x8), so tiles can be copied directly.
     for (int ty = 0; ty < 8; ty++) {
