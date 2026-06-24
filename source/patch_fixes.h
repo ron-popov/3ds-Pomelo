@@ -1,3 +1,5 @@
+#pragma once
+
 // This strings is here to fix luma3ds loader trying to patch a homemenu code.bin
 // trying to do some memory replacements and failing
 // I reverse engineered it according to the patchCode function in luma3ds "loader"

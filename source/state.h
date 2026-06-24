@@ -1,5 +1,4 @@
-#ifndef POMELO_STATE
-#define POMELO_STATE
+#pragma once
 
 #include "log.h"
 
@@ -52,5 +51,3 @@ void SetState(enum HomemenuState newState) {
 
     state = newState;
 }
-
-#endif

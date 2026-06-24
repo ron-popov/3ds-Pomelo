@@ -304,21 +304,13 @@ int main(int argc, char* argv[]) {
             } 
         }
 
-        u64 titleIdsToLaunch[] = {
-            0x4013000001d02, 0x4013000001802, 0x4013000001a02, 0x4013000001502, 0x4013000001c02, 
-            0x4013000002702, 0x4013000001602, 0x4013000002002, 0x4013000003302, 0x4013000002d02, 
-            0x4013000002e02, 0x4013000002902, 0x4013000002f02, 0x4013000002602, 0x4013000002402, 
-            0x4013000003202, 0x4013000003402, 0x4013000003502, 0x4013000002b02, 0x4013000002c02, 
-            0x4013000002802
-        };
-
-        for (int i = 0; i < sizeof(titleIdsToLaunch) / sizeof(u64); i++) {
+        for (int i = 0; i < sizeof(TitleIdsToLaunch) / sizeof(u64); i++) {
             u32 proc_id_out = 0;
-            temp_res = NS_LaunchTitle(titleIdsToLaunch[i], 0x00, &proc_id_out);
+            temp_res = NS_LaunchTitle(TitleIdsToLaunch[i], 0x00, &proc_id_out);
             if (R_FAILED(temp_res)) {
-                log_debug("Failed launching system module %#018llx", titleIdsToLaunch[i]);
+                log_debug("Failed launching system module %#018llx", TitleIdsToLaunch[i]);
                 char *error_message = (char*)malloc(256);
-                sprintf(error_message, "launch required title (%#018llx)", titleIdsToLaunch[i]);
+                sprintf(error_message, "launch required title (%#018llx)", TitleIdsToLaunch[i]);
                 print_error_code_verbose(error_message, temp_res);
                 free(error_message);
             }
