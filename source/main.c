@@ -289,69 +289,14 @@ int main(int argc, char* argv[]) {
     // Start doing homemenu stuff - enumerating titles and their names
     titleGame* games[MAX_TITLES];
     u8 games_counter = 0;
-    
 
-    // Launch a bunch of titles required for the homescreen
-    // I took this list from the real home menu
-    {
-        log_debug("Launching system modules");
-        // Get handle to NS system module
-        // NS is used to initialize all sorts of modules the homemenu is supposed to launch
-        {
-            temp_res = nsInit();
-            if (temp_res != 0) {
-                print_error_code_verbose("nsInit", temp_res);
-            } 
-        }
 
-        for (int i = 0; i < sizeof(TitleIdsToLaunch) / sizeof(u64); i++) {
-            u32 proc_id_out = 0;
-            temp_res = NS_LaunchTitle(TitleIdsToLaunch[i], 0x00, &proc_id_out);
-            if (R_FAILED(temp_res)) {
-                log_debug("Failed launching system module %#018llx", TitleIdsToLaunch[i]);
-                char *error_message = (char*)malloc(256);
-                sprintf(error_message, "launch required title (%#018llx)", TitleIdsToLaunch[i]);
-                print_error_code_verbose(error_message, temp_res);
-                free(error_message);
-            }
-        }
-
-        log_debug("Finished launching system modules");
-
-        nsExit();
-    }
 
     // This must come after launching the titles, because one of the titles that is being launcher
     // is the InfraRed module, which HID requires, hidInit hangs if the IR module is not running
-    hidInit();
+    // hidInit();
 
-    // Run the "am" system module title, before getting it's handle
-    // It is used to iterate the installed titles
-    {
-        log_debug("Launching AM system module");
-        // Get handle to PM system module
-        // PM is used to initialize the AM module
-        {
-            // Initialize "Process Application Manager" system module
-            // It is useful for launching more titles / system modules
-            temp_res = pmAppInit();
-            if (temp_res != 0) {
-                print_error_code_verbose("pmappInit", temp_res);
-            } 
-        }
 
-        const FS_ProgramInfo amProgramInfo = {
-            .programId = TITLE_ID_SYSTEM_MODULE_AM_EU, 
-            .mediaType = MEDIATYPE_NAND
-        };
-
-        temp_res = PMAPP_LaunchTitle(&amProgramInfo, 0x00);
-        if (R_FAILED(temp_res)) {
-            print_error_code_verbose("launch application manager", temp_res);
-        }
-
-        pmAppExit();
-    }
 
     // Get handle to AM system module
     {

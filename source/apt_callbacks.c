@@ -63,12 +63,12 @@ void _aptDebug(int a, int b) {
     log_debug("APT Debug 0x%x 0x%x", a, b);
 }
 
-// Overriding __appInit to remove the hidInit from this section, full explanation next to hidInit call in "main"
-void __appInit(void)
-{
-    // Initialize services
-    srvInit();
-    fsInit();
-    archiveMountSdmc();
-    aptInit();
-}
+// // Overriding __appInit to remove the hidInit from this section, full explanation next to hidInit call in "main"
+// void __appInit(void)
+// {
+//     // Initialize services
+//     srvInit();
+//     fsInit();
+//     archiveMountSdmc();
+//     aptInit();
+// }

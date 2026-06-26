@@ -16,12 +16,15 @@ SystemControlInfo:
   RemasterVersion: 0
   StackSize: 0x4000
   Dependency:
-    ns: 0x0004013000008002
+    ns:   0x0004013000008002
     hwcd: 0x0004013000001c02
-    mvd: 0x0004013000001d02
-    dsp: 0x0004013000001802
-    nwm: 0x0004013000003102
-    soc: 0x0004013000001b02
+    mvd:  0x0004013000001d02
+    dsp:  0x0004013000001802
+    nwm:  0x0004013000003102
+    soc:  0x0004013000001b02
+    am:   0x0004013000001502
+    hid:  0x0004013000003302
+    
 
 AccessControlInfo:
   SystemMode: 64MB
