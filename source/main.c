@@ -513,6 +513,12 @@ int main(int argc, char* argv[]) {
                                 log_debug("Successfully ran APT_PrepareToStartApplication");
                             }
 
+                            // Clearing memory allocations of all games
+                            // Some games will hang during boot if this memory is not released
+                            for (int i = 0; i < games_counter; i++) {
+                                free(games[i]);
+                            }
+
                             u8 parameter[0x300] = {0};
                             
                             log_debug("Calling APT_StartApplication");
