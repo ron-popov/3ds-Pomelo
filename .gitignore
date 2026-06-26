@@ -9,3 +9,6 @@ build/
 aes_keys.txt
 *.bin
 .vscode
+.cache
+compile_commands.json
+.clangd
