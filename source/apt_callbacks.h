@@ -5,8 +5,6 @@
 #include <citro2d.h>
 #include <stddef.h>
 
-#include "log.h"
-#include "utils.h"
 
 void aptCallback(APT_HookType hook, void* param);
 void aptMessageCallback(void* user, NS_APPID sender, void* msg, size_t msgsize);

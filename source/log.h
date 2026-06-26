@@ -1,10 +1,6 @@
 #pragma once
 
 #include <3ds.h>
-#include <stdio.h>
-#include <string.h>
-#include <stdarg.h>
-#include <stdlib.h>
 
 
 void log_debug(const char* format, ...);

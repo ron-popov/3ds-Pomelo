@@ -1,6 +1,7 @@
 #pragma once
 
 #include "log.h"
+#include <string.h>
 
 // When adding a new state, note to also add it to GetStateName - that how the logger gets the name of the state
 enum HomemenuState {

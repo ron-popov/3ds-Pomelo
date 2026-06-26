@@ -1,5 +1,10 @@
 #include "log.h"
 
+#include <stdarg.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+
 #include "stb_sprintf.h"
 
 // Print debug messages

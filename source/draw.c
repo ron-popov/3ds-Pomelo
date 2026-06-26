@@ -1,7 +1,6 @@
 #include <citro2d.h>
 
 #include "draw.h"
-#include "custom_font.h"
 
 bool C2D_Pomelo_DrawRectangleSingleColor(float x, float y, float w, float h, u32 clr) {
     return C2D_DrawRectangle(x, y, 0, w, h, clr, clr, clr, clr);

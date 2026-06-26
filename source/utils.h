@@ -1,12 +1,12 @@
 #pragma once
 
 #include <3ds.h>
-#include <stdio.h>
-#include <string.h>
+#include <c2d/base.h>
+#include <tex3ds.h>
 
-#include "log.h"
 #include "consts.h"
 #include "draw.h"
+
 
 #define MIN(a,b) (((a)<(b))?(a):(b))
 #define MAX(a,b) (((a)>(b))?(a):(b))

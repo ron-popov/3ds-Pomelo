@@ -1,5 +1,6 @@
 #include "apt_callbacks.h"
-
+#include "log.h"
+#include "utils.h"
 
 // This handles apt callbacks to our process
 void aptCallback(APT_HookType hook, void* param) {
