@@ -26,25 +26,25 @@ static PrintConsole topScreen;
 // Get the name of a title, from the "icon" file in the ExeFS section of the
 // title
 bool loadTitleMetadata(u64 titleId, FS_MediaType mediaType,
-					   titleGame *titleGameOut) {
+                       titleGame *titleGameOut) {
   SMDH *smdh = malloc(sizeof(SMDH));
 
   log_debug("Get name of title %#018llx (media 0x%x)", titleId, mediaType);
   // printf("Get name of title %#018llx (media 0x%x)\n", titleId, mediaType);
 
   const FS_ProgramInfo archiveProgramInfo = {.programId = titleId,
-											 .mediaType = mediaType};
+                                             .mediaType = mediaType};
   FS_Path archivePath = {PATH_BINARY, sizeof(archiveProgramInfo),
-						 (void *)&archiveProgramInfo};
+                         (void *)&archiveProgramInfo};
 
   // log_debug("Opening FSUSER archive");
 
   FS_Archive archive;
   Result res =
-	  FSUSER_OpenArchive(&archive, ARCHIVE_SAVEDATA_AND_CONTENT, archivePath);
+      FSUSER_OpenArchive(&archive, ARCHIVE_SAVEDATA_AND_CONTENT, archivePath);
   if (R_FAILED(res)) {
-	print_error_code_verbose("FSUSER_OpenArchive", res);
-	goto cleanup_fail;
+    print_error_code_verbose("FSUSER_OpenArchive", res);
+    goto cleanup_fail;
   }
 
   // printf("Ran FSUSER_OpenArchive\n");
@@ -62,11 +62,11 @@ bool loadTitleMetadata(u64 titleId, FS_MediaType mediaType,
   u32 filePathData[5] = {0};
   filePathData[0] = 0x00; // is_save_data
   filePathData[1] =
-	  0x00; // content_id (in mikage), also known as NCSDPartitionId
+      0x00; // content_id (in mikage), also known as NCSDPartitionId
   filePathData[2] =
-	  0x02; // sub_file_type, used by the function NCCHOpenExeFSSection
+      0x02; // sub_file_type, used by the function NCCHOpenExeFSSection
   filePathData[3] =
-	  0x6e6f6369; // name of the section to read (this spells "icon")
+      0x6e6f6369; // name of the section to read (this spells "icon")
   filePathData[4] = 0x00000000; // name of the section to read (part2)
 
   FS_Path filePath = {PATH_BINARY, sizeof(filePathData), filePathData};
@@ -77,9 +77,9 @@ bool loadTitleMetadata(u64 titleId, FS_MediaType mediaType,
 
   res = FSUSER_OpenFile(&fileHandle, archive, filePath, FS_OPEN_READ, 0);
   if (R_FAILED(res)) {
-	print_error_code_verbose("FSUSER_OpenFile", res);
-	FSUSER_CloseArchive(archive);
-	goto cleanup_fail;
+    print_error_code_verbose("FSUSER_OpenFile", res);
+    FSUSER_CloseArchive(archive);
+    goto cleanup_fail;
   }
 
   // log_debug("Reading FSUSER file");
@@ -91,13 +91,13 @@ bool loadTitleMetadata(u64 titleId, FS_MediaType mediaType,
   FSUSER_CloseArchive(archive);
 
   if (R_FAILED(res)) {
-	goto cleanup_fail;
+    goto cleanup_fail;
   }
 
   // Validate SMDH magic ("SMDH")
   if (smdh->magic != 0x48444D53) {
-	printf("File magic does not match SMDH\n");
-	goto cleanup_fail;
+    printf("File magic does not match SMDH\n");
+    goto cleanup_fail;
   }
 
   // Pick language (use English = 1, or CFG_LANGUAGE_EN)
@@ -109,7 +109,7 @@ bool loadTitleMetadata(u64 titleId, FS_MediaType mediaType,
   // The short description is a UTF-16 string (0x40 u16 chars)
   // Convert to UTF-8 for easier use
   utf16_to_utf8((uint8_t *)titleGameOut->name,
-				smdh->titles[lang].shortDescription, MAX_TITLE_NAME - 1);
+                smdh->titles[lang].shortDescription, MAX_TITLE_NAME - 1);
   titleGameOut->name[MAX_TITLE_NAME - 1] = '\0';
 
   // Remove non ascii chars
@@ -120,7 +120,7 @@ bool loadTitleMetadata(u64 titleId, FS_MediaType mediaType,
   // PICA200 requires power-of-two dimensions, so allocate 64x64 for a 48x48
   // icon
   if (!C3D_TexInit(&titleGameOut->large_icon_tex, 64, 64, GPU_RGB565))
-	goto cleanup_fail;
+    goto cleanup_fail;
 
   // log_debug("Reencoding texture");
 
@@ -129,7 +129,7 @@ bool loadTitleMetadata(u64 titleId, FS_MediaType mediaType,
   // to a 64px morton texture This function takes care of that
   uint16_t *reencoded_texture_data = linearAlloc(64 * 64 * sizeof(uint16_t));
   copy_icon_to_tex64(reencoded_texture_data,
-					 (uint16_t *)smdh->large_icon_rgb565);
+                     (uint16_t *)smdh->large_icon_rgb565);
 
   // log_debug("Copying tex content");
 
@@ -156,7 +156,7 @@ cleanup_fail:
 }
 
 bool loadTitlesFromMediaType(FS_MediaType mediaType, u8 maxTitleCount,
-							 titleGame **games, u8 *games_counter) {
+                             titleGame **games, u8 *games_counter) {
   Result temp_res;
 
   log_debug("Iterating over titles (media type 0x%x)", mediaType);
@@ -166,11 +166,11 @@ bool loadTitlesFromMediaType(FS_MediaType mediaType, u8 maxTitleCount,
   u32 titles_found_count = 0;
   u64 *title_ids = malloc(maxTitleCount * sizeof(u64));
   temp_res =
-	  AM_GetTitleList(&titles_found_count, mediaType, maxTitleCount, title_ids);
+      AM_GetTitleList(&titles_found_count, mediaType, maxTitleCount, title_ids);
   if (temp_res != 0) {
-	log_debug("AM_GetTitleList Failed, Result 0x%lx", temp_res);
-	print_error_code_verbose("AM_GetTitleList", temp_res);
-	goto error;
+    log_debug("AM_GetTitleList Failed, Result 0x%lx", temp_res);
+    print_error_code_verbose("AM_GetTitleList", temp_res);
+    goto error;
   }
 
   log_debug("Found %lu title ids", titles_found_count);
@@ -178,34 +178,34 @@ bool loadTitlesFromMediaType(FS_MediaType mediaType, u8 maxTitleCount,
   // Get name of each title
   for (u32 i = 0; i < titles_found_count; i++) {
 
-	if (*games_counter == MAX_TITLES) {
-	  printf("Finished games limit\n");
-	  log_debug("Finished games limit");
-	  return false;
-	}
+    if (*games_counter == MAX_TITLES) {
+      printf("Finished games limit\n");
+      log_debug("Finished games limit");
+      return false;
+    }
 
-	if (!shouldDisplayTitle(title_ids[i])) {
-	  log_debug("Skipping title %#018llx", title_ids[i]);
-	  continue;
-	}
+    if (!shouldDisplayTitle(title_ids[i])) {
+      log_debug("Skipping title %#018llx", title_ids[i]);
+      continue;
+    }
 
-	titleGame *loadedTitleGame = malloc(sizeof(titleGame));
+    titleGame *loadedTitleGame = malloc(sizeof(titleGame));
 
-	loadedTitleGame->titleId = title_ids[i];
-	loadedTitleGame->mediaType = mediaType;
-	strncpy(loadedTitleGame->name, "", MAX_TITLE_NAME);
+    loadedTitleGame->titleId = title_ids[i];
+    loadedTitleGame->mediaType = mediaType;
+    strncpy(loadedTitleGame->name, "", MAX_TITLE_NAME);
 
-	temp_res = loadTitleMetadata(title_ids[i], mediaType, loadedTitleGame);
-	if (temp_res) {
-	  log_debug("Loaded name for title %#018llx : %s", loadedTitleGame->titleId,
-				loadedTitleGame->name);
+    temp_res = loadTitleMetadata(title_ids[i], mediaType, loadedTitleGame);
+    if (temp_res) {
+      log_debug("Loaded name for title %#018llx : %s", loadedTitleGame->titleId,
+                loadedTitleGame->name);
 
-	  games[*games_counter] = loadedTitleGame;
-	  (*games_counter)++;
+      games[*games_counter] = loadedTitleGame;
+      (*games_counter)++;
 
-	} else {
-	  log_debug("%02lu title %#018llx - failed to get name", i, title_ids[i]);
-	}
+    } else {
+      log_debug("%02lu title %#018llx - failed to get name", i, title_ids[i]);
+    }
   }
 
   return true;
@@ -224,30 +224,30 @@ bool loadTitles(titleGame **games, u8 *games_counter) {
   // list of installed titles
   Result temp_res = amInit();
   if (temp_res != 0) {
-	print_error_code_verbose("amInit", temp_res);
-	return false;
+    print_error_code_verbose("amInit", temp_res);
+    return false;
   }
 
   // Load the games into the games list
   if (SHOULD_ITERATE_GAMECARD &&
-	  !loadTitlesFromMediaType(MEDIATYPE_GAME_CARD, 1, games, games_counter)) {
-	log_debug("Failed iterating over GAMECARD titles, exiting");
-	printf("Failed iterating over GAMECARD titles, exiting\n");
-	goto error;
+      !loadTitlesFromMediaType(MEDIATYPE_GAME_CARD, 1, games, games_counter)) {
+    log_debug("Failed iterating over GAMECARD titles, exiting");
+    printf("Failed iterating over GAMECARD titles, exiting\n");
+    goto error;
   }
 
   if (SHOULD_ITERATE_SDCARD &&
-	  !loadTitlesFromMediaType(MEDIATYPE_SD, 128, games, games_counter)) {
-	log_debug("Failed iterating over SDCARD titles, exiting");
-	printf("Failed iterating over SDCARD titles, exiting\n");
-	goto error;
+      !loadTitlesFromMediaType(MEDIATYPE_SD, 128, games, games_counter)) {
+    log_debug("Failed iterating over SDCARD titles, exiting");
+    printf("Failed iterating over SDCARD titles, exiting\n");
+    goto error;
   }
 
   if (SHOULD_ITERATE_NAND &&
-	  !loadTitlesFromMediaType(MEDIATYPE_NAND, 128, games, games_counter)) {
-	log_debug("Failed iterating over NAND titles, exiting");
-	printf("Failed iterating over NAND titles, exiting\n");
-	goto error;
+      !loadTitlesFromMediaType(MEDIATYPE_NAND, 128, games, games_counter)) {
+    log_debug("Failed iterating over NAND titles, exiting");
+    printf("Failed iterating over NAND titles, exiting\n");
+    goto error;
   }
 
   amExit();
@@ -292,36 +292,36 @@ int main(int argc, char *argv[]) {
   // Check if we are running on real hardware or mikage
   bool is_mikage = isRunningInEmulator();
   if (is_mikage) {
-	printf("Running in Mikage\n");
-	log_debug("Running in mikage");
+    printf("Running in Mikage\n");
+    log_debug("Running in mikage");
 
-	printf("System Model : %s\n", "Emulator");
-	log_debug("System Model : %s", "Emulator");
+    printf("System Model : %s\n", "Emulator");
+    log_debug("System Model : %s", "Emulator");
   } else {
-	printf("Running on Real Hardware\n");
-	log_debug("Running on Real Hardware");
+    printf("Running on Real Hardware\n");
+    log_debug("Running on Real Hardware");
 
-	temp_res = cfguInit();
-	if (R_FAILED(temp_res)) {
-	  print_error_code_verbose("cfguInit for system model", temp_res);
-	  return 0;
-	}
+    temp_res = cfguInit();
+    if (R_FAILED(temp_res)) {
+      print_error_code_verbose("cfguInit for system model", temp_res);
+      return 0;
+    }
 
-	u8 system_model;
-	temp_res = CFGU_GetSystemModel(&system_model);
-	if (R_FAILED(temp_res)) {
-	  print_error_code_verbose("GetSystemModel", temp_res);
-	} else {
-	  char system_name[32];
-	  systemModelName(system_model, (char *)&system_name);
+    u8 system_model;
+    temp_res = CFGU_GetSystemModel(&system_model);
+    if (R_FAILED(temp_res)) {
+      print_error_code_verbose("GetSystemModel", temp_res);
+    } else {
+      char system_name[32];
+      systemModelName(system_model, (char *)&system_name);
 
-	  log_debug("System Model Id : %x", system_model);
+      log_debug("System Model Id : %x", system_model);
 
-	  printf("System Model : %s\n", system_name);
-	  log_debug("System Model : %s", system_name);
-	}
+      printf("System Model : %s\n", system_name);
+      log_debug("System Model : %s", system_name);
+    }
 
-	cfguExit();
+    cfguExit();
   }
 
   // Configure APT stuff and hooks
@@ -341,8 +341,8 @@ int main(int argc, char *argv[]) {
   // Init render target
   C3D_RenderTarget *bottom = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
   if (bottom == NULL) {
-	log_debug("Failed initializing bottom screen for rendering!");
-	return 0;
+    log_debug("Failed initializing bottom screen for rendering!");
+    return 0;
   }
 
   // Initialize text buffer
@@ -353,13 +353,13 @@ int main(int argc, char *argv[]) {
   // C2D_Font font = C2D_FontLoadFromMem(&font, 96*13); // system font
   // or load a custom font:
   C2D_Font font = C2D_FontLoad(
-	  "sdmc:/monogram.bcfnt"); // TODO: Inject this into the binary, romfs?
+      "sdmc:/monogram.bcfnt"); // TODO: Inject this into the binary, romfs?
 
   float GRID_CELL_GAP_W =
-	  (BOTTOM_SCREEN_WIDTH - (GRID_CELL_W * GRID_COLS)) / (GRID_COLS + 1);
+      (BOTTOM_SCREEN_WIDTH - (GRID_CELL_W * GRID_COLS)) / (GRID_COLS + 1);
   float GRID_CELL_GAP_H = (BOTTOM_SCREEN_HEIGHT - GRID_HEADER_H -
-						   (GRID_CELL_H * GRID_VISIBLE_ROWS)) /
-						  (GRID_VISIBLE_ROWS + 1);
+                           (GRID_CELL_H * GRID_VISIBLE_ROWS)) /
+                          (GRID_VISIBLE_ROWS + 1);
 
   SetState(STATE_MOVE_TO_FOREGROUND);
 
@@ -367,213 +367,240 @@ int main(int argc, char *argv[]) {
 
   while (true) {
 
-	gspWaitForVBlank();
-	aptMainLoop();
+    gspWaitForVBlank();
+    aptMainLoop();
 
-	switch (GetState()) {
-	case STATE_NONE: // There is no state, that is weird
-	  log_debug("Invalid state reached");
-	  svcBreak(USERBREAK_USER);
-	  break;
-	case STATE_BACKGROUND: // Another app is currently running, we just need to handle shutdown and homebutton signals
-	  // We want to continue running in the background to handle APT events,
-	  // such as shutdown
-	  continue;
-	case STATE_WAIT_TO_REGISTER: // Wait for the launched app to wakeup
-	  bool registered = 0;
-	  APT_IsRegistered(APPID_APPLICATION, &registered);
+    switch (GetState()) {
+    case STATE_NONE: // There is no state, that is weird
+      log_debug("Invalid state reached");
+      svcBreak(USERBREAK_USER);
+      break;
+    case STATE_BACKGROUND: // Another app is currently running, we just need to
+                           // handle shutdown and homebutton signals
+      // We want to continue running in the background to handle APT events,
+      // such as shutdown
+      APT_Command temp_cmd = aptGetCommand();
+      if (temp_cmd != APTCMD_NONE) {
+        log_debug("Got APT CMD 0x%x", temp_cmd);
+      }
 
-	  if (registered) {
-		log_debug("Is App Registered %d", registered);
-		log_debug("Terminating GFX");
+      continue;
+    case STATE_WAIT_TO_REGISTER: // Wait for the launched app to wakeup
+      bool registered = 0;
+      APT_IsRegistered(APPID_APPLICATION, &registered);
 
-		printf("Is App Registered %d\n", registered);
-		printf("Terminating GFX\n");
+      if (registered) {
+        log_debug("Is App Registered %d", registered);
+        log_debug("Terminating GFX");
 
-		// Terminate gfx
-		gfxExit();
+        printf("Is App Registered %d\n", registered);
+        printf("Terminating GFX\n");
 
-		log_debug("Waking Up Application");
-		printf("Waking Up Application\n");
+        // TODO: Close ALL the gfx stuff and all the citro2d/citro3d stuff
 
-		// Waking up application
-		temp_res = APT_WakeupApplication();
-		if (R_FAILED(temp_res)) {
-		  print_error_code_verbose("APT_WakeupApplication", temp_res);
-		  break;
-		} else {
-		  log_debug("Successfully ran APT_WakeupApplication");
-		  printf("Successfully ran APT_WakeupApplication\n");
+        // Terminate gfx
+        gfxExit();
 
-		  SetState(STATE_BACKGROUND);
-		}
-	  }
-	case STATE_MOVE_TO_FOREGROUND: // Preare pomelo to be in the foreground
-	  if (!loadTitles((titleGame **)&games, &games_counter)) {
-		return 0;
-	  }
+        log_debug("Waking Up Application");
+        printf("Waking Up Application\n");
 
-	  log_debug("Finished iterating");
-	  printf("Finished iterating\n");
+        // Waking up application
+        temp_res = APT_WakeupApplication();
+        if (R_FAILED(temp_res)) {
+          print_error_code_verbose("APT_WakeupApplication", temp_res);
+          break;
+        } else {
+          log_debug("Successfully ran APT_WakeupApplication");
+          printf("Successfully ran APT_WakeupApplication\n");
 
-	case STATE_FOREGROUND: // Pomelo is in the foreground, handle user input (and re-render the screen if needed) and launch apps
-	  hidScanInput();
-	  u32 kDown = hidKeysDown();
+          APT_NotifyToWait(envGetAptAppId());
 
-	  if (kDown == 0x00 && !is_first_run) { // If no keys were pressed and it's
-											// not the first run, skip this flow
-		break;
-	  }
+          temp_res = APT_SleepIfShellClosed();
+          if (R_FAILED(temp_res)) {
+            print_error_code_verbose("APT_SleepIfShellClosed", temp_res);
+          }
 
-	  is_first_run = false;
+          SetState(STATE_BACKGROUND);
+        }
+      }
 
-	  // Handle kDown
-	  switch (kDown) {
-	  case KEY_DDOWN: // Go down in menu
-		selected_game_index =
-			MIN(selected_game_index + GRID_COLS, (int)games_counter - 1);
-		break;
-	  case KEY_DUP: // Go up in menu
-		selected_game_index = MAX(selected_game_index - GRID_COLS, 0);
-		break;
-	  case KEY_DLEFT:
-		selected_game_index = MAX(selected_game_index - 1, 0);
-		break;
-	  case KEY_DRIGHT:
-		selected_game_index =
-			MIN(selected_game_index + 1, (int)games_counter - 1);
-		break;
-	  case KEY_START: // Turn off console
-		log_debug("Initiating shutdown due to start button press");
-		hardwareTimerSleep(2); // Give the console a moment to flush the log
-		ptmSysmInit();
-		PTMSYSM_ShutdownAsync(0);
-		break;
-	  case KEY_A: // Launch selected game
-		printf("Launching title id %#018llx\n",
-			   games[selected_game_index]->titleId);
-		log_debug("Launching title id %#018llx",
-				  games[selected_game_index]->titleId);
+      break;
+    case STATE_MOVE_TO_FOREGROUND: // Preare pomelo to be in the foreground
+      if (!loadTitles((titleGame **)&games, &games_counter)) {
+        return 0;
+      }
 
-		titleGame *selectedTitleGame = games[selected_game_index];
+      // TODO: Start the gfx again and all the citro2d/citro3d stuff
 
-		FS_ProgramInfo selectedGameProgramInfo = {
-			.programId = selectedTitleGame->titleId,
-			.mediaType = selectedTitleGame->mediaType};
+      log_debug("Finished iterating");
+      printf("Finished iterating\n");
 
-		// Start game using apt:startapplication
-		{
-		  log_debug("Calling APT_PrepareToStartApplication");
-		  printf("Calling APT_PrepareToStartApplication\n");
-		  temp_res =
-			  APT_PrepareToStartApplication(&selectedGameProgramInfo, 0x00);
-		  if (R_FAILED(temp_res)) {
-			print_error_code_verbose("APT_PrepareToStartApplication", temp_res);
-			printf("Continuing even tho error\n");
-			// break;
-		  } else {
-			printf("Successfully ran APT_PrepareToStartApplication\n");
-			log_debug("Successfully ran APT_PrepareToStartApplication");
-		  }
+      SetState(STATE_FOREGROUND);
 
-		  // Clearing memory allocations of all games
-		  // Some games will hang during boot if this memory is not
-		  // released
-		  for (int i = 0; i < games_counter; i++) {
-			free(games[i]);
-		  }
+      break;
 
-		  u8 parameter[0x300] = {0};
+    case STATE_FOREGROUND: // Pomelo is in the foreground, handle user input
+                           // (and re-render the screen if needed) and launch
+                           // apps
+      hidScanInput();
+      u32 kDown = hidKeysDown();
 
-		  log_debug("Calling APT_StartApplication");
-		  printf("Calling APT_StartApplication\n");
-		  temp_res = APT_StartApplication(0x300, 0x00, true, &parameter, NULL);
-		  if (R_FAILED(temp_res)) {
-			print_error_code_verbose("APT_StartApplication", temp_res);
-			break;
-		  } else {
-			printf("Successfully ran APT_StartApplication\n");
-			log_debug("Successfully ran APT_StartApplication");
-		  }
+      if (kDown == 0x00 && !is_first_run) { // If no keys were pressed and it's
+                                            // not the first run, skip this flow
+        break;
+      }
 
-		  SetState(STATE_WAIT_TO_REGISTER);
-		}
+      is_first_run = false;
 
-		// I used to have aptWaitForWakeUp(TR_ENABLE) over here, which
-		// kinda helped the shutdown to work while pomelo is in the
-		// background, I didn't see it get triggered, instead the
-		// regular flow just worked Maybe the aptWaitForWakeUp caused
-		// the regular flow to work while in the background
+      // Handle kDown
+      switch (kDown) {
+      case KEY_DDOWN: // Go down in menu
+        selected_game_index =
+            MIN(selected_game_index + GRID_COLS, (int)games_counter - 1);
+        break;
+      case KEY_DUP: // Go up in menu
+        selected_game_index = MAX(selected_game_index - GRID_COLS, 0);
+        break;
+      case KEY_DLEFT:
+        selected_game_index = MAX(selected_game_index - 1, 0);
+        break;
+      case KEY_DRIGHT:
+        selected_game_index =
+            MIN(selected_game_index + 1, (int)games_counter - 1);
+        break;
+      case KEY_START: // Turn off console
+        log_debug("Initiating shutdown due to start button press");
+        hardwareTimerSleep(2); // Give the console a moment to flush the log
+        ptmSysmInit();
+        PTMSYSM_ShutdownAsync(0);
+        break;
+      case KEY_A: // Launch selected game
+        printf("Launching title id %#018llx\n",
+               games[selected_game_index]->titleId);
+        log_debug("Launching title id %#018llx",
+                  games[selected_game_index]->titleId);
 
-		break; // Break from handleStart case
-	  }
+        titleGame *selectedTitleGame = games[selected_game_index];
 
-	  // Auto-scroll to keep selection visible
-	  {
-		int sel_row = selected_game_index / GRID_COLS;
-		if (sel_row < scroll_offset)
-		  scroll_offset = sel_row;
-		if (sel_row >= scroll_offset + GRID_VISIBLE_ROWS)
-		  scroll_offset = sel_row - GRID_VISIBLE_ROWS + 1;
-	  }
+        FS_ProgramInfo selectedGameProgramInfo = {
+            .programId = selectedTitleGame->titleId,
+            .mediaType = selectedTitleGame->mediaType};
 
-	  // Render UI using citro2d
-	  {
-		// Render the scene
-		C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
-		C2D_TargetClear(bottom, rgb_to_C2D_Color32(COL_BG));
-		C2D_SceneBegin(bottom);
+        // Start game using apt:startapplication
+        {
+          log_debug("Calling APT_PrepareToStartApplication");
+          printf("Calling APT_PrepareToStartApplication\n");
+          temp_res =
+              APT_PrepareToStartApplication(&selectedGameProgramInfo, 0x00);
+          if (R_FAILED(temp_res)) {
+            print_error_code_verbose("APT_PrepareToStartApplication", temp_res);
+            printf("Continuing even tho error\n");
+            // break;
+          } else {
+            printf("Successfully ran APT_PrepareToStartApplication\n");
+            log_debug("Successfully ran APT_PrepareToStartApplication");
+          }
 
-		// Draw seperating line from header to grid
-		C2D_Pomelo_DrawRectangleSingleColor(0, 0, BOTTOM_SCREEN_WIDTH,
-											GRID_HEADER_H,
-											rgb_to_C2D_Color32(COL_CELL));
+          // Clearing memory allocations of all games
+          // Some games will hang during boot if this memory is not
+          // released
+          for (int i = 0; i < games_counter; i++) {
+            free(games[i]);
+          }
 
-		// Draw header text
-		C2D_Text header_text;
-		C2D_TextFontParse(&header_text, font, buf,
-						  games[selected_game_index]->name);
-		C2D_TextOptimize(&header_text);
+          u8 parameter[0x300] = {0};
 
-		C2D_DrawText(&header_text, C2D_WithColor, GRID_CELL_GAP_W + 2, 8, 0,
-					 TEXT_HEADER_SCALE, TEXT_HEADER_SCALE,
-					 rgb_to_C2D_Color32(COL_TEXT));
+          log_debug("Calling APT_StartApplication");
+          printf("Calling APT_StartApplication\n");
+          temp_res = APT_StartApplication(0x300, 0x00, true, &parameter, NULL);
+          if (R_FAILED(temp_res)) {
+            print_error_code_verbose("APT_StartApplication", temp_res);
+            break;
+          } else {
+            printf("Successfully ran APT_StartApplication\n");
+            log_debug("Successfully ran APT_StartApplication");
+          }
 
-		// Draw grid of cells, not including icons, just the background
-		// color of the cells
-		for (int grid_x = 0; grid_x < GRID_COLS; grid_x++) {
-		  for (int grid_y = 0; grid_y < GRID_VISIBLE_ROWS; grid_y++) {
-			int game_index = (grid_y + scroll_offset) * GRID_COLS + grid_x;
+          SetState(STATE_WAIT_TO_REGISTER);
+        }
 
-			if (game_index >= games_counter)
-			  break;
+        // I used to have aptWaitForWakeUp(TR_ENABLE) over here, which
+        // kinda helped the shutdown to work while pomelo is in the
+        // background, I didn't see it get triggered, instead the
+        // regular flow just worked Maybe the aptWaitForWakeUp caused
+        // the regular flow to work while in the background
 
-			u32 cell_color = game_index == selected_game_index
-								 ? rgb_to_C2D_Color32(COL_CELL_SELECTED)
-								 : rgb_to_C2D_Color32(COL_CELL);
+        break; // Break from handleStart case
+      }
 
-			float cell_start_x =
-				GRID_CELL_GAP_W + grid_x * (GRID_CELL_GAP_W + GRID_CELL_W);
-			float cell_Start_y = GRID_HEADER_H + GRID_CELL_GAP_H +
-								 grid_y * (GRID_CELL_GAP_H + GRID_CELL_H);
+      // Auto-scroll to keep selection visible
+      {
+        int sel_row = selected_game_index / GRID_COLS;
+        if (sel_row < scroll_offset)
+          scroll_offset = sel_row;
+        if (sel_row >= scroll_offset + GRID_VISIBLE_ROWS)
+          scroll_offset = sel_row - GRID_VISIBLE_ROWS + 1;
+      }
 
-			C2D_Pomelo_DrawRectangleSingleColor(cell_start_x, cell_Start_y,
-												GRID_CELL_W, GRID_CELL_H,
-												cell_color);
+      // Render UI using citro2d
+      {
+        // Render the scene
+        C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+        C2D_TargetClear(bottom, rgb_to_C2D_Color32(COL_BG));
+        C2D_SceneBegin(bottom);
 
-			C2D_Image image = {.tex = &games[game_index]->large_icon_tex,
-							   .subtex = &icon_subtex};
+        // Draw seperating line from header to grid
+        C2D_Pomelo_DrawRectangleSingleColor(0, 0, BOTTOM_SCREEN_WIDTH,
+                                            GRID_HEADER_H,
+                                            rgb_to_C2D_Color32(COL_CELL));
 
-			C2D_DrawImageAt(image, cell_start_x + GRID_CELL_BORDER,
-							cell_Start_y + GRID_CELL_BORDER, 1.0f, NULL, 1.0f,
-							1.0f);
-		  }
-		}
+        // Draw header text
+        C2D_Text header_text;
+        C2D_TextFontParse(&header_text, font, buf,
+                          games[selected_game_index]->name);
+        C2D_TextOptimize(&header_text);
 
-		C3D_FrameEnd(0);
-		// log_debug("Finished rendering");
-	  }
-	}
+        C2D_DrawText(&header_text, C2D_WithColor, GRID_CELL_GAP_W + 2, 8, 0,
+                     TEXT_HEADER_SCALE, TEXT_HEADER_SCALE,
+                     rgb_to_C2D_Color32(COL_TEXT));
+
+        // Draw grid of cells, not including icons, just the background
+        // color of the cells
+        for (int grid_x = 0; grid_x < GRID_COLS; grid_x++) {
+          for (int grid_y = 0; grid_y < GRID_VISIBLE_ROWS; grid_y++) {
+            int game_index = (grid_y + scroll_offset) * GRID_COLS + grid_x;
+
+            if (game_index >= games_counter)
+              break;
+
+            u32 cell_color = game_index == selected_game_index
+                                 ? rgb_to_C2D_Color32(COL_CELL_SELECTED)
+                                 : rgb_to_C2D_Color32(COL_CELL);
+
+            float cell_start_x =
+                GRID_CELL_GAP_W + grid_x * (GRID_CELL_GAP_W + GRID_CELL_W);
+            float cell_Start_y = GRID_HEADER_H + GRID_CELL_GAP_H +
+                                 grid_y * (GRID_CELL_GAP_H + GRID_CELL_H);
+
+            C2D_Pomelo_DrawRectangleSingleColor(cell_start_x, cell_Start_y,
+                                                GRID_CELL_W, GRID_CELL_H,
+                                                cell_color);
+
+            C2D_Image image = {.tex = &games[game_index]->large_icon_tex,
+                               .subtex = &icon_subtex};
+
+            C2D_DrawImageAt(image, cell_start_x + GRID_CELL_BORDER,
+                            cell_Start_y + GRID_CELL_BORDER, 1.0f, NULL, 1.0f,
+                            1.0f);
+          }
+        }
+
+        C3D_FrameEnd(0);
+        // log_debug("Finished rendering");
+      }
+
+      break;
+    }
   }
 
   gfxExit();

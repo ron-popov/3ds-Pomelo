@@ -84,5 +84,5 @@ void log_debug(const char* format, ...) {
     va_end(args);
 
     log_debug_mikage((const char*)&buffer);
-    log_debug_hardware((const char*)&buffer);
+    // log_debug_hardware((const char*)&buffer);
 }
