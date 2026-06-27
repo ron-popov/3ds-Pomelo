@@ -5,10 +5,11 @@
 
 // When adding a new state, note to also add it to GetStateName - that how the logger gets the name of the state
 enum HomemenuState {
-	STATE_NONE = 0,                   // State hasn't been initialized
-    STATE_FOREGROUND = 1,             // Currently in the foreground, user can make actions
-    STATE_WAIT_TO_REGISTER = 2,       // In transition to new app, user can still do actions
-    STATE_BACKGROUND = 3              // In background, must still handle shutdowns
+	STATE_NONE = 0,                     // State hasn't been initialized
+    STATE_FOREGROUND = 1,               // Currently in the foreground, user can make actions
+    STATE_WAIT_TO_REGISTER = 2,         // In transition to new app, user can still do actions
+    STATE_BACKGROUND = 3,               // In background, must still handle shutdowns
+    STATE_MOVE_TO_FOREGROUND = 4        // When transitioning to foreground
 };
 
 static enum HomemenuState state = STATE_NONE;
@@ -28,6 +29,9 @@ void GetStateName(enum HomemenuState state, char* nameOut) {
         case STATE_BACKGROUND:
             strcpy(nameOut, "Background");
             return;
+        case STATE_MOVE_TO_FOREGROUND:
+          strcpy(nameOut, "Moving To Foreground");
+          return;
         default:
             strcpy(nameOut, "ERROR - NO NAME");
             return;
