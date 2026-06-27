@@ -276,8 +276,6 @@ int main(int argc, char *argv[]) {
   C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
   C2D_Prepare();
 
-  C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
-
   consoleInit(GFX_TOP, &topScreen);
   consoleSelect(&topScreen);
 
@@ -396,9 +394,8 @@ int main(int argc, char *argv[]) {
         printf("Is App Registered %d\n", registered);
         printf("Terminating GFX\n");
 
-        // TODO: Close ALL the gfx stuff and all the citro2d/citro3d stuff
-
-        // Terminate gfx
+        C2D_Fini();
+        C3D_Fini();
         gfxExit();
 
         log_debug("Waking Up Application");
@@ -505,6 +502,7 @@ int main(int argc, char *argv[]) {
           // Some games will hang during boot if this memory is not
           // released
           for (int i = 0; i < games_counter; i++) {
+            C3D_TexDelete(&games[i]->large_icon_tex);
             free(games[i]);
           }
 
