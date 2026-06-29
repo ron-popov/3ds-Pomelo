@@ -456,7 +456,9 @@ int main(int argc, char *argv[]) {
 				// Some games will hang during boot if this memory is not
 				// released
 				for (int i = 0; i < games_counter; i++) {
+					log_debug("Freeing texture index 0x%x", i);
 					C3D_TexDelete(&games[i]->large_icon_tex);
+					log_debug("Freeing game index 0x%x", i);
 					free(games[i]);
 				}
 
@@ -609,26 +611,9 @@ int main(int argc, char *argv[]) {
 					  wakeup_cmd);
 			SetState(STATE_CLOSING_APP);
 		} else if (state == STATE_CLOSING_APP) {
-			// Wait for current app to close
-			log_debug("Terminating current application");
-			temp_res = APT_PrepareToCloseApplication(false);
-			if (R_FAILED(temp_res)) {
-				print_error_code_verbose("APT_PrepareToCloseApplication",
-										 temp_res);
-			}
+			// The running app is responsible for also reading the home button signal
+			// And closing itself
 
-			temp_res = APT_CloseApplication(NULL, 0, 0);
-			if (R_FAILED(temp_res)) {
-				print_error_code_verbose("APT_CloseApplication", temp_res);
-			}
-
-			log_debug("Waiting for current application to close");
-			bool registered = 0;
-			do {
-				APT_IsRegistered(APPID_APPLICATION, &registered);
-			} while (!registered);
-
-			log_debug("Application closed!");
 			gfxInitDefault();
 
 			// Init rendering stuff

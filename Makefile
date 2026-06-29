@@ -196,7 +196,7 @@ install_mikage: cxi
 	# rm -v ~/.local/share/mikage/data/00040030/00009802/content/*.cxi
 	# cp -v -f pomelo.cxi ~/.local/share/mikage/data/00040030/00009802/content/00000000.cxi
 # US Systems
-	rm -v ~/.local/share/mikage/data/title/00040030/00008f02/content/*.cxi
+	-rm -v ~/.local/share/mikage/data/title/00040030/00008f02/content/*.cxi
 	cp -v -f pomelo.cxi ~/.local/share/mikage/data/title/00040030/00008f02/content/00000000.cxi
 
 install_sdcard: code.bin
