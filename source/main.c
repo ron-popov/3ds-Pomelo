@@ -185,7 +185,7 @@ bool loadTitlesFromMediaType(FS_MediaType mediaType, u8 maxTitleCount,
 		}
 
 		if (!shouldDisplayTitle(title_ids[i])) {
-			log_debug("Skipping title %#018llx", title_ids[i]);
+			// log_debug("Skipping title %#018llx", title_ids[i]);
 			continue;
 		}
 
@@ -607,8 +607,28 @@ int main(int argc, char *argv[]) {
 			APT_Command wakeup_cmd = aptWaitForWakeUp(TR_APPJUMP);
 			log_debug("Woke up from background with APT command 0x%x",
 					  wakeup_cmd);
-			SetState(STATE_STARTING_POMELO);
+			SetState(STATE_CLOSING_APP);
 		} else if (state == STATE_CLOSING_APP) {
+			// Wait for current app to close
+			log_debug("Terminating current application");
+			temp_res = APT_PrepareToCloseApplication(false);
+			if (R_FAILED(temp_res)) {
+				print_error_code_verbose("APT_PrepareToCloseApplication",
+										 temp_res);
+			}
+
+			temp_res = APT_CloseApplication(NULL, 0, 0);
+			if (R_FAILED(temp_res)) {
+				print_error_code_verbose("APT_CloseApplication", temp_res);
+			}
+
+			log_debug("Waiting for current application to close");
+			bool registered = 0;
+			do {
+				APT_IsRegistered(APPID_APPLICATION, &registered);
+			} while (!registered);
+
+			log_debug("Application closed!");
 			gfxInitDefault();
 
 			// Init rendering stuff
@@ -618,8 +638,10 @@ int main(int argc, char *argv[]) {
 
 			consoleInit(GFX_TOP, &topScreen);
 			consoleSelect(&topScreen);
+
+			SetState(STATE_STARTING_POMELO);
 		}
-		
+
 	} // End of pomelo main loop
 
 	gfxExit();
