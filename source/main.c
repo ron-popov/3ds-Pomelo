@@ -365,7 +365,8 @@ int main(int argc, char *argv[]) {
 
   while (true) {
 
-    gspWaitForVBlank();
+	log_debug("Pomelo main loop");
+
     aptMainLoop();
 
     switch (GetState()) {
@@ -373,17 +374,16 @@ int main(int argc, char *argv[]) {
       log_debug("Invalid state reached");
       svcBreak(USERBREAK_USER);
       break;
-    case STATE_BACKGROUND: // Another app is currently running, we just need to
-                           // handle shutdown and homebutton signals
-      // We want to continue running in the background to handle APT events,
-      // such as shutdown
-      APT_Command temp_cmd = aptGetCommand();
-      if (temp_cmd != APTCMD_NONE) {
-        log_debug("Got APT CMD 0x%x", temp_cmd);
-      }
-
-      continue;
+    case STATE_BACKGROUND: // Another app is currently running; block until APT
+                           // wakes us back up (e.g. the launched game exits)
+      log_debug("Waiting for wakeup");
+      APT_Command wakeup_cmd = aptWaitForWakeUp(TR_APPJUMP);
+      log_debug("Woke up from background with APT command 0x%x", wakeup_cmd);
+      SetState(STATE_MOVE_TO_FOREGROUND);
+      break;
     case STATE_WAIT_TO_REGISTER: // Wait for the launched app to wakeup
+      gspWaitForVBlank();
+
       bool registered = 0;
       APT_IsRegistered(APPID_APPLICATION, &registered);
 
@@ -439,6 +439,7 @@ int main(int argc, char *argv[]) {
     case STATE_FOREGROUND: // Pomelo is in the foreground, handle user input
                            // (and re-render the screen if needed) and launch
                            // apps
+      gspWaitForVBlank();
       hidScanInput();
       u32 kDown = hidKeysDown();
 
