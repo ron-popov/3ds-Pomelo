@@ -1,0 +1,5 @@
+# .clang-format in your project root
+BasedOnStyle: LLVM
+UseTab: Always
+IndentWidth: 4
+TabWidth: 4
