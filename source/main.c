@@ -348,7 +348,7 @@ int main(int argc, char *argv[]) {
 							 (GRID_CELL_H * GRID_VISIBLE_ROWS)) /
 							(GRID_VISIBLE_ROWS + 1);
 
-	SetState(STATE_MOVE_TO_FOREGROUND);
+	SetState(STATE_STARTING_POMELO);
 
 	log_debug("Starting apt loop");
 
@@ -361,79 +361,7 @@ int main(int argc, char *argv[]) {
 		if (state == STATE_NONE) { // There is no state, that is weird
 			log_debug("Invalid state reached");
 			svcBreak(USERBREAK_USER);
-		} else if (state == STATE_BACKGROUND) {
-			// Another app is currently running;
-			// block until APT
-			// wakes us back up (e.g. the launched game exits)
-
-			log_debug("Waiting for wakeup");
-			APT_Command wakeup_cmd = aptWaitForWakeUp(TR_APPJUMP);
-			log_debug("Woke up from background with APT command 0x%x",
-					  wakeup_cmd);
-			SetState(STATE_MOVE_TO_FOREGROUND);
-
-		} else if (state == STATE_WAIT_TO_REGISTER) { // Wait for the launched
-													  // app to wakeup
-			gspWaitForVBlank();
-
-			bool registered = 0;
-			APT_IsRegistered(APPID_APPLICATION, &registered);
-
-			if (registered) {
-				log_debug("Is App Registered %d", registered);
-				log_debug("Terminating GFX");
-
-				printf("Is App Registered %d\n", registered);
-				printf("Terminating GFX\n");
-
-				if (pomeloFont != NULL) {
-					C2D_FontFree(pomeloFont);
-				}
-				if (titleNameTextBuf != NULL) {
-					C2D_TextBufDelete(titleNameTextBuf);
-				}
-				if (bottomRenderTarget != NULL) {
-					C3D_RenderTargetDelete(bottomRenderTarget);
-				}
-
-				C2D_Fini();
-				C3D_Fini();
-				gfxExit();
-
-				log_debug("Waking Up Application");
-				printf("Waking Up Application\n");
-
-				// Waking up application
-				temp_res = APT_WakeupApplication();
-				if (R_FAILED(temp_res)) {
-					print_error_code_verbose("APT_WakeupApplication", temp_res);
-				} else {
-					log_debug("Successfully ran APT_WakeupApplication");
-					printf("Successfully ran APT_WakeupApplication\n");
-
-					APT_NotifyToWait(envGetAptAppId());
-
-					temp_res = APT_SleepIfShellClosed();
-					if (R_FAILED(temp_res)) {
-						print_error_code_verbose("APT_SleepIfShellClosed",
-												 temp_res);
-					}
-
-					SetState(STATE_BACKGROUND);
-				}
-			}
-
-		} else if (state == STATE_MOVE_TO_FOREGROUND) {
-			gfxInitDefault();
-
-			// Init rendering stuff
-			C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
-			C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
-			C2D_Prepare();
-
-			consoleInit(GFX_TOP, &topScreen);
-			consoleSelect(&topScreen);
-
+		} else if (state == STATE_STARTING_POMELO) {
 			if (!loadTitles((titleGame **)&games, &games_counter)) {
 				return 0;
 			}
@@ -460,6 +388,7 @@ int main(int argc, char *argv[]) {
 			printf("Finished iterating\n");
 
 			SetState(STATE_FOREGROUND);
+
 		} else if (state == STATE_FOREGROUND) {
 			gspWaitForVBlank();
 			hidScanInput();
@@ -618,7 +547,79 @@ int main(int argc, char *argv[]) {
 			}
 
 			C3D_FrameEnd(0);
+
+		} else if (state == STATE_WAIT_TO_REGISTER) { // Wait for the launched
+													  // app to wakeup
+			gspWaitForVBlank();
+
+			bool registered = 0;
+			APT_IsRegistered(APPID_APPLICATION, &registered);
+
+			if (registered) {
+				log_debug("Is App Registered %d", registered);
+				log_debug("Terminating GFX");
+
+				printf("Is App Registered %d\n", registered);
+				printf("Terminating GFX\n");
+
+				if (pomeloFont != NULL) {
+					C2D_FontFree(pomeloFont);
+				}
+				if (titleNameTextBuf != NULL) {
+					C2D_TextBufDelete(titleNameTextBuf);
+				}
+				if (bottomRenderTarget != NULL) {
+					C3D_RenderTargetDelete(bottomRenderTarget);
+				}
+
+				C2D_Fini();
+				C3D_Fini();
+				gfxExit();
+
+				log_debug("Waking Up Application");
+				printf("Waking Up Application\n");
+
+				// Waking up application
+				temp_res = APT_WakeupApplication();
+				if (R_FAILED(temp_res)) {
+					print_error_code_verbose("APT_WakeupApplication", temp_res);
+				} else {
+					log_debug("Successfully ran APT_WakeupApplication");
+					printf("Successfully ran APT_WakeupApplication\n");
+
+					APT_NotifyToWait(envGetAptAppId());
+
+					temp_res = APT_SleepIfShellClosed();
+					if (R_FAILED(temp_res)) {
+						print_error_code_verbose("APT_SleepIfShellClosed",
+												 temp_res);
+					}
+
+					SetState(STATE_BACKGROUND);
+				}
+			}
+		} else if (state == STATE_BACKGROUND) {
+			// Another app is currently running;
+			// block until APT
+			// wakes us back up (e.g. the launched game exits)
+
+			log_debug("Waiting for wakeup");
+			APT_Command wakeup_cmd = aptWaitForWakeUp(TR_APPJUMP);
+			log_debug("Woke up from background with APT command 0x%x",
+					  wakeup_cmd);
+			SetState(STATE_STARTING_POMELO);
+		} else if (state == STATE_CLOSING_APP) {
+			gfxInitDefault();
+
+			// Init rendering stuff
+			C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
+			C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
+			C2D_Prepare();
+
+			consoleInit(GFX_TOP, &topScreen);
+			consoleSelect(&topScreen);
 		}
+		
 	} // End of pomelo main loop
 
 	gfxExit();
