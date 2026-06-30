@@ -2,6 +2,7 @@
 #include <citro2d.h>
 #include <citro3d.h>
 
+#include <math.h>
 #include <stdarg.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -430,6 +431,31 @@ int main(int argc, char *argv[]) {
 					   games[selected_game_index]->titleId);
 				log_debug("Launching title id %#018llx",
 						  games[selected_game_index]->titleId);
+
+				bool registered = 0;
+				APT_IsRegistered(APPID_APPLICATION, &registered);
+				if (registered) {
+					log_debug("Previous app is still running", registered);
+					continue;
+				}
+
+				u64 programId;
+				u8 mediaType;
+				bool pRegistered, pLoadState;
+				APT_AppletAttr pAttributes;
+
+				temp_res =
+					APT_GetAppletInfo(APPID_APPLICATION, &programId, &mediaType,
+									  &pRegistered, &pLoadState, &pAttributes);
+				if (R_FAILED(temp_res)) {
+					print_error_code_verbose("APT_GetAppletInfo failed\n",
+											 temp_res);
+				} else {
+					log_debug("GetAppletInfo (APP) - 0x%llx\n0x%x | 0x%x | "
+							  "0x%x | 0x%x\n",
+							  programId, mediaType, pRegistered, pLoadState,
+							  pAttributes);
+				}
 
 				titleGame *selectedTitleGame = games[selected_game_index];
 
