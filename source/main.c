@@ -462,6 +462,8 @@ int main(int argc, char *argv[]) {
 					free(games[i]);
 				}
 
+				games_counter = 0;
+
 				u8 parameter[0x300] = {0};
 
 				log_debug("Calling APT_StartApplication");
