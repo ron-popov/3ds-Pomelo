@@ -489,6 +489,7 @@ int main(int argc, char *argv[]) {
 				}
 
 				games_counter = 0;
+				selected_game_index = 0;
 
 				u8 parameter[0x300] = {0};
 
@@ -505,6 +506,8 @@ int main(int argc, char *argv[]) {
 				}
 
 				SetState(STATE_WAIT_TO_REGISTER);
+
+				is_first_run = true;
 
 				// I used to have aptWaitForWakeUp(TR_ENABLE) over here, which
 				// kinda helped the shutdown to work while pomelo is in the
@@ -616,14 +619,6 @@ int main(int argc, char *argv[]) {
 				} else {
 					log_debug("Successfully ran APT_WakeupApplication");
 					printf("Successfully ran APT_WakeupApplication\n");
-
-					APT_NotifyToWait(envGetAptAppId());
-
-					temp_res = APT_SleepIfShellClosed();
-					if (R_FAILED(temp_res)) {
-						print_error_code_verbose("APT_SleepIfShellClosed",
-												 temp_res);
-					}
 
 					SetState(STATE_BACKGROUND);
 				}
