@@ -41,7 +41,8 @@ void aptSignalCallback(APT_Signal signal) {
         case APTSIGNAL_POWERBUTTON:
         case APTSIGNAL_POWERBUTTON2: // Shutdown the system
             log_debug("Initiating shutdown due to power button press");
-            hardwareTimerSleep(2); // Give the console a moment to flush the log
+			printf("Shutting down...\n");
+			hardwareTimerSleep(2); // Give the console a moment to flush the log
             ptmSysmInit();
             PTMSYSM_ShutdownAsync(0);
             break;

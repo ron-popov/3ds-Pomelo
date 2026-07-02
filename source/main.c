@@ -435,7 +435,8 @@ int main(int argc, char *argv[]) {
 				bool registered = 0;
 				APT_IsRegistered(APPID_APPLICATION, &registered);
 				if (registered) {
-					log_debug("Previous app is still running", registered);
+					log_debug("Previous app is still running");
+					printf("Previous app is still running\n");
 					continue;
 				}
 
