@@ -377,13 +377,12 @@ int main(int argc, char *argv[]) {
 			// Initialize text buffer
 			titleNameTextBuf = C2D_TextBufNew(4096); // glyph buffer
 
-			// Load font
-			// C2D_Font font = C2D_FontLoadSystem(CFG_REGION_USA);
-			// C2D_Font font = C2D_FontLoadFromMem(&font, 96*13); // system font
-			// or load a custom font:
-			pomeloFont =
-				C2D_FontLoad("sdmc:/monogram.bcfnt"); // TODO: Inject this into
-													  // the binary, romfs?
+			// Load default font
+			// pomeloFont = C2D_FontLoadSystem(CFG_REGION_USA);
+
+			// Load font file from disk
+			// TODO: Inject this into the binary, probably romfs?
+			pomeloFont = C2D_FontLoad("sdmc:/monogram.bcfnt"); 
 
 			log_debug("Finished iterating");
 			printf("Finished iterating\n");
