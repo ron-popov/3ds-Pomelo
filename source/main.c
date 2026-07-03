@@ -527,8 +527,13 @@ int main(int argc, char *argv[]) {
 			// Render UI using citro2d
 			// Render the scene
 			C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
-			C2D_TargetClear(bottomRenderTarget, rgb_to_C2D_Color32(COL_BG));
+			C2D_TargetClear(bottomRenderTarget,
+							rgb_to_C2D_Color32(COL_GRID_DITHER_LIGHT));
 			C2D_SceneBegin(bottomRenderTarget);
+			C2D_Pomelo_DrawNdsGridBackground(
+				BOTTOM_SCREEN_WIDTH, BOTTOM_SCREEN_HEIGHT,
+				rgb_to_C2D_Color32(COL_GRID_DITHER_DARK),
+				rgb_to_C2D_Color32(COL_GRID_LINE));
 
 			// Draw seperating line from header to grid
 			C2D_Pomelo_DrawRectangleSingleColor(0, 0, BOTTOM_SCREEN_WIDTH,

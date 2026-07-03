@@ -42,7 +42,11 @@
 #define GRID_CELL_W             (GRID_CELL_BORDER + GRID_CELL_ICON_SIZE + GRID_CELL_BORDER)
 
 // Colors (R, G, B)
-#define COL_BG                  0xE8E4DC
+// NDS-style grid background: a fine 2px/2px dither plus 2px border lines
+// every 32px, matching ds.css's `.ds-grid` (https://github.com/notpx/ds.css)
+#define COL_GRID_DITHER_LIGHT   0xFFFFFF
+#define COL_GRID_DITHER_DARK    0xE3E3E3
+#define COL_GRID_LINE           0xC3C3C3
 #define COL_CELL                0xD4CFC5
 #define COL_CELL_SELECTED       0xFFFFFF
 #define COL_TEXT                0x222222

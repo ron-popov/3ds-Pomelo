@@ -6,6 +6,22 @@ bool C2D_Pomelo_DrawRectangleSingleColor(float x, float y, float w, float h, u32
     return C2D_DrawRectangle(x, y, 0, w, h, clr, clr, clr, clr);
 }
 
+void C2D_Pomelo_DrawNdsGridBackground(float w, float h, u32 dither_dark_clr, u32 line_clr) {
+    // Fine 4px dither: the target is assumed to already be cleared to the
+    // light color, so only the dark half of each 2px/2px stripe is drawn.
+    for (float y = 2.f; y < h; y += 4.f) {
+        C2D_Pomelo_DrawRectangleSingleColor(0, y, w, 2.f, dither_dark_clr);
+    }
+
+    // Coarse 32px grid lines on top of the dither
+    for (float x = 30.f; x < w; x += 32.f) {
+        C2D_Pomelo_DrawRectangleSingleColor(x, 0, 2.f, h, line_clr);
+    }
+    for (float y = 30.f; y < h; y += 32.f) {
+        C2D_Pomelo_DrawRectangleSingleColor(0, y, w, 2.f, line_clr);
+    }
+}
+
 u8 get_red(u32 color) {
     u32 temp = color & 0xff0000;
     u8 red_color = temp >> 16;
