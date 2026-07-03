@@ -560,9 +560,16 @@ int main(int argc, char *argv[]) {
 					if (game_index >= games_counter)
 						break;
 
-					u32 cell_color = game_index == selected_game_index
-										 ? rgb_to_C2D_Color32(COL_CELL_SELECTED)
-										 : rgb_to_C2D_Color32(COL_CELL);
+					bool is_selected = game_index == selected_game_index;
+					u32 cell_fill = rgb_to_C2D_Color32(
+						is_selected ? COL_CELL_SELECTED : COL_CELL);
+					u32 cell_border = rgb_to_C2D_Color32(
+						is_selected ? COL_BORDER_SELECTED : COL_BORDER);
+					// Raised gloss highlight when idle, pressed-in shadow
+					// when selected, like a DS system UI icon tile
+					u32 cell_bevel = is_selected
+										 ? C2D_Color32(0, 0, 0, 40)
+										 : C2D_Color32(255, 255, 255, 70);
 
 					float cell_start_x =
 						GRID_CELL_GAP_W +
@@ -571,9 +578,10 @@ int main(int argc, char *argv[]) {
 						GRID_HEADER_H + GRID_CELL_GAP_H +
 						grid_y * (GRID_CELL_GAP_H + GRID_CELL_H);
 
-					C2D_Pomelo_DrawRectangleSingleColor(
+					C2D_Pomelo_DrawNdsIconCell(
 						cell_start_x, cell_Start_y, GRID_CELL_W, GRID_CELL_H,
-						cell_color);
+						cell_fill, cell_border, cell_bevel,
+						CELL_BEVEL_BORDER_W);
 
 					C2D_Image image = {.tex =
 										   &games[game_index]->large_icon_tex,

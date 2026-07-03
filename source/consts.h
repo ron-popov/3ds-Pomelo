@@ -53,6 +53,9 @@
 #define COL_BORDER              0xB8B3A8
 #define COL_BORDER_SELECTED     0x636e72
 
+// Thickness of the DS-style bevel border drawn around each icon cell
+#define CELL_BEVEL_BORDER_W     2.f
+
 #define TITLE_ID_SYSTEM_MODULE_AM 0x0004013000001502
 
 #define SHOULD_ITERATE_GAMECARD true

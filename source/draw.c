@@ -22,6 +22,26 @@ void C2D_Pomelo_DrawNdsGridBackground(float w, float h, u32 dither_dark_clr, u32
     }
 }
 
+void C2D_Pomelo_DrawNdsIconCell(float x, float y, float w, float h,
+								 u32 fill_clr, u32 border_clr, u32 bevel_clr,
+								 float border_w) {
+    // Outer border ring
+    C2D_Pomelo_DrawRectangleSingleColor(x, y, w, h, border_clr);
+
+    // Inner fill
+    float inner_x = x + border_w;
+    float inner_y = y + border_w;
+    float inner_w = w - (border_w * 2.f);
+    float inner_h = h - (border_w * 2.f);
+    C2D_Pomelo_DrawRectangleSingleColor(inner_x, inner_y, inner_w, inner_h,
+										 fill_clr);
+
+    // Translucent bevel band across the top of the inner area
+    float bevel_h = inner_h * 0.4f;
+    C2D_DrawRectangle(inner_x, inner_y, 0, inner_w, bevel_h, bevel_clr,
+					   bevel_clr, bevel_clr, bevel_clr);
+}
+
 u8 get_red(u32 color) {
     u32 temp = color & 0xff0000;
     u8 red_color = temp >> 16;
