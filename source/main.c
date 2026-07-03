@@ -560,16 +560,13 @@ int main(int argc, char *argv[]) {
 					if (game_index >= games_counter)
 						break;
 
-					bool is_selected = game_index == selected_game_index;
-					u32 cell_fill = rgb_to_C2D_Color32(
-						is_selected ? COL_CELL_SELECTED : COL_CELL);
-					u32 cell_border = rgb_to_C2D_Color32(
-						is_selected ? COL_BORDER_SELECTED : COL_BORDER);
-					// Raised gloss highlight when idle, pressed-in shadow
-					// when selected, like a DS system UI icon tile
-					u32 cell_bevel = is_selected
-										 ? C2D_Color32(0, 0, 0, 40)
-										 : C2D_Color32(255, 255, 255, 70);
+					// Every cell uses the same bevel treatment regardless of
+					// selection: white fill with the dark slate-grey
+					// top/left edge, like a DS system UI icon tile
+					u32 cell_fill = rgb_to_C2D_Color32(COL_CELL_SELECTED);
+					u32 cell_top_left = rgb_to_C2D_Color32(COL_BORDER_SELECTED);
+					u32 cell_bottom_right = rgb_to_C2D_Color32(COL_CELL_SELECTED);
+					u32 cell_bevel = C2D_Color32(0, 0, 0, 50);
 
 					float cell_start_x =
 						GRID_CELL_GAP_W +
@@ -580,8 +577,8 @@ int main(int argc, char *argv[]) {
 
 					C2D_Pomelo_DrawNdsIconCell(
 						cell_start_x, cell_Start_y, GRID_CELL_W, GRID_CELL_H,
-						cell_fill, cell_border, cell_bevel,
-						CELL_BEVEL_BORDER_W);
+						cell_fill, cell_top_left, cell_bottom_right,
+						cell_bevel, CELL_BEVEL_BORDER_W);
 
 					C2D_Image image = {.tex =
 										   &games[game_index]->large_icon_tex,

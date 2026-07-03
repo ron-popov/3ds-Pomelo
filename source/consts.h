@@ -50,7 +50,6 @@
 #define COL_CELL                0xD4CFC5
 #define COL_CELL_SELECTED       0xFFFFFF
 #define COL_TEXT                0x222222
-#define COL_BORDER              0xB8B3A8
 #define COL_BORDER_SELECTED     0x636e72
 
 // Thickness of the DS-style bevel border drawn around each icon cell

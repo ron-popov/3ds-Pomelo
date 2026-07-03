@@ -23,10 +23,18 @@ void C2D_Pomelo_DrawNdsGridBackground(float w, float h, u32 dither_dark_clr, u32
 }
 
 void C2D_Pomelo_DrawNdsIconCell(float x, float y, float w, float h,
-								 u32 fill_clr, u32 border_clr, u32 bevel_clr,
+								 u32 fill_clr, u32 top_left_clr,
+								 u32 bottom_right_clr, u32 bevel_clr,
 								 float border_w) {
-    // Outer border ring
-    C2D_Pomelo_DrawRectangleSingleColor(x, y, w, h, border_clr);
+    // Base rect: doubles as the bottom/right border, since the inner fill
+    // and top/left strips drawn after it never cover those edges.
+    C2D_Pomelo_DrawRectangleSingleColor(x, y, w, h, bottom_right_clr);
+
+    // Top/left strips: the contrasting edge that makes this read as a
+    // raised (or, with colors swapped, pressed-in) bevel rather than a
+    // flat single-tone outline.
+    C2D_Pomelo_DrawRectangleSingleColor(x, y, w, border_w, top_left_clr);
+    C2D_Pomelo_DrawRectangleSingleColor(x, y, border_w, h, top_left_clr);
 
     // Inner fill
     float inner_x = x + border_w;
