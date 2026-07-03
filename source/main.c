@@ -382,7 +382,8 @@ int main(int argc, char *argv[]) {
 
 			// Load font file from disk
 			// TODO: Inject this into the binary, probably romfs?
-			pomeloFont = C2D_FontLoad("sdmc:/monogram.bcfnt"); 
+			// pomeloFont = C2D_FontLoad("sdmc:/monogram.bcfnt");
+			pomeloFont = C2D_FontLoad("sdmc:/nitrods-font.bcfnt");
 
 			log_debug("Finished iterating");
 			printf("Finished iterating\n");
