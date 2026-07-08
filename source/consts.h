@@ -13,10 +13,12 @@
 
 
 // Number of game icon columns
-#define GRID_COLS               5.f
+// (dropped from 5 to 4 to make room for a bigger GRID_CELL_BORDER without
+// shrinking the fixed 48px icon)
+#define GRID_COLS               4.f
 
 // Number of rows displayed, you will have more rows than that, that can be scrolled to
-#define GRID_VISIBLE_ROWS       3.f
+#define GRID_VISIBLE_ROWS       2.f
 
 // The height of the header where the game name will be displayed
 #define GRID_HEADER_H           40.f
@@ -25,7 +27,9 @@
 #define GRID_CELL_ICON_SIZE     48.f
 
 // The border around the icon
-#define GRID_CELL_BORDER        4.f
+// (doubled from 4 to 8; only possible without cramping gaps because
+// GRID_COLS was dropped to 4 above)
+#define GRID_CELL_BORDER        8.f
 
 // The scale of the header text
 #define TEXT_HEADER_SCALE       0.8f

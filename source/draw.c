@@ -27,27 +27,24 @@ void C2D_Pomelo_DrawNdsIconCell(float x, float y, float w, float h,
 								 u32 bottom_right_clr, u32 bevel_clr,
 								 float border_w) {
     // Base rect: doubles as the bottom/right border, since the inner fill
-    // and top/left strips drawn after it never cover those edges.
+    // drawn after it never covers those edges.
     C2D_Pomelo_DrawRectangleSingleColor(x, y, w, h, bottom_right_clr);
 
-    // Top/left strips: the contrasting edge that makes this read as a
-    // raised (or, with colors swapped, pressed-in) bevel rather than a
-    // flat single-tone outline.
-    C2D_Pomelo_DrawRectangleSingleColor(x, y, w, border_w, top_left_clr);
-    C2D_Pomelo_DrawRectangleSingleColor(x, y, border_w, h, top_left_clr);
+    // // Top/left strips removed for testing.
+    // (void)top_left_clr;
 
-    // Inner fill
-    float inner_x = x + border_w;
-    float inner_y = y + border_w;
-    float inner_w = w - (border_w * 2.f);
-    float inner_h = h - (border_w * 2.f);
-    C2D_Pomelo_DrawRectangleSingleColor(inner_x, inner_y, inner_w, inner_h,
-										 fill_clr);
+    // // Inner fill
+    // float inner_x = x + border_w;
+    // float inner_y = y + border_w;
+    // float inner_w = w - (border_w * 2.f);
+    // float inner_h = h - (border_w * 2.f);
+    // C2D_Pomelo_DrawRectangleSingleColor(inner_x, inner_y, inner_w, inner_h,
+	// 									 fill_clr);
 
-    // Translucent bevel band across the top of the inner area
-    float bevel_h = inner_h * 0.4f;
-    C2D_DrawRectangle(inner_x, inner_y, 0, inner_w, bevel_h, bevel_clr,
-					   bevel_clr, bevel_clr, bevel_clr);
+    // // Translucent bevel band across the top of the inner area
+    // float bevel_h = inner_h * 0.4f;
+    // C2D_DrawRectangle(inner_x, inner_y, 0, inner_w, bevel_h, bevel_clr,
+	// 				   bevel_clr, bevel_clr, bevel_clr);
 }
 
 u8 get_red(u32 color) {
