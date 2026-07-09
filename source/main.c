@@ -260,6 +260,73 @@ error:
 	return false;
 }
 
+// Draws the DS-style grid background (fine dither plus coarse tiled grid
+// lines) covering the whole bottom screen. Must be called after
+// C2D_SceneBegin() targets the bottom screen.
+static void drawBottomScreenGridBackground(void) {
+	C2D_Pomelo_DrawNdsGridDither(BOTTOM_SCREEN_WIDTH, BOTTOM_SCREEN_HEIGHT,
+								 rgb_to_C2D_Color32(COL_GRID_DITHER_DARK));
+
+	// Coarse grid lines tiled at a fixed pitch across the whole screen,
+	// matching ds.css's `.ds-grid` (a repeating grid of square cells),
+	// rather than lining up with the row boxes
+	float grid_x_lines[(int)(BOTTOM_SCREEN_WIDTH / GRID_CELL_PX) + 1];
+	int grid_x_line_count = C2D_Pomelo_BuildGridLinePositions(
+		GRID_X_OFFSET, GRID_CELL_PX, BOTTOM_SCREEN_WIDTH, grid_x_lines);
+
+	float grid_y_lines[(int)(BOTTOM_SCREEN_HEIGHT / GRID_CELL_PX) + 1];
+	int grid_y_line_count = C2D_Pomelo_BuildGridLinePositions(
+		GRID_Y_OFFSET, GRID_CELL_PX, BOTTOM_SCREEN_HEIGHT, grid_y_lines);
+
+	C2D_Pomelo_DrawNdsGridLines(grid_x_lines, grid_x_line_count, grid_y_lines,
+								grid_y_line_count, BOTTOM_SCREEN_WIDTH,
+								BOTTOM_SCREEN_HEIGHT,
+								rgb_to_C2D_Color32(COL_GRID_LINE),
+								GRID_LINE_W);
+}
+
+// Draws a single game row (icon on the left, name on the right) at its
+// scroll-adjusted position, like the DS System Menu's PICTOCHAT / DS
+// Download Play buttons.
+static void drawGameRow(int row, titleGame *game, bool is_selected,
+						C2D_TextBuf textBuf, C2D_Font font,
+						float row_gap_y) {
+	u32 fill_clr = rgb_to_C2D_Color32(COL_ROW_FILL);
+	u32 border_clr = rgb_to_C2D_Color32(
+		is_selected ? COL_ROW_SELECTED_BORDER : COL_ROW_BORDER);
+	float border_w = is_selected ? ROW_SELECTED_BORDER_W : ROW_BORDER_W;
+	float top_border_w =
+		is_selected ? ROW_SELECTED_BORDER_TOP_W : ROW_BORDER_TOP_W;
+
+	float row_start_x = LIST_MARGIN_X;
+	float row_start_y =
+		LIST_TOP_OFFSET_Y + row_gap_y + row * (row_gap_y + LIST_ROW_H);
+
+	C2D_Pomelo_DrawNdsIconCell(row_start_x, row_start_y, LIST_ROW_W,
+							   LIST_ROW_H, fill_clr, border_clr, border_w,
+							   top_border_w);
+
+	float icon_x = row_start_x + LIST_ICON_PADDING;
+	float icon_y = row_start_y + LIST_ICON_PADDING;
+
+	C2D_Image image = {.tex = &game->large_icon_tex, .subtex = &icon_subtex};
+	C2D_DrawImageAt(image, icon_x, icon_y, 1.0f, NULL, 1.0f, 1.0f);
+
+	C2D_Text row_text;
+	C2D_TextFontParse(&row_text, font, textBuf, game->name);
+	C2D_TextOptimize(&row_text);
+
+	float text_w, text_h;
+	C2D_TextGetDimensions(&row_text, TEXT_ROW_SCALE, TEXT_ROW_SCALE, &text_w,
+						  &text_h);
+
+	float text_x = icon_x + LIST_ICON_SIZE + LIST_TEXT_GAP;
+	float text_y = row_start_y + (LIST_ROW_H - text_h) / 2.f;
+
+	C2D_DrawText(&row_text, C2D_WithColor, text_x, text_y, 0, TEXT_ROW_SCALE,
+				TEXT_ROW_SCALE, rgb_to_C2D_Color32(COL_TEXT));
+}
+
 /// Main Function
 int main(int argc, char *argv[]) {
 
@@ -341,10 +408,6 @@ int main(int argc, char *argv[]) {
 	C3D_RenderTarget *bottomRenderTarget = NULL;
 	C2D_TextBuf titleNameTextBuf = NULL;
 	C2D_Font pomeloFont = NULL;
-
-	// float LIST_ROW_GAP_Y = (BOTTOM_SCREEN_HEIGHT -
-	// 						(LIST_ROW_H * LIST_VISIBLE_ROWS)) /
-	// 					   (LIST_VISIBLE_ROWS + 1);
 
 	float LIST_ROW_GAP_Y = 4.f;
 
@@ -525,31 +588,7 @@ int main(int argc, char *argv[]) {
 			C2D_TargetClear(bottomRenderTarget,
 							rgb_to_C2D_Color32(COL_GRID_DITHER_LIGHT));
 			C2D_SceneBegin(bottomRenderTarget);
-			C2D_Pomelo_DrawNdsGridDither(BOTTOM_SCREEN_WIDTH,
-										 BOTTOM_SCREEN_HEIGHT,
-										 rgb_to_C2D_Color32(COL_GRID_DITHER_DARK));
-
-			// Coarse grid lines tiled at a fixed pitch across the whole
-			// screen, matching ds.css's `.ds-grid` (a repeating grid of
-			// square cells), rather than lining up with the row boxes
-			float grid_x_lines[(int)(BOTTOM_SCREEN_WIDTH / GRID_CELL_PX) + 1];
-			int grid_x_line_count = 0;
-			for (float x = GRID_X_OFFSET;
-				 x < BOTTOM_SCREEN_WIDTH; x += GRID_CELL_PX) {
-				grid_x_lines[grid_x_line_count++] = x;
-			}
-
-			float grid_y_lines[(int)(BOTTOM_SCREEN_HEIGHT / GRID_CELL_PX) + 1];
-			int grid_y_line_count = 0;
-			for (float y = GRID_Y_OFFSET;
-				 y < BOTTOM_SCREEN_HEIGHT; y += GRID_CELL_PX) {
-				grid_y_lines[grid_y_line_count++] = y;
-			}
-
-			C2D_Pomelo_DrawNdsGridLines(
-				grid_x_lines, grid_x_line_count, grid_y_lines,
-				grid_y_line_count, BOTTOM_SCREEN_WIDTH, BOTTOM_SCREEN_HEIGHT,
-				rgb_to_C2D_Color32(COL_GRID_LINE), GRID_LINE_W);
+			drawBottomScreenGridBackground();
 
 			// Reset the glyph buffer every frame: up to LIST_VISIBLE_ROWS
 			// texts get parsed below, and they'd otherwise keep
@@ -565,50 +604,9 @@ int main(int argc, char *argv[]) {
 				if (game_index >= games_counter)
 					break;
 
-				bool is_selected = game_index == selected_game_index;
-				u32 fill_clr = rgb_to_C2D_Color32(COL_ROW_FILL);
-				u32 border_clr = rgb_to_C2D_Color32(
-					is_selected ? COL_ROW_SELECTED_BORDER : COL_ROW_BORDER);
-				float border_w =
-					is_selected ? ROW_SELECTED_BORDER_W : ROW_BORDER_W;
-				float top_border_w = is_selected ? ROW_SELECTED_BORDER_TOP_W
-												 : ROW_BORDER_TOP_W;
-
-				float row_start_x = LIST_MARGIN_X;
-				float row_start_y = LIST_TOP_OFFSET_Y + LIST_ROW_GAP_Y +
-									row * (LIST_ROW_GAP_Y + LIST_ROW_H);
-
-				C2D_Pomelo_DrawNdsIconCell(row_start_x, row_start_y,
-										   LIST_ROW_W, LIST_ROW_H, fill_clr,
-										   border_clr, border_w,
-										   top_border_w);
-
-				float icon_x = row_start_x + LIST_ICON_PADDING;
-				float icon_y = row_start_y + LIST_ICON_PADDING;
-
-				C2D_Image image = {.tex =
-									   &games[game_index]->large_icon_tex,
-								   .subtex = &icon_subtex};
-
-				C2D_DrawImageAt(image, icon_x, icon_y, 1.0f, NULL, 1.0f,
-								1.0f);
-
-				C2D_Text row_text;
-				C2D_TextFontParse(&row_text, pomeloFont, titleNameTextBuf,
-								  games[game_index]->name);
-				C2D_TextOptimize(&row_text);
-
-				float text_w, text_h;
-				C2D_TextGetDimensions(&row_text, TEXT_ROW_SCALE,
-									  TEXT_ROW_SCALE, &text_w, &text_h);
-
-				float text_x = icon_x + LIST_ICON_SIZE + LIST_TEXT_GAP;
-				float text_y =
-					row_start_y + (LIST_ROW_H - text_h) / 2.f;
-
-				C2D_DrawText(&row_text, C2D_WithColor, text_x, text_y, 0,
-							 TEXT_ROW_SCALE, TEXT_ROW_SCALE,
-							 rgb_to_C2D_Color32(COL_TEXT));
+				drawGameRow(row, games[game_index],
+						   game_index == selected_game_index,
+						   titleNameTextBuf, pomeloFont, LIST_ROW_GAP_Y);
 			}
 
 			C3D_FrameEnd(0);

@@ -17,6 +17,13 @@ void C2D_Pomelo_DrawNdsGridLines(const float *x_lines, int x_line_count,
 								 float w, float h, u32 line_clr,
 								 float line_w);
 
+// Fills out_positions with the tiled grid-line coordinates starting at
+// offset, spaced pitch apart, up to (but excluding) extent. Returns the
+// number of positions written. Used to build the x_lines/y_lines arrays
+// consumed by C2D_Pomelo_DrawNdsGridLines.
+int C2D_Pomelo_BuildGridLinePositions(float offset, float pitch,
+									 float extent, float *out_positions);
+
 // Draws a DS-style icon cell: a flat white tile with a thin border,
 // matching the plain button chrome used across the real DS System Menu
 // (PICTOCHAT / DS Download Play buttons). The top edge is drawn at

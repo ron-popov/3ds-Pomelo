@@ -1,5 +1,10 @@
 # Pomelo — APT internals notes
 
+## Build
+
+To check that the project compiles, run `make 3dsx` from the repo root
+(requires `DEVKITARM` to be set).
+
 This file documents what has been verified (via Ghidra reverse-engineering of a
 real Nintendo `ns` system module, cross-checked against a real-hardware IPC
 packet capture of the stock Home Menu, and empirical on-device/Mikage

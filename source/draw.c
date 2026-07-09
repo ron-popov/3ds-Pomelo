@@ -48,6 +48,15 @@ void C2D_Pomelo_DrawNdsIconCell(float x, float y, float w, float h,
 										 fill_clr);
 }
 
+int C2D_Pomelo_BuildGridLinePositions(float offset, float pitch,
+									 float extent, float *out_positions) {
+    int count = 0;
+    for (float p = offset; p < extent; p += pitch) {
+        out_positions[count++] = p;
+    }
+    return count;
+}
+
 u8 get_red(u32 color) {
     u32 temp = color & 0xff0000;
     u8 red_color = temp >> 16;
