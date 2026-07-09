@@ -2,14 +2,12 @@
 
 #include "3ds/types.h"
 
-#define TOP_SCREEN_WIDTH 400
-#define TOP_SCREEN_HEIGHT 240
-
 #define BOTTOM_SCREEN_WIDTH 320
 #define BOTTOM_SCREEN_HEIGHT 240
 
+// Max number of titleGame entries loadTitles() will collect across all
+// media types
 #define MAX_TITLES 64
-#define MAX_TITLES_TO_DISPLAY 26
 
 
 // Games are listed as full-width rows (icon on the left, name on the
@@ -34,14 +32,24 @@
 // The scale of the game name text drawn inside each row
 #define TEXT_ROW_SCALE           0.7f
 
-// App icon sizes
+// App icon sizes, as stored in the SMDH (see SMDH_ApplicationTitle in
+// utils.h). Both icons are RGB565 (2 bytes/pixel); the content-size consts
+// below are derived from these dimensions rather than hardcoded, so they
+// can't drift out of sync with the actual icon dimensions.
 #define LARGE_ICON_H 48
 #define LARGE_ICON_W 48
 #define SMALL_ICON_H 24
-#define SMALL_ICON_W 24 
-#define LARGE_ICON_RGB565_CONTENT_SIZE 0x1200
+#define SMALL_ICON_W 24
+#define ICON_RGB565_BYTES_PER_PIXEL 2
+#define LARGE_ICON_RGB565_CONTENT_SIZE \
+	(LARGE_ICON_W * LARGE_ICON_H * ICON_RGB565_BYTES_PER_PIXEL)
+#define SMALL_ICON_RGB565_CONTENT_SIZE \
+	(SMALL_ICON_W * SMALL_ICON_H * ICON_RGB565_BYTES_PER_PIXEL)
 
 #define LIST_TOP_OFFSET_Y 6.f
+
+// Vertical gap left between consecutive rows (and above the first one)
+#define LIST_ROW_GAP_Y            4.f
 
 // Height of each row: icon plus its top/bottom padding
 #define LIST_ROW_H               (LIST_ICON_PADDING + LIST_ICON_SIZE + LIST_ICON_PADDING)
@@ -86,19 +94,11 @@
 #define SELECTION_CORNER_THICKNESS 3.f
 #define SELECTION_CORNER_OUTSET    3.f
 
-#define TITLE_ID_SYSTEM_MODULE_AM 0x0004013000001502
-
+// Which media types loadTitles() scans for launchable titles
 #define SHOULD_ITERATE_GAMECARD true
 #define SHOULD_ITERATE_NAND true
 #define SHOULD_ITERATE_SDCARD false
 
+// Max length (incl. null terminator) of a title's display name, as stored
+// in titleGame::name
 #define MAX_TITLE_NAME 255
-
-// List of titles ids that the homemenu has to launch during startup
-static const u64 TitleIdsToLaunch[] = {
-    0x4013000001d02, 0x4013000001802, 0x4013000001a02, 0x4013000001502, 0x4013000001c02, 
-    0x4013000002702, 0x4013000001602, 0x4013000002002, 0x4013000003302, 0x4013000002d02, 
-    0x4013000002e02, 0x4013000002902, 0x4013000002f02, 0x4013000002602, 0x4013000002402, 
-    0x4013000003202, 0x4013000003402, 0x4013000003502, 0x4013000002b02, 0x4013000002c02, 
-    0x4013000002802
-};

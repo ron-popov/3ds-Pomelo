@@ -289,14 +289,13 @@ static void drawBottomScreenGridBackground(void) {
 // scroll-adjusted position, like the DS System Menu's PICTOCHAT / DS
 // Download Play buttons.
 static void drawGameRow(int row, titleGame *game, bool is_selected,
-						C2D_TextBuf textBuf, C2D_Font font,
-						float row_gap_y) {
+						C2D_TextBuf textBuf, C2D_Font font) {
 	u32 fill_clr = rgb_to_C2D_Color32(COL_ROW_FILL);
 	u32 border_clr = rgb_to_C2D_Color32(COL_ROW_BORDER);
 
 	float row_start_x = LIST_MARGIN_X;
-	float row_start_y =
-		LIST_TOP_OFFSET_Y + row_gap_y + row * (row_gap_y + LIST_ROW_H);
+	float row_start_y = LIST_TOP_OFFSET_Y + LIST_ROW_GAP_Y +
+						row * (LIST_ROW_GAP_Y + LIST_ROW_H);
 
 	C2D_Pomelo_DrawNdsIconCell(row_start_x, row_start_y, LIST_ROW_W,
 							   LIST_ROW_H, fill_clr, border_clr,
@@ -412,8 +411,6 @@ int main(int argc, char *argv[]) {
 	C3D_RenderTarget *bottomRenderTarget = NULL;
 	C2D_TextBuf titleNameTextBuf = NULL;
 	C2D_Font pomeloFont = NULL;
-
-	float LIST_ROW_GAP_Y = 4.f;
 
 	SetState(STATE_STARTING_POMELO);
 
@@ -610,7 +607,7 @@ int main(int argc, char *argv[]) {
 
 				drawGameRow(row, games[game_index],
 						   game_index == selected_game_index,
-						   titleNameTextBuf, pomeloFont, LIST_ROW_GAP_Y);
+						   titleNameTextBuf, pomeloFont);
 			}
 
 			C3D_FrameEnd(0);
