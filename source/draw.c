@@ -48,6 +48,38 @@ void C2D_Pomelo_DrawNdsIconCell(float x, float y, float w, float h,
 										 fill_clr);
 }
 
+void C2D_Pomelo_DrawSelectionCorners(float x, float y, float w, float h,
+									 float corner_len, float thickness,
+									 float outset, u32 clr) {
+    float left = x - outset;
+    float top = y - outset;
+    float right = x + w + outset - thickness;
+    float bottom = y + h + outset - thickness;
+
+    // Top-left
+    C2D_Pomelo_DrawRectangleSingleColor(left, top, corner_len, thickness, clr);
+    C2D_Pomelo_DrawRectangleSingleColor(left, top, thickness, corner_len, clr);
+
+    // Top-right
+    C2D_Pomelo_DrawRectangleSingleColor(right - corner_len + thickness, top,
+										corner_len, thickness, clr);
+    C2D_Pomelo_DrawRectangleSingleColor(right, top, thickness, corner_len,
+										clr);
+
+    // Bottom-left
+    C2D_Pomelo_DrawRectangleSingleColor(left, bottom, corner_len, thickness,
+										clr);
+    C2D_Pomelo_DrawRectangleSingleColor(left, bottom - corner_len + thickness,
+										thickness, corner_len, clr);
+
+    // Bottom-right
+    C2D_Pomelo_DrawRectangleSingleColor(right - corner_len + thickness,
+										bottom, corner_len, thickness, clr);
+    C2D_Pomelo_DrawRectangleSingleColor(right,
+										bottom - corner_len + thickness,
+										thickness, corner_len, clr);
+}
+
 int C2D_Pomelo_BuildGridLinePositions(float offset, float pitch,
 									 float extent, float *out_positions) {
     int count = 0;

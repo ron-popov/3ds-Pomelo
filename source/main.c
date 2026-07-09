@@ -292,19 +292,23 @@ static void drawGameRow(int row, titleGame *game, bool is_selected,
 						C2D_TextBuf textBuf, C2D_Font font,
 						float row_gap_y) {
 	u32 fill_clr = rgb_to_C2D_Color32(COL_ROW_FILL);
-	u32 border_clr = rgb_to_C2D_Color32(
-		is_selected ? COL_ROW_SELECTED_BORDER : COL_ROW_BORDER);
-	float border_w = is_selected ? ROW_SELECTED_BORDER_W : ROW_BORDER_W;
-	float top_border_w =
-		is_selected ? ROW_SELECTED_BORDER_TOP_W : ROW_BORDER_TOP_W;
+	u32 border_clr = rgb_to_C2D_Color32(COL_ROW_BORDER);
 
 	float row_start_x = LIST_MARGIN_X;
 	float row_start_y =
 		LIST_TOP_OFFSET_Y + row_gap_y + row * (row_gap_y + LIST_ROW_H);
 
 	C2D_Pomelo_DrawNdsIconCell(row_start_x, row_start_y, LIST_ROW_W,
-							   LIST_ROW_H, fill_clr, border_clr, border_w,
-							   top_border_w);
+							   LIST_ROW_H, fill_clr, border_clr,
+							   ROW_BORDER_W, ROW_BORDER_TOP_W);
+
+	if (is_selected) {
+		C2D_Pomelo_DrawSelectionCorners(
+			row_start_x, row_start_y, LIST_ROW_W, LIST_ROW_H,
+			SELECTION_CORNER_LEN, SELECTION_CORNER_THICKNESS,
+			SELECTION_CORNER_OUTSET,
+			rgb_to_C2D_Color32(COL_SELECTION_CORNER));
+	}
 
 	float icon_x = row_start_x + LIST_ICON_PADDING;
 	float icon_y = row_start_y + LIST_ICON_PADDING;

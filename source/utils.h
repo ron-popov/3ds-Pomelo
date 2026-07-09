@@ -42,7 +42,7 @@ typedef struct {
 
 
 static inline u32 rgb_to_C2D_Color32(u32 color) {
-    return C2D_Color32(get_red(color), get_blue(color), get_green(color), 0xff);
+    return C2D_Color32(get_red(color), get_green(color), get_blue(color), 0xff);
 }
 
 

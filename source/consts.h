@@ -38,7 +38,7 @@
 #define LARGE_ICON_H 48
 #define LARGE_ICON_W 48
 #define SMALL_ICON_H 24
-#define SMALL_ICON_W 24
+#define SMALL_ICON_W 24 
 #define LARGE_ICON_RGB565_CONTENT_SIZE 0x1200
 
 #define LIST_TOP_OFFSET_Y 6.f
@@ -77,11 +77,14 @@
 // real DS System Menu's button chrome
 #define ROW_BORDER_TOP_W        3.f
 
-// The selected row's border uses ds.css's --color-ds-blue accent and a
-// thicker stroke, instead of the plain black border, as its highlight
-#define COL_ROW_SELECTED_BORDER 0x0059F3
-#define ROW_SELECTED_BORDER_W   3.f
-#define ROW_SELECTED_BORDER_TOP_W 4.f
+// The selected row is marked with blue L-shaped corner brackets drawn just
+// outside its border, matching the real DS System Menu's selection
+// highlight (see the "Pokemon Black Version" row on the DS Home Menu),
+// rather than recoloring the row's own border.
+#define COL_SELECTION_CORNER       0x3c6773
+#define SELECTION_CORNER_LEN       14.f
+#define SELECTION_CORNER_THICKNESS 3.f
+#define SELECTION_CORNER_OUTSET    3.f
 
 #define TITLE_ID_SYSTEM_MODULE_AM 0x0004013000001502
 

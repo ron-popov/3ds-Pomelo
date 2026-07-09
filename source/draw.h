@@ -34,6 +34,15 @@ void C2D_Pomelo_DrawNdsIconCell(float x, float y, float w, float h,
 								 u32 fill_clr, u32 border_clr,
 								 float border_w, float top_border_w);
 
+// Draws four L-shaped corner brackets just outside the rectangle
+// (x, y, w, h), like the DS System Menu's selection highlight (see the
+// "Pokemon Black Version" row on the real DS Home Menu). Each bracket is
+// corner_len long on both legs, thickness wide, and offset outward from
+// the rectangle by outset.
+void C2D_Pomelo_DrawSelectionCorners(float x, float y, float w, float h,
+									 float corner_len, float thickness,
+									 float outset, u32 clr);
+
 u8 get_red(u32 color);
 u8 get_green(u32 color);
 u8 get_blue(u32 color);
