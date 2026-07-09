@@ -35,7 +35,8 @@ typedef struct {
     u64 titleId;
     FS_MediaType mediaType;
     char name[MAX_TITLE_NAME];
-    C3D_Tex small_icon_tex;
+	char publisher[MAX_TITLE_NAME];
+	C3D_Tex small_icon_tex;
     C3D_Tex large_icon_tex;
 } titleGame;
 

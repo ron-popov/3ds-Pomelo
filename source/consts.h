@@ -30,7 +30,8 @@
 #define LIST_TEXT_GAP            10.f
 
 // The scale of the game name text drawn inside each row
-#define TEXT_ROW_SCALE           0.7f
+#define TEXT_ROW_SCALE_X            0.4f
+#define TEXT_ROW_SCALE_Y            0.4f
 
 // App icon sizes, as stored in the SMDH (see SMDH_ApplicationTitle in
 // utils.h). Both icons are RGB565 (2 bytes/pixel); the content-size consts

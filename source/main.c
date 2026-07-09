@@ -105,6 +105,7 @@ bool loadTitleMetadata(u64 titleId, FS_MediaType mediaType,
 
 	// Clean the name before we override it
 	memset(titleGameOut->name, 0, sizeof(titleGameOut->name));
+	memset(titleGameOut->publisher, 0, sizeof(titleGameOut->publisher));
 
 	// The short description is a UTF-16 string (0x40 u16 chars)
 	// Convert to UTF-8 for easier use
@@ -112,8 +113,13 @@ bool loadTitleMetadata(u64 titleId, FS_MediaType mediaType,
 				  smdh->titles[lang].shortDescription, MAX_TITLE_NAME - 1);
 	titleGameOut->name[MAX_TITLE_NAME - 1] = '\0';
 
+	utf16_to_utf8((uint8_t *)titleGameOut->publisher,
+				  smdh->titles[lang].publisher, MAX_TITLE_NAME - 1);
+	titleGameOut->publisher[MAX_TITLE_NAME - 1] = '\0';
+
 	// Remove non ascii chars
 	remove_non_ascii(titleGameOut->name);
+	remove_non_ascii(titleGameOut->publisher);
 
 	// log_debug("Initiating tex");
 
@@ -194,6 +200,7 @@ bool loadTitlesFromMediaType(FS_MediaType mediaType, u8 maxTitleCount,
 		loadedTitleGame->titleId = title_ids[i];
 		loadedTitleGame->mediaType = mediaType;
 		strncpy(loadedTitleGame->name, "", MAX_TITLE_NAME);
+		strncpy(loadedTitleGame->publisher, "", MAX_TITLE_NAME);
 
 		temp_res = loadTitleMetadata(title_ids[i], mediaType, loadedTitleGame);
 		if (temp_res) {
@@ -315,19 +322,34 @@ static void drawGameRow(int row, titleGame *game, bool is_selected,
 	C2D_Image image = {.tex = &game->large_icon_tex, .subtex = &icon_subtex};
 	C2D_DrawImageAt(image, icon_x, icon_y, 1.0f, NULL, 1.0f, 1.0f);
 
-	C2D_Text row_text;
-	C2D_TextFontParse(&row_text, font, textBuf, game->name);
-	C2D_TextOptimize(&row_text);
+	C2D_Text row_gamename;
+	C2D_TextFontParse(&row_gamename, font, textBuf, game->name);
+	C2D_TextOptimize(&row_gamename);
 
-	float text_w, text_h;
-	C2D_TextGetDimensions(&row_text, TEXT_ROW_SCALE, TEXT_ROW_SCALE, &text_w,
-						  &text_h);
+	float text_gamename_h, text_gamename_w;
+	C2D_TextGetDimensions(&row_gamename, TEXT_ROW_SCALE_X, TEXT_ROW_SCALE_Y, &text_gamename_h,
+						  &text_gamename_w);
 
-	float text_x = icon_x + LIST_ICON_SIZE + LIST_TEXT_GAP;
-	float text_y = row_start_y + (LIST_ROW_H - text_h) / 2.f;
+	float text_gamename_x = icon_x + LIST_ICON_SIZE + LIST_TEXT_GAP;
+	float text_gamename_y = row_start_y + (LIST_ROW_H - text_gamename_w) / 4.f;
+	// float text_gamename_y = icon_y;
 
-	C2D_DrawText(&row_text, C2D_WithColor, text_x, text_y, 0, TEXT_ROW_SCALE,
-				TEXT_ROW_SCALE, rgb_to_C2D_Color32(COL_TEXT));
+	C2D_DrawText(&row_gamename, C2D_WithColor, text_gamename_x, text_gamename_y, 0, TEXT_ROW_SCALE_X,
+				TEXT_ROW_SCALE_Y, rgb_to_C2D_Color32(COL_TEXT));
+
+	C2D_Text row_publisher;
+	C2D_TextFontParse(&row_publisher, font, textBuf, game->publisher);
+	C2D_TextOptimize(&row_publisher);
+
+	float text_publisher_w, text_publisher_h;
+	C2D_TextGetDimensions(&row_publisher, TEXT_ROW_SCALE_X, TEXT_ROW_SCALE_Y,
+						  &text_publisher_w, &text_publisher_h);
+
+	float text_publisher_x = icon_x + LIST_ICON_SIZE + LIST_TEXT_GAP;
+	float text_publisher_y = icon_y + (LIST_ROW_H - text_publisher_h) / 2.f;
+
+	C2D_DrawText(&row_publisher, C2D_WithColor, text_publisher_x, text_publisher_y, 0, TEXT_ROW_SCALE_X,
+				 TEXT_ROW_SCALE_Y, rgb_to_C2D_Color32(COL_TEXT));
 }
 
 /// Main Function
