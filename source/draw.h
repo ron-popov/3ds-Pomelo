@@ -9,9 +9,7 @@ bool C2D_Pomelo_DrawRectangleSingleColor(float x, float y, float w, float h, u32
 void C2D_Pomelo_DrawNdsGridDither(float w, float h, u32 dither_dark_clr);
 
 // Draws the coarse NDS-style grid lines (the ones that read as visible
-// "squares") at caller-supplied x/y coordinates, rather than a fixed
-// independent tiling, so they can be aligned to line up exactly with UI
-// element edges (e.g. the game row boxes). Each x coordinate gets a
+// "squares") at caller-supplied x/y coordinates. Each x coordinate gets a
 // full-height vertical line, each y coordinate a full-width horizontal
 // line. Colors are already expected to be in C2D_Color32 form.
 void C2D_Pomelo_DrawNdsGridLines(const float *x_lines, int x_line_count,
