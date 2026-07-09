@@ -342,9 +342,11 @@ int main(int argc, char *argv[]) {
 	C2D_TextBuf titleNameTextBuf = NULL;
 	C2D_Font pomeloFont = NULL;
 
-	float LIST_ROW_GAP_Y = (BOTTOM_SCREEN_HEIGHT -
-							(LIST_ROW_H * LIST_VISIBLE_ROWS)) /
-						   (LIST_VISIBLE_ROWS + 1);
+	// float LIST_ROW_GAP_Y = (BOTTOM_SCREEN_HEIGHT -
+	// 						(LIST_ROW_H * LIST_VISIBLE_ROWS)) /
+	// 					   (LIST_VISIBLE_ROWS + 1);
+
+	float LIST_ROW_GAP_Y = 4.f;
 
 	SetState(STATE_STARTING_POMELO);
 
@@ -532,15 +534,15 @@ int main(int argc, char *argv[]) {
 			// square cells), rather than lining up with the row boxes
 			float grid_x_lines[(int)(BOTTOM_SCREEN_WIDTH / GRID_CELL_PX) + 1];
 			int grid_x_line_count = 0;
-			for (float x = GRID_CELL_PX; x < BOTTOM_SCREEN_WIDTH;
-				 x += GRID_CELL_PX) {
+			for (float x = GRID_X_OFFSET;
+				 x < BOTTOM_SCREEN_WIDTH; x += GRID_CELL_PX) {
 				grid_x_lines[grid_x_line_count++] = x;
 			}
 
 			float grid_y_lines[(int)(BOTTOM_SCREEN_HEIGHT / GRID_CELL_PX) + 1];
 			int grid_y_line_count = 0;
-			for (float y = GRID_CELL_PX; y < BOTTOM_SCREEN_HEIGHT;
-				 y += GRID_CELL_PX) {
+			for (float y = GRID_Y_OFFSET;
+				 y < BOTTOM_SCREEN_HEIGHT; y += GRID_CELL_PX) {
 				grid_y_lines[grid_y_line_count++] = y;
 			}
 
@@ -573,8 +575,8 @@ int main(int argc, char *argv[]) {
 												 : ROW_BORDER_TOP_W;
 
 				float row_start_x = LIST_MARGIN_X;
-				float row_start_y =
-					LIST_ROW_GAP_Y + row * (LIST_ROW_GAP_Y + LIST_ROW_H);
+				float row_start_y = LIST_TOP_OFFSET_Y + LIST_ROW_GAP_Y +
+									row * (LIST_ROW_GAP_Y + LIST_ROW_H);
 
 				C2D_Pomelo_DrawNdsIconCell(row_start_x, row_start_y,
 										   LIST_ROW_W, LIST_ROW_H, fill_clr,

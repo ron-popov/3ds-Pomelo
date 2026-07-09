@@ -17,7 +17,7 @@
 // PICTOCHAT / DS Download Play buttons.
 
 // Left/right margin around each row
-#define LIST_MARGIN_X            12.f
+#define LIST_MARGIN_X            28.f
 
 // Number of rows visible on screen at once; more can be scrolled to
 #define LIST_VISIBLE_ROWS        3.f
@@ -41,6 +41,8 @@
 #define SMALL_ICON_W 24
 #define LARGE_ICON_RGB565_CONTENT_SIZE 0x1200
 
+#define LIST_TOP_OFFSET_Y 6.f
+
 // Height of each row: icon plus its top/bottom padding
 #define LIST_ROW_H               (LIST_ICON_PADDING + LIST_ICON_SIZE + LIST_ICON_PADDING)
 
@@ -58,7 +60,9 @@
 #define GRID_LINE_W              2.f
 
 // Pitch of the coarse grid squares, matching ds.css's .ds-grid 32px tile
-#define GRID_CELL_PX             32.f
+#define GRID_CELL_PX             67.f
+#define GRID_X_OFFSET 25.f
+#define GRID_Y_OFFSET 9.f
 #define COL_ROW_FILL            0xFFFFFF
 #define COL_TEXT                0x222222
 
@@ -83,7 +87,7 @@
 
 #define SHOULD_ITERATE_GAMECARD true
 #define SHOULD_ITERATE_NAND true
-#define SHOULD_ITERATE_SDCARD true
+#define SHOULD_ITERATE_SDCARD false
 
 #define MAX_TITLE_NAME 255
 
