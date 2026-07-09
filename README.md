@@ -3,13 +3,8 @@ Pomelo 3ds is an alternative homemenu to the stock homemenu! Currently the proje
 This project currently only supports US systems, it is able to run on mikage and on real hardware running US firmware.
 
 ## Features
-- [x] List all installed titles
-- [x] Launch selected title
-- [ ] Handle APT events
-- [ ] Pretty UI
-- [ ] OS Stats - Battery, wifi and etc...
-- [ ] Show title 3d icon
-- [ ] Cutomizable UI
+- List all installed titles
+- Launch selected title
 
 ## Build
 This project uses my own fork of `libctru`. libctru is intented for building a 3ds application / game, however
@@ -32,21 +27,8 @@ make 3dsx
 make all
 ```
 
-
-## Deploy to mikage homemenu
-The title built by this project is supposed to run as a home menu. Mikage must be bootstrapped as a US system.
-To install this title as a mikage homemenu do the following (assuming you already have mikage home menu running)
-```bash
-# Backup original mikage homemenu
-cp -v ~/.local/share/mikage/data/00040030/00009802/content/00000027.cxi ~/.local/share/mikage/data/00040030/00009802/content/00000027.cxi.bak
-cp -v ~/.local/share/mikage/data/00040030/00009802/content/00000000.cxi ~/.local/share/mikage/data/00040030/00009802/content/00000000.cxi.bak
-
-# This will override the mikage homemenu with pomelo
-make install_mikage
-```
-
 ## Deploy to real hardware
-This requires having a sdcard and luma3ds installed on your system
+This requires having a sdcard and luma3ds installed on your system. Currently it only supports US systems.
 ```bash
 # Build a "pomelo.code.bin" and "pomelo.exheader.bin"
 make code.bin

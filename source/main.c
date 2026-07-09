@@ -343,11 +343,9 @@ int main(int argc, char *argv[]) {
 	C2D_TextBuf titleNameTextBuf = NULL;
 	C2D_Font pomeloFont = NULL;
 
-	float GRID_CELL_GAP_W =
-		(BOTTOM_SCREEN_WIDTH - (GRID_CELL_W * GRID_COLS)) / (GRID_COLS + 1);
-	float GRID_CELL_GAP_H = (BOTTOM_SCREEN_HEIGHT - GRID_HEADER_H -
-							 (GRID_CELL_H * GRID_VISIBLE_ROWS)) /
-							(GRID_VISIBLE_ROWS + 1);
+	float LIST_ROW_GAP_Y = (BOTTOM_SCREEN_HEIGHT -
+							(LIST_ROW_H * LIST_VISIBLE_ROWS)) /
+						   (LIST_VISIBLE_ROWS + 1);
 
 	SetState(STATE_STARTING_POMELO);
 
@@ -404,20 +402,17 @@ int main(int argc, char *argv[]) {
 			is_first_run = false;
 
 			// Handle kDown
+			// Games are listed as a single scrollable column now, so
+			// up/left and down/right are equivalent ways to move by one row
 			switch (kDown) {
-			case KEY_DDOWN: // Go down in menu
-				selected_game_index = MIN(selected_game_index + GRID_COLS,
-										  (int)games_counter - 1);
-				break;
-			case KEY_DUP: // Go up in menu
-				selected_game_index = MAX(selected_game_index - GRID_COLS, 0);
-				break;
-			case KEY_DLEFT:
-				selected_game_index = MAX(selected_game_index - 1, 0);
-				break;
+			case KEY_DDOWN:
 			case KEY_DRIGHT:
 				selected_game_index =
 					MIN(selected_game_index + 1, (int)games_counter - 1);
+				break;
+			case KEY_DUP:
+			case KEY_DLEFT:
+				selected_game_index = MAX(selected_game_index - 1, 0);
 				break;
 			case KEY_START: // Turn off console
 				log_debug("Initiating shutdown due to start button press");
@@ -518,11 +513,10 @@ int main(int argc, char *argv[]) {
 			}
 
 			// Auto-scroll to keep selection visible
-			int sel_row = selected_game_index / GRID_COLS;
-			if (sel_row < scroll_offset)
-				scroll_offset = sel_row;
-			if (sel_row >= scroll_offset + GRID_VISIBLE_ROWS)
-				scroll_offset = sel_row - GRID_VISIBLE_ROWS + 1;
+			if (selected_game_index < scroll_offset)
+				scroll_offset = selected_game_index;
+			if (selected_game_index >= scroll_offset + LIST_VISIBLE_ROWS)
+				scroll_offset = selected_game_index - LIST_VISIBLE_ROWS + 1;
 
 			// Render UI using citro2d
 			// Render the scene
@@ -530,62 +524,85 @@ int main(int argc, char *argv[]) {
 			C2D_TargetClear(bottomRenderTarget,
 							rgb_to_C2D_Color32(COL_GRID_DITHER_LIGHT));
 			C2D_SceneBegin(bottomRenderTarget);
-			C2D_Pomelo_DrawNdsGridBackground(
+			C2D_Pomelo_DrawNdsGridDither(BOTTOM_SCREEN_WIDTH,
+										 BOTTOM_SCREEN_HEIGHT,
+										 rgb_to_C2D_Color32(COL_GRID_DITHER_DARK));
+
+			// Align the coarse grid lines to the row boxes' own edges,
+			// instead of an independent fixed tiling, so the background
+			// "squares" always line up with the games' rows
+			float grid_x_lines[] = {LIST_MARGIN_X,
+									BOTTOM_SCREEN_WIDTH - LIST_MARGIN_X};
+			float grid_y_lines[(int)LIST_VISIBLE_ROWS * 2];
+			for (int row = 0; row < LIST_VISIBLE_ROWS; row++) {
+				float row_top =
+					LIST_ROW_GAP_Y + row * (LIST_ROW_GAP_Y + LIST_ROW_H);
+				grid_y_lines[row * 2] = row_top;
+				grid_y_lines[row * 2 + 1] = row_top + LIST_ROW_H;
+			}
+			C2D_Pomelo_DrawNdsGridLines(
+				grid_x_lines, 2, grid_y_lines, (int)LIST_VISIBLE_ROWS * 2,
 				BOTTOM_SCREEN_WIDTH, BOTTOM_SCREEN_HEIGHT,
-				rgb_to_C2D_Color32(COL_GRID_DITHER_DARK),
-				rgb_to_C2D_Color32(COL_GRID_LINE));
+				rgb_to_C2D_Color32(COL_GRID_LINE), GRID_LINE_W);
 
-			// Draw seperating line from header to grid
-			C2D_Pomelo_DrawRectangleSingleColor(0, 0, BOTTOM_SCREEN_WIDTH,
-												GRID_HEADER_H,
-												rgb_to_C2D_Color32(COL_CELL));
+			// Reset the glyph buffer every frame: up to LIST_VISIBLE_ROWS
+			// texts get parsed below, and they'd otherwise keep
+			// accumulating in the buffer frame after frame
+			C2D_TextBufClear(titleNameTextBuf);
 
-			// Draw header text
-			C2D_Text header_text;
-			C2D_TextFontParse(&header_text, pomeloFont, titleNameTextBuf,
-							  games[selected_game_index]->name);
-			C2D_TextOptimize(&header_text);
+			// Draw each visible game as a full-width row: icon on the
+			// left, name on the right, like the DS System Menu's
+			// PICTOCHAT / DS Download Play buttons
+			for (int row = 0; row < LIST_VISIBLE_ROWS; row++) {
+				int game_index = row + scroll_offset;
 
-			C2D_DrawText(&header_text, C2D_WithColor, GRID_CELL_GAP_W + 2, 8, 0,
-						 TEXT_HEADER_SCALE, TEXT_HEADER_SCALE,
-						 rgb_to_C2D_Color32(COL_TEXT));
+				if (game_index >= games_counter)
+					break;
 
-			// Draw grid of cells, not including icons, just the background
-			// color of the cells
-			for (int grid_x = 0; grid_x < GRID_COLS; grid_x++) {
-				for (int grid_y = 0; grid_y < GRID_VISIBLE_ROWS; grid_y++) {
-					int game_index =
-						(grid_y + scroll_offset) * GRID_COLS + grid_x;
+				bool is_selected = game_index == selected_game_index;
+				u32 fill_clr = rgb_to_C2D_Color32(COL_ROW_FILL);
+				u32 border_clr = rgb_to_C2D_Color32(
+					is_selected ? COL_ROW_SELECTED_BORDER : COL_ROW_BORDER);
+				float border_w =
+					is_selected ? ROW_SELECTED_BORDER_W : ROW_BORDER_W;
+				float top_border_w = is_selected ? ROW_SELECTED_BORDER_TOP_W
+												 : ROW_BORDER_TOP_W;
 
-					if (game_index >= games_counter)
-						break;
+				float row_start_x = LIST_MARGIN_X;
+				float row_start_y =
+					LIST_ROW_GAP_Y + row * (LIST_ROW_GAP_Y + LIST_ROW_H);
 
-					// Every cell uses the same flat DS-style button chrome
-					// regardless of selection: white fill with a thin
-					// uniform light-grey border
-					u32 fill_clr = rgb_to_C2D_Color32(COL_CELL_SELECTED);
-					u32 border_clr = rgb_to_C2D_Color32(COL_CELL_BORDER);
+				C2D_Pomelo_DrawNdsIconCell(row_start_x, row_start_y,
+										   LIST_ROW_W, LIST_ROW_H, fill_clr,
+										   border_clr, border_w,
+										   top_border_w);
 
-					float cell_start_x =
-						GRID_CELL_GAP_W +
-						grid_x * (GRID_CELL_GAP_W + GRID_CELL_W);
-					float cell_Start_y =
-						GRID_HEADER_H + GRID_CELL_GAP_H +
-						grid_y * (GRID_CELL_GAP_H + GRID_CELL_H);
+				float icon_x = row_start_x + LIST_ICON_PADDING;
+				float icon_y = row_start_y + LIST_ICON_PADDING;
 
-					C2D_Pomelo_DrawNdsIconCell(
-						cell_start_x, cell_Start_y, GRID_CELL_W, GRID_CELL_H,
-						fill_clr, border_clr, CELL_BORDER_W,
-						CELL_BORDER_TOP_W);
+				C2D_Image image = {.tex =
+									   &games[game_index]->large_icon_tex,
+								   .subtex = &icon_subtex};
 
-					C2D_Image image = {.tex =
-										   &games[game_index]->large_icon_tex,
-									   .subtex = &icon_subtex};
+				C2D_DrawImageAt(image, icon_x, icon_y, 1.0f, NULL, 1.0f,
+								1.0f);
 
-					C2D_DrawImageAt(image, cell_start_x + GRID_CELL_BORDER,
-									cell_Start_y + GRID_CELL_BORDER, 1.0f, NULL,
-									1.0f, 1.0f);
-				}
+				C2D_Text row_text;
+				C2D_TextFontParse(&row_text, pomeloFont, titleNameTextBuf,
+								  games[game_index]->name);
+				C2D_TextOptimize(&row_text);
+
+				float text_w, text_h;
+				C2D_TextGetDimensions(&row_text, TEXT_ROW_SCALE,
+									  TEXT_ROW_SCALE, &text_w, &text_h);
+
+				float text_x = icon_x + LIST_ICON_SIZE + LIST_TEXT_GAP;
+				float text_y =
+					row_start_y + (LIST_ROW_H - text_h) / 2.f;
+
+				C2D_DrawText(&row_text, C2D_WithColor, text_x, text_y, 0,
+							 TEXT_ROW_SCALE, TEXT_ROW_SCALE,
+							 rgb_to_C2D_Color32(COL_TEXT));
 			}
 
 			C3D_FrameEnd(0);

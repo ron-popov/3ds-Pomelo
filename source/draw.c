@@ -6,19 +6,28 @@ bool C2D_Pomelo_DrawRectangleSingleColor(float x, float y, float w, float h, u32
     return C2D_DrawRectangle(x, y, 0, w, h, clr, clr, clr, clr);
 }
 
-void C2D_Pomelo_DrawNdsGridBackground(float w, float h, u32 dither_dark_clr, u32 line_clr) {
+void C2D_Pomelo_DrawNdsGridDither(float w, float h, u32 dither_dark_clr) {
     // Fine 4px dither: the target is assumed to already be cleared to the
     // light color, so only the dark half of each 2px/2px stripe is drawn.
     for (float y = 2.f; y < h; y += 4.f) {
         C2D_Pomelo_DrawRectangleSingleColor(0, y, w, 2.f, dither_dark_clr);
     }
+}
 
-    // Coarse 32px grid lines on top of the dither
-    for (float x = 30.f; x < w; x += 32.f) {
-        C2D_Pomelo_DrawRectangleSingleColor(x, 0, 2.f, h, line_clr);
+void C2D_Pomelo_DrawNdsGridLines(const float *x_lines, int x_line_count,
+								 const float *y_lines, int y_line_count,
+								 float w, float h, u32 line_clr,
+								 float line_w) {
+    // Vertical lines, each spanning the full height
+    for (int i = 0; i < x_line_count; i++) {
+        C2D_Pomelo_DrawRectangleSingleColor(x_lines[i], 0, line_w, h,
+											line_clr);
     }
-    for (float y = 30.f; y < h; y += 32.f) {
-        C2D_Pomelo_DrawRectangleSingleColor(0, y, w, 2.f, line_clr);
+
+    // Horizontal lines, each spanning the full width
+    for (int i = 0; i < y_line_count; i++) {
+        C2D_Pomelo_DrawRectangleSingleColor(0, y_lines[i], w, line_w,
+											line_clr);
     }
 }
 
