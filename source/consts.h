@@ -54,10 +54,17 @@
 #define COL_CELL                0xD4CFC5
 #define COL_CELL_SELECTED       0xFFFFFF
 #define COL_TEXT                0x222222
-#define COL_BORDER_SELECTED     0x636e72
 
-// Thickness of the DS-style bevel border drawn around each icon cell
-#define CELL_BEVEL_BORDER_W     2.f
+// Flat black border used on DS-style buttons/icon cells (see
+// PICTOCHAT / DS Download Play buttons on the real DS System Menu)
+#define COL_CELL_BORDER         0x000000
+
+// Thickness of the flat border drawn around each icon cell
+#define CELL_BORDER_W           2.f
+
+// The top edge is drawn thicker than the other three sides, matching the
+// real DS System Menu's button chrome
+#define CELL_BORDER_TOP_W       3.f
 
 #define TITLE_ID_SYSTEM_MODULE_AM 0x0004013000001502
 
