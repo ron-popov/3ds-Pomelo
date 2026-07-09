@@ -48,14 +48,17 @@
 #define LIST_ROW_W               (BOTTOM_SCREEN_WIDTH - (LIST_MARGIN_X * 2.f))
 
 // Colors (R, G, B)
-// NDS-style grid background: a fine 2px/2px dither, with coarse border
-// lines aligned to the game rows' own edges (see the grid_x_lines /
+// NDS-style grid background: a fine 2px/2px dither, with a coarse grid
+// of square cells tiled across the whole screen (see the grid_x_lines /
 // grid_y_lines computation in main.c), matching ds.css's `.ds-grid`
 // (https://github.com/notpx/ds.css)
 #define COL_GRID_DITHER_LIGHT   0xFFFFFF
 #define COL_GRID_DITHER_DARK    0xE3E3E3
 #define COL_GRID_LINE           0xC3C3C3
 #define GRID_LINE_W              2.f
+
+// Pitch of the coarse grid squares, matching ds.css's .ds-grid 32px tile
+#define GRID_CELL_PX             32.f
 #define COL_ROW_FILL            0xFFFFFF
 #define COL_TEXT                0x222222
 

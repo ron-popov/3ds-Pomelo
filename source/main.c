@@ -528,21 +528,26 @@ int main(int argc, char *argv[]) {
 										 BOTTOM_SCREEN_HEIGHT,
 										 rgb_to_C2D_Color32(COL_GRID_DITHER_DARK));
 
-			// Align the coarse grid lines to the row boxes' own edges,
-			// instead of an independent fixed tiling, so the background
-			// "squares" always line up with the games' rows
-			float grid_x_lines[] = {LIST_MARGIN_X,
-									BOTTOM_SCREEN_WIDTH - LIST_MARGIN_X};
-			float grid_y_lines[(int)LIST_VISIBLE_ROWS * 2];
-			for (int row = 0; row < LIST_VISIBLE_ROWS; row++) {
-				float row_top =
-					LIST_ROW_GAP_Y + row * (LIST_ROW_GAP_Y + LIST_ROW_H);
-				grid_y_lines[row * 2] = row_top;
-				grid_y_lines[row * 2 + 1] = row_top + LIST_ROW_H;
+			// Coarse grid lines tiled at a fixed pitch across the whole
+			// screen, matching ds.css's `.ds-grid` (a repeating grid of
+			// square cells), rather than lining up with the row boxes
+			float grid_x_lines[(int)(BOTTOM_SCREEN_WIDTH / GRID_CELL_PX) + 1];
+			int grid_x_line_count = 0;
+			for (float x = GRID_CELL_PX; x < BOTTOM_SCREEN_WIDTH;
+				 x += GRID_CELL_PX) {
+				grid_x_lines[grid_x_line_count++] = x;
 			}
+
+			float grid_y_lines[(int)(BOTTOM_SCREEN_HEIGHT / GRID_CELL_PX) + 1];
+			int grid_y_line_count = 0;
+			for (float y = GRID_CELL_PX; y < BOTTOM_SCREEN_HEIGHT;
+				 y += GRID_CELL_PX) {
+				grid_y_lines[grid_y_line_count++] = y;
+			}
+
 			C2D_Pomelo_DrawNdsGridLines(
-				grid_x_lines, 2, grid_y_lines, (int)LIST_VISIBLE_ROWS * 2,
-				BOTTOM_SCREEN_WIDTH, BOTTOM_SCREEN_HEIGHT,
+				grid_x_lines, grid_x_line_count, grid_y_lines,
+				grid_y_line_count, BOTTOM_SCREEN_WIDTH, BOTTOM_SCREEN_HEIGHT,
 				rgb_to_C2D_Color32(COL_GRID_LINE), GRID_LINE_W);
 
 			// Reset the glyph buffer every frame: up to LIST_VISIBLE_ROWS
