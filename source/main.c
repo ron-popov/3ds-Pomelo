@@ -565,9 +565,7 @@ int main(int argc, char *argv[]) {
 				// Some games will hang during boot if this memory is not
 				// released
 				for (int i = 0; i < games_counter; i++) {
-					log_debug("Freeing texture index 0x%x", i);
 					C3D_TexDelete(&games[i]->large_icon_tex);
-					log_debug("Freeing game index 0x%x", i);
 					free(games[i]);
 				}
 

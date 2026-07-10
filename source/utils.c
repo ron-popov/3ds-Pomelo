@@ -52,44 +52,49 @@ bool shouldDisplayTitle(u64 title_id) {
     u32 title_id_upper = (u32)((title_id >> 32) & 0xFFFFFFFF);
 
     switch (title_id_upper) {
-        case 0x0004001b: // System data archives
-            return false;
-        case 0x00040030: // System Applets
-            return false;
-        case 0x0004009B: // Shared data archives
-            return false;
-        case 0x000400DB: // System data archives
-            return false;
-        case 0x00040130: // System modules
-            return false;
-        case 0x00040138: // System Firmware
-            return false;
-        case 0x00048004: // DSiWare Ports
-            return false;
-        case 0x00048005: // DSi System Applications
-            return false;
-        case 0x0004800F: // DSi System Data Archives
-            return false;
-        default:
-            break;
+	case 0x0004000E: // Updates / Patch
+        return false;
+	case 0x0004008C: // DLC
+		return false;
+	case 0x00040002: // Demo
+		return false;
+	case 0x0004001b: // System data archives
+		return false;
+	case 0x00040030: // System Applets
+		return false;
+	case 0x0004009B: // Shared data archives
+		return false;
+	case 0x000400DB: // System data archives
+		return false;
+	case 0x00040130: // System modules
+		return false;
+	case 0x00040138: // System Firmware
+		return false;
+	case 0x00048004: // DSiWare Ports
+		return false;
+	case 0x00048005: // DSi System Applications
+		return false;
+	case 0x0004800F: // DSi System Data Archives
+		return false;
+	default:
+		break;
     }
 
-    // Specific title ids blacklist
-    switch(title_id) {
-        case 0x0004001000021a00: // System transfer - name in "icon" is "???"
-            return false;
-        case 0x0004001000021f00: // System updates in safe mode - no name
-            return false;
-        case 0x000400102002cf00: // Homemenu
-            return false;
-        case 0x0000000000000000: // Empty title id
-            return false;
-        default:
-            break;
-    }
-    
+		// Specific title ids blacklist
+		switch (title_id) {
+	case 0x0004001000021a00: // System transfer - name in "icon" is "???"
+		return false;
+	case 0x0004001000021f00: // System updates in safe mode - no name
+		return false;
+	case 0x000400102002cf00: // Homemenu
+		return false;
+	case 0x0000000000000000: // Empty title id
+		return false;
+	default:
+		break;
+	}
 
-    return true;
+	return true;
 }
 
 
