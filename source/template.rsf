@@ -161,7 +161,7 @@ AccessControlInfo:
     - CategoryHomeMenu
     - SeedDB
   HandleTableSize: 0x200
-  MemoryType: System
+  MemoryType: Application
   IORegisterMapping:
     - 0x1FF00000-0x1FF7FFFF
     - 0x1EC00000-0x1EFFFFFF

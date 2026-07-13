@@ -98,7 +98,7 @@
 // Which media types loadTitles() scans for launchable titles
 #define SHOULD_ITERATE_GAMECARD true
 #define SHOULD_ITERATE_NAND true
-#define SHOULD_ITERATE_SDCARD true
+#define SHOULD_ITERATE_SDCARD false
 
 // Max length (incl. null terminator) of a title's display name, as stored
 // in titleGame::name

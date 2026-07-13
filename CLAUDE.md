@@ -125,37 +125,6 @@ few `_aptDebug` calls in, rebuild, ask for a fresh `pomelo_debug.log`, remove
 them once root-caused) is the effective way to debug this stack, since there's
 no interactive debugger available on-device or in Mikage.
 
-## Real bug found and fixed in `source/template.rsf`: `MemoryType: Application`
-
-Launching memory-hungry titles (confirmed with `super_mario_3d_land_us`) crashed
-a bit after wakeup, with the title itself calling `svcBreak(USERBREAK_PANIC)`
-from inside its own resource allocator's out-of-memory handler (a
-Nintendo-SDK-style bidirectional frame-heap allocator, hit while it was loading
-early-boot/intro assets). Mikage treats a guest kernel panic as fatal to the
-whole emulation session, which is why this looked like "Mikage crashes a bit
-after the game is woken up" rather than a guest-process-local failure. The
-title booted fine under the stock Home Menu with the same Mikage build, which
-ruled out an emulator-side or console-model (SystemMode/SystemModeExt)
-explanation and pointed at something pomelo itself does differently.
-
-Root cause: `source/template.rsf` (which `makerom -f cxi` turns into
-`pomelo.cxi`'s exheader — the `cxi`/`install_mikage`/`install_sdcard` Makefile
-targets all consume it) set `MemoryType: Application`. `MemoryType` selects
-which FCRAM partition a process's own memory is drawn from; `Application` put
-pomelo's own resident heap/texture/GX allocations in the **same** partition the
-launched title needs, instead of the isolated `System` partition. A real dump
-of the stock Home Menu (`title_dumps/myconsole_0004003000008F02_homemenu`,
-same UniqueId `0x008f` pomelo's RSF deliberately mirrors) confirms it uses
-`Memory Type: SYSTEM`. Fixed by changing pomelo's RSF to match:
-`MemoryType: System`.
-
-`git blame` traces the wrong value back to the "Finally a template.rsf that
-runs on real hardware" commit, which bundled it together with several other,
-actually-necessary fixes (`Priority: 16`, the `Dependency` list,
-`IoAccessControl` entries) needed to get NS to accept the title at all —
-`MemoryType: Application` was very likely leftover shotgun-debugging cruft
-from that session that was never revisited, not something load-bearing.
-
 ## Hazard: never trigger IPC between `svcSendSyncRequest` and reading its response
 
 `aptSendCommand()` uses `getThreadCommandBuffer()` — a **single, shared
