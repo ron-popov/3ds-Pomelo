@@ -156,48 +156,6 @@ actually-necessary fixes (`Priority: 16`, the `Dependency` list,
 `MemoryType: Application` was very likely leftover shotgun-debugging cruft
 from that session that was never revisited, not something load-bearing.
 
-## Real bug found and fixed in `libctru-for-homemenu`'s `allocateHeaps.c`: fatal-checking the two startup `MEMOP_FREE` calls
-
-After the `MemoryType: System` fix above, pomelo started panicking on real
-hardware (Mikage was unaffected) while setting up its heaps, at
-`svcControlMemory(MEMOP_ALLOC_LINEAR)`. A real dump of the stock Home Menu
-showed it calls `svcControlMemory(..., MEMOP_FREE, ...)` twice right at boot —
-once at `addr0=0x00000000` and once at `addr0=0x08000000`, both with
-`size=0` — before doing its own `ALLOC`/`ALLOC_LINEAR` calls. `allocateHeaps.c`
-was changed to mimic this, but doing so made things *worse*: it now paniced
-even earlier, on the very first added `MEMOP_FREE` call itself
-(`svcBreak` tag `0xEEEE0004`, real hardware register dump: `r11` = the actual
-kernel `Result` = `0xE0E01BF5`, i.e. Level `USAGE` / Summary `INVALID_ARG` /
-Module `OS`).
-
-Ghidra tracing of the real Home Menu binary
-(`title_dumps/myconsole_0004003000008F02_homemenu`) found these two `FREE`
-calls originate from `FUN_00146d40(0)` (linear heap) and `FUN_00146ca8(0)`
-(app heap) — shrink-to-`0` calls made from a shared boot-init routine
-(`FUN_00011bf4`). Both shrink functions compute `size = <tracked current
-size> - <new size>` from a global heap-tracking struct that starts
-zero-initialized (confirmed by finding every writer to that struct and by the
-struct's address living in `.bss`, unreadable as static data) — so on a fresh
-process this is genuinely a `FREE` of address `0`/`0x08000000` with `size=0`,
-byte-for-byte the same parameters pomelo now sends. Critically, **neither
-shrink function's failure path panics or even propagates specially** — on
-failure they just `return` the negative `Result` to the caller, and
-`FUN_00011bf4` never checks the return value of either call at all. So on
-real hardware, this exact `FREE(addr=0/0x08000000, size=0)` call legitimately
-fails with `0xE0E01BF5` ("nothing committed there to free") on a normal,
-freshly-created process — including, presumably, for the real Home Menu
-itself on a cold boot — and the real code simply ignores that failure and
-falls through to the `ALLOC`/`ALLOC_LINEAR` calls regardless. These two
-`FREE` calls only do real work in a warm-relaunch scenario (a heap from a
-previous run already exists and needs shrinking before resizing).
-
-Fixed by making pomelo's two startup `MEMOP_FREE` calls best-effort (ignore
-the `Result`, no `svcBreak`) instead of fatal, matching the real binary's own
-error handling. The original linear-heap `ALLOC` panic that motivated adding
-these `FREE` calls in the first place is a separate, still-open question —
-worth re-checking once these frees are non-fatal, since it may no longer
-reproduce, or may need its own real-hardware register dump to diagnose.
-
 ## Hazard: never trigger IPC between `svcSendSyncRequest` and reading its response
 
 `aptSendCommand()` uses `getThreadCommandBuffer()` — a **single, shared
