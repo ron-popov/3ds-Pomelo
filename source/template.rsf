@@ -28,8 +28,8 @@ SystemControlInfo:
 
 AccessControlInfo:
   SystemMode: 64MB
-  SystemModeExt: LEGACY
-  CpuSpeed: 268MHz
+  SystemModeExt: 178MB
+  CpuSpeed: 804MHz
   CoreVersion: 2
   IdealProcessor: 0
   AffinityMask: 1
@@ -167,7 +167,7 @@ AccessControlInfo:
     - 0x1EC00000-0x1EFFFFFF
   MemoryMapping:
     - 0x1F000000-0x1F5FFFFF:r
-  ResourceLimitCategory: sysapplet
+  ResourceLimitCategory: 1
   IoAccessControl:
     - FsMountNand
     - FsMountNandRoWrite
@@ -180,4 +180,4 @@ AccessControlInfo:
   EnableL2Cache: true
 
 Option:
-  UseOnSD: false
+  UseOnSD: true
