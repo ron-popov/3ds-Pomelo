@@ -12,8 +12,9 @@ TitleInfo:
   Version: 2
 
 SystemControlInfo:
-  JumpId: 0
-  RemasterVersion: 0
+  AppType: system
+  JumpId: 0x0004003000008f02
+  RemasterVersion: 0 # Do NOT set to 0x001e (the real Home Menu's value) - confirmed to crash the loader
   StackSize: 0x4000
   Dependency:
     ns:   0x0004013000008002
@@ -24,7 +25,7 @@ SystemControlInfo:
     soc:  0x0004013000001b02
     am:   0x0004013000001502
     hid:  0x0004013000003302
-    
+
 
 AccessControlInfo:
   SystemMode: 64MB
@@ -33,7 +34,18 @@ AccessControlInfo:
   CoreVersion: 2
   IdealProcessor: 0
   AffinityMask: 1
-  Priority: 16 # It must be this value, or else the NS will crash when trying to load the homemenu, like honestly IDK
+  Priority: 28 # It must be this value, or else the NS will crash when trying to load the homemenu, like honestly IDK
+  SystemSaveDataId1: 0x0002008f
+  AccessibleSaveDataIds: # Matches real Home Menu's exheader (0004003000008F02 dump)
+    - 0x8f
+    - 0x210
+    - 0x2cd
+    - 0x14d1
+    - 0x165c
+  DisableDebug: true
+  DescVersion: 3
+  ReleaseKernelMajor: 2   # Removing this field, causes linear heap allocation to fail
+  ReleaseKernelMinor: 50  # Removing this field, causes linear heap allocation to fail
   SystemCallAccess:
     ControlMemory: 1
     QueryMemory: 2
@@ -106,55 +118,38 @@ AccessControlInfo:
     BindInterrupt: 69
     UnbindInterrupt: 70
     InvalidateProcessDataCache: 71
-    StoreProcessDataCache: 72
-    FlushProcessDataCache: 73
-    ProgramVerification: 74
-    ControlProcessMemory: 75
-    MapProcessMemory: 76
-    UnmapProcessMemory: 77
-    CreateCodeSet: 78
-    LaunchProcess: 79
-    TerminateProcess: 80
-    SetProcessResourceLimit: 81
-    GetProcessResourceLimit: 82
-    CreateResourceLimit: 83
-    SetResourceLimitValues: 84
-    ControlMemoryMapping: 85
-    SetGpuProt: 86
-    SetGid: 87
-    Backdoor: 123
   ServiceAccessControl:
-    - APT:S
-    - ac:u
-    - am:net
-    - boss:U
-    - cam:u
-    - cecd:u
-    - cfg:nor
-    - cfg:u
-    - csnd:SND
-    - dsp::DSP
-    - frd:u
+    - $hioFIO
+    - $hostio0
+    - $hostio1
     - fs:USER
     - gsp::Gpu
-    - gsp::Lcd
     - hid:USER
-    - http:C
-    - ir:rst
-    - ir:u
-    - ir:USER
-    - mic:u
     - ndm:u
-    - news:s
-    - nwm::EXT
-    - nwm::UDS
-    - ptm:sysm
-    - ptm:u
     - pxi:dev
-    - soc:U
-    - y2r:u
-    - pm:app
+    - APT:S
+    - APT:U
+    - ac:u
+    - act:u
+    - am:sys
+    - boss:P
+    - cam:u
+    - cecd:s
+    - dsp::DSP
+    - frd:a
+    - gsp::Lcd
+    - hid:SPVR
+    - ir:rst
+    - mic:u
+    - news:s
+    - nim:aoc
+    - nim:u
     - ns:s
+    - nwm::EXT
+    - ptm:gets
+    - ptm:sysm
+    - y2r:u
+    - cfg:s
   FileSystemAccess:
     - DirectSdmc
     - SwitchCleanup
@@ -163,21 +158,12 @@ AccessControlInfo:
   HandleTableSize: 0x200
   MemoryType: Application
   IORegisterMapping:
-    - 0x1FF00000-0x1FF7FFFF
-    - 0x1EC00000-0x1EFFFFFF
+    - 0x1FF50000-0x1FF57FFF
+    - 0x1FF70000-0x1FF77FFF
   MemoryMapping:
     - 0x1F000000-0x1F5FFFFF:r
-  ResourceLimitCategory: 1
-  IoAccessControl:
-    - FsMountNand
-    - FsMountNandRoWrite
-    - FsMountTwln
-    - FsMountWnand
-    - FsMountCardSpi
-    - UseSdif3
-    - CreateSeed
-    - UseCardSpi
-  EnableL2Cache: true
+  ResourceLimitCategory: sysapplet
+  EnableL2Cache: false
 
 Option:
   UseOnSD: true
