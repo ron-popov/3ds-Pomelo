@@ -8,6 +8,7 @@
 #include <string.h>
 #include <wchar.h>
 
+#include "3ds/srv.h"
 #include "apt_callbacks.h"
 #include "consts.h"
 #include "draw.h"
@@ -362,18 +363,20 @@ int main(int argc, char *argv[]) {
 	// final binary
 	inject_loader_decoys();
 
-	// Launch required sysmodules
-	{
-
-	}
-
-	log_debug("You are OKAY, this will hang now, it's okay");
+	log_debug("Initializing HID");
 
 	// Init HID
 	hidInit();
 
+	log_debug("Initializing gfx");
+
 	// Init gfx stuff
-	gfxInitDefault(); // This hangs
+	gfxInitDefault();
+
+	log_debug("Initializing c2d & c3d");
+
+	Handle temp_handle;
+	srvGetServiceHandle(&temp_handle, "pop");
 
 	// Init rendering stuff
 	C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);

@@ -1,7 +1,5 @@
 #pragma once
 
-#include "3ds/types.h"
-
 #define BOTTOM_SCREEN_WIDTH 320
 #define BOTTOM_SCREEN_HEIGHT 240
 

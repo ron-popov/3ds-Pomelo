@@ -17,26 +17,18 @@ TitleInfo:
 
 SystemControlInfo:
   AppType: system
-  JumpId: 0
-  RemasterVersion: 0
+  JumpId: 0x0004003000008f02
+  RemasterVersion: 0 # Do NOT set to 0x001e (the real Home Menu's value) - confirmed to crash the loader
   StackSize: 0x4000
   Dependency:
-    config: 0x0004013000001702
-    gpio:   0x0004013000001b02
-    i2c:    0x0004013000001e02
-    mcu:    0x0004013000001f02
-    pdn:    0x0004013000002102
-    ptm:    0x0004013000002202
-    spi:    0x0004013000002302  
-
-# hid:  0x0004013000003302
-# ns:     0x0004013000008002
-# hwcd: 0x0004013000001c02
-# mvd:  0x0004013000001d02
-# dsp:  0x0004013000001802
-# nwm:  0x0004013000003102
-# soc:  0x0004013000001b02
-# am:   0x0004013000001502
+    ns:   0x0004013000008002
+    hwcd: 0x0004013000001c02
+    mvd:  0x0004013000001d02
+    dsp:  0x0004013000001802
+    nwm:  0x0004013000003102
+    soc:  0x0004013000001b02
+    am:   0x0004013000001502
+    hid:  0x0004013000003302
 
 # Dependency:             0004013000001702
 # Dependency:             0004013000001b02
@@ -63,6 +55,9 @@ AccessControlInfo:
     - 0x14d1
     - 0x165c
   DisableDebug: true
+  DescVersion: 3
+  ReleaseKernelMajor: 2
+  ReleaseKernelMinor: 50
   SystemCallAccess:
     ControlMemory: 1
     QueryMemory: 2
@@ -135,23 +130,6 @@ AccessControlInfo:
     BindInterrupt: 69
     UnbindInterrupt: 70
     InvalidateProcessDataCache: 71
-    StoreProcessDataCache: 72
-    FlushProcessDataCache: 73
-    ProgramVerification: 74
-    ControlProcessMemory: 75
-    MapProcessMemory: 76
-    UnmapProcessMemory: 77
-    CreateCodeSet: 78
-    LaunchProcess: 79
-    TerminateProcess: 80
-    SetProcessResourceLimit: 81
-    GetProcessResourceLimit: 82
-    CreateResourceLimit: 83
-    SetResourceLimitValues: 84
-    ControlMemoryMapping: 85
-    SetGpuProt: 86
-    SetGid: 87
-    Backdoor: 123
   ServiceAccessControl:
     - $hioFIO
     - $hostio0
@@ -197,15 +175,6 @@ AccessControlInfo:
   MemoryMapping:
     - 0x1F000000-0x1F5FFFFF:r
   ResourceLimitCategory: sysapplet
-  IoAccessControl:
-    - FsMountNand
-    - FsMountNandRoWrite
-    - FsMountTwln
-    - FsMountWnand
-    - FsMountCardSpi
-    - UseSdif3
-    - CreateSeed
-    - UseCardSpi
   EnableL2Cache: false
 
 Option:
