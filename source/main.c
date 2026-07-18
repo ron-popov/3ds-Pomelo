@@ -363,23 +363,20 @@ int main(int argc, char *argv[]) {
 	// final binary
 	inject_loader_decoys();
 
-	log_debug("Initializing HID");
-
 	// Init HID
-	hidInit();
-
-	log_debug("Initializing gfx");
+	log_debug("Initializing HID");
+	hidInit();	
 
 	// Init gfx stuff
+	log_debug("Initializing gfx");
 	gfxInitDefault();
 
-	log_debug("Initializing c2d & c3d");
-
-	Handle temp_handle;
-	srvGetServiceHandle(&temp_handle, "pop");
-
 	// Init rendering stuff
+	log_debug("Initializing C3D");
 	C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);
+
+	// Init 2D rendering stuff
+	log_debug("Initializing C2D");
 	C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
 	C2D_Prepare();
 
@@ -489,9 +486,14 @@ int main(int argc, char *argv[]) {
 			SetState(STATE_FOREGROUND);
 
 		} else if (state == STATE_FOREGROUND) {
+			log_debug("Waiting for vblank");
 			gspWaitForVBlank();
+
+			log_debug("Scanning hid input");
 			hidScanInput();
 			u32 kDown = hidKeysDown();
+
+			log_debug("Handling hid input");
 
 			if (kDown == 0x00 &&
 				!is_first_run) { // If no keys were pressed and it's
