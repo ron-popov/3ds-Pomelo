@@ -56,6 +56,12 @@ AccessControlInfo:
   AffinityMask: 1
   Priority: 28 # It must be this value, or else the NS will crash when trying to load the homemenu, like honestly IDK
   SystemSaveDataId1: 0x0002008f
+  AccessibleSaveDataIds: # Matches real Home Menu's exheader (0004003000008F02 dump)
+    - 0x8f
+    - 0x210
+    - 0x2cd
+    - 0x14d1
+    - 0x165c
   DisableDebug: true
   SystemCallAccess:
     ControlMemory: 1
