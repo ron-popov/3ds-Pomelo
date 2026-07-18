@@ -158,8 +158,8 @@ AccessControlInfo:
   HandleTableSize: 0x200
   MemoryType: Application
   IORegisterMapping:
-    - 0x1FF50000-0x1FF57FFF
-    - 0x1FF70000-0x1FF77FFF
+    - 0x1FF00000-0x1FF7FFFF
+    - 0x1EC00000-0x1EFFFFFF
   MemoryMapping:
     - 0x1F000000-0x1F5FFFFF:r
   ResourceLimitCategory: sysapplet
