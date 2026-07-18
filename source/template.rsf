@@ -56,8 +56,8 @@ AccessControlInfo:
     - 0x165c
   DisableDebug: true
   DescVersion: 3
-  ReleaseKernelMajor: 2
-  ReleaseKernelMinor: 50
+  ReleaseKernelMajor: 2   # Removing this field, causes linear heap allocation to fail
+  ReleaseKernelMinor: 50  # Removing this field, causes linear heap allocation to fail
   SystemCallAccess:
     ControlMemory: 1
     QueryMemory: 2
