@@ -17,8 +17,8 @@
 #include "utils.h"
 
 // Homemenu heap size is different from regular app heap size
-u32 __ctru_heap_size = 0x304000;
-u32 __ctru_linear_heap_size = 0xb64000;
+u32 __ctru_heap_size = 0x800000; // 8MB of linear ram
+u32 __ctru_linear_heap_size = 0x400000; // 4MB of linear heap
 
 static aptHookCookie homemenuAptHookCookie;
 static PrintConsole topScreen;
@@ -362,8 +362,18 @@ int main(int argc, char *argv[]) {
 	// final binary
 	inject_loader_decoys();
 
+	// Launch required sysmodules
+	{
+
+	}
+
+	log_debug("You are OKAY, this will hang now, it's okay");
+
+	// Init HID
+	hidInit();
+
 	// Init gfx stuff
-	gfxInitDefault();
+	gfxInitDefault(); // This hangs
 
 	// Init rendering stuff
 	C3D_Init(C3D_DEFAULT_CMDBUF_SIZE);

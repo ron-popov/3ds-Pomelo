@@ -11,20 +11,41 @@ TitleInfo:
   UniqueId: 0x008f
   Version: 2
 
+# JumpId: 0x0004003000008f02
+# RemasterVersion: 0x001e // Settings this values makes loader crash, 
+# even tho that is the value the real homemenu has
+
 SystemControlInfo:
+  AppType: system
   JumpId: 0
   RemasterVersion: 0
   StackSize: 0x4000
   Dependency:
-    ns:   0x0004013000008002
-    hwcd: 0x0004013000001c02
-    mvd:  0x0004013000001d02
-    dsp:  0x0004013000001802
-    nwm:  0x0004013000003102
-    soc:  0x0004013000001b02
-    am:   0x0004013000001502
-    hid:  0x0004013000003302
-    
+    config: 0x0004013000001702
+    gpio:   0x0004013000001b02
+    i2c:    0x0004013000001e02
+    mcu:    0x0004013000001f02
+    pdn:    0x0004013000002102
+    ptm:    0x0004013000002202
+    spi:    0x0004013000002302  
+
+# hid:  0x0004013000003302
+# ns:     0x0004013000008002
+# hwcd: 0x0004013000001c02
+# mvd:  0x0004013000001d02
+# dsp:  0x0004013000001802
+# nwm:  0x0004013000003102
+# soc:  0x0004013000001b02
+# am:   0x0004013000001502
+
+# Dependency:             0004013000001702
+# Dependency:             0004013000001b02
+# Dependency:             0004013000001e02
+# Dependency:             0x0004013000001f02
+# Dependency:             0x0004013000002102
+# Dependency:             0x0004013000002202
+# Dependency:             0x0004013000002302
+
 
 AccessControlInfo:
   SystemMode: 64MB
@@ -33,7 +54,9 @@ AccessControlInfo:
   CoreVersion: 2
   IdealProcessor: 0
   AffinityMask: 1
-  Priority: 16 # It must be this value, or else the NS will crash when trying to load the homemenu, like honestly IDK
+  Priority: 28 # It must be this value, or else the NS will crash when trying to load the homemenu, like honestly IDK
+  SystemSaveDataId1: 0x0002008f
+  DisableDebug: true
   SystemCallAccess:
     ControlMemory: 1
     QueryMemory: 2
@@ -124,37 +147,37 @@ AccessControlInfo:
     SetGid: 87
     Backdoor: 123
   ServiceAccessControl:
-    - APT:S
-    - ac:u
-    - am:net
-    - boss:U
-    - cam:u
-    - cecd:u
-    - cfg:nor
-    - cfg:u
-    - csnd:SND
-    - dsp::DSP
-    - frd:u
+    - $hioFIO
+    - $hostio0
+    - $hostio1
     - fs:USER
     - gsp::Gpu
-    - gsp::Lcd
     - hid:USER
-    - http:C
-    - ir:rst
-    - ir:u
-    - ir:USER
-    - mic:u
     - ndm:u
-    - news:s
-    - nwm::EXT
-    - nwm::UDS
-    - ptm:sysm
-    - ptm:u
     - pxi:dev
-    - soc:U
-    - y2r:u
-    - pm:app
+    - APT:S
+    - APT:U
+    - ac:u
+    - act:u
+    - am:sys
+    - boss:P
+    - cam:u
+    - cecd:s
+    - dsp::DSP
+    - frd:a
+    - gsp::Lcd
+    - hid:SPVR
+    - ir:rst
+    - mic:u
+    - news:s
+    - nim:aoc
+    - nim:u
     - ns:s
+    - nwm::EXT
+    - ptm:gets
+    - ptm:sysm
+    - y2r:u
+    - cfg:s
   FileSystemAccess:
     - DirectSdmc
     - SwitchCleanup
@@ -163,8 +186,8 @@ AccessControlInfo:
   HandleTableSize: 0x200
   MemoryType: System
   IORegisterMapping:
-    - 0x1FF00000-0x1FF7FFFF
-    - 0x1EC00000-0x1EFFFFFF
+    - 0x1FF50000-0x1FF57FFF
+    - 0x1FF70000-0x1FF77FFF
   MemoryMapping:
     - 0x1F000000-0x1F5FFFFF:r
   ResourceLimitCategory: sysapplet
@@ -177,7 +200,7 @@ AccessControlInfo:
     - UseSdif3
     - CreateSeed
     - UseCardSpi
-  EnableL2Cache: true
+  EnableL2Cache: false
 
 Option:
   UseOnSD: false
