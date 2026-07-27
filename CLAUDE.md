@@ -15,6 +15,14 @@ why pomelo ships its own libctru fork
 ([libctru-for-homemenu](https://github.com/ron-popov/libctru-for-homemenu),
 vendored as the `libctru` submodule).
 
+For the same reason pomelo also ships a **citro3d fork**, vendored as the
+`citro3d` submodule (see the 28-bit offset ceiling section below). Both forks
+are wired up through `LIBDIRS` in the Makefile, and **their entries must stay
+ahead of `$(CTRULIB)`** — devkitPro's libctru directory bundles its own
+`libcitro3d.a` and `c3d/` headers, `LIBDIRS` is expanded into `-I`/`-L` flags in
+order, and first match wins. Get the order wrong and the build silently links
+stock citro3d, reintroducing the GPU hang below with no visible error.
+
 Mikage's APT HLE is treated as behaviorally equivalent to real hardware for
 this project — bugs reproduced under Mikage are assumed to reflect real APT
 semantics, not emulator-specific divergence, unless proven otherwise.
@@ -124,6 +132,76 @@ real results) gated behind `#ifdef LIBCTRU_APT_DEBUG` — this pattern (patch a
 few `_aptDebug` calls in, rebuild, ask for a fresh `pomelo_debug.log`, remove
 them once root-caused) is the effective way to debug this stack, since there's
 no interactive debugger available on-device or in Mikage.
+
+## The citro3d 28-bit vertex-buffer offset ceiling (fixed in the citro3d fork)
+
+Symptom: after switching `MemoryType` from `Application` to `System` in
+`source/template.rsf`, the bottom screen went blank and the console hung on the
+**very first rendered frame**. GSP accepted the `ProcessCommandList` GX command
+and programmed the PICA's `command_processor_config` registers normally, but
+the GPU never finished and never raised the `P3D` interrupt, so
+`gxCmdQueueWait` blocked forever. `MemoryFill` (`PSC0`) kept completing fine
+throughout, which is what proves the GPU and GSP's interrupt relay were both
+alive — only command-list execution was stuck.
+
+**Root cause: citro3d does not give the GPU absolute vertex addresses.**
+`GPUREG_ATTRIBBUFFERS_LOC` (0x0200) holds a base as `paddr >> 3`, and every
+vertex buffer (`0x0203`+) and the index buffer (`GPUREG_INDEXBUFFER_CONFIG`,
+0x0227) is expressed as a **byte offset from that base**. The hardware's offset
+field is 28 bits, so the reachable window is always
+`[base, base + 0x10000000)`. Upstream citro3d hardcodes
+`BUFFER_BASE_PADDR 0x18000000` (VRAM's base) — which on an Old 3DS spans VRAM
+through the end of FCRAM at `0x28000000`, i.e. exactly all GPU-addressable
+memory. On a New 3DS, FCRAM runs to `0x30000000` and that no longer holds.
+
+Under `MemoryType: System` pomelo's linear heap landed at physical
+`0x27f32000`–`0x28b32000`, straddling the `0x28000000` ceiling with only ~824KB
+below it, so essentially every citro2d allocation overflowed the field. The
+truncated offset pointed the vertex fetcher back inside VRAM (at the
+framebuffer), and the GPU stalled on the malformed primitive.
+
+Fixed by rebasing to `0x20000000` (FCRAM's base) in the fork's
+`citro3d/source/buffers.c`, sliding the window to `0x20000000`–`0x30000000`.
+**Note this is a forced choice, not a clean fix:** `0x30000000 - 0x18000000` is
+384MB, wider than a 28-bit field, so no single base can cover both VRAM and all
+of New 3DS FCRAM. The cost is that vertex/index buffers in VRAM are now
+rejected by the guards in `BufInfo_Add`/`C3D_DrawElements`; nothing in pomelo
+puts them there, and framebuffers and textures are unaffected because they use
+**absolute** address registers (`COLORBUFFER_LOC`, `TEXUNIT0_ADDR1`, …) rather
+than this offset scheme.
+
+Two things worth remembering, since both produced misleading evidence while
+diagnosing this:
+
+- **Only vertex and index data go through the base+offset scheme.** Textures,
+  colour/depth buffers, and the command list itself are all addressed
+  absolutely. A capture showing the real Home Menu writing physical
+  `0x28005aa0` into `command_processor_config` (0x18E8) says nothing about this
+  bug — different register, different addressing mode — and briefly led to the
+  wrong conclusion that the GPU simply could not read N3DS extended FCRAM. It
+  can.
+- **The real Home Menu solves this properly and does not hit the ceiling.**
+  Decompiling `FUN_0002fad0` in the Home Menu binary (`myconsole_homemenu`)
+  shows it recomputes the base dynamically: `0x000303e8` does
+  `biclt r3, r2, #0xf` — base = `min(vertex buffer addresses)` aligned down to
+  16 bytes, tracked at `[r5,#0x6a0]` — then rebases every stored offset
+  (`0x30450`) and only re-emits `ATTRIBBUFFERS_LOC` when the base actually
+  changed. That Nintendo bothers to track a running minimum and rebase is
+  independent confirmation that the offset field really is narrow. Porting that
+  adaptive-base approach is the general fix if VRAM vertex buffers are ever
+  needed alongside high FCRAM.
+
+The most effective way to debug this class of problem is to decode the command
+list before submitting it — patch a decoder into `GX_ProcessCommandList` in the
+libctru fork (`libctru/source/gpu/gx.c`) that walks the buffer and logs the
+address-bearing registers. Command format, per `GPUCMD_AddInternal` in
+`libctru/source/gpu/gpu.c`: `[param0][header]` plus any extra params, padded to
+an even word count, where the header packs the register in bits 0-9, a byte
+mask in 16-19, the count of *extra* params in 20-27, and a "consecutive
+registers" flag in bit 31. **That bit-31 flag matters** — citro3d emits texture
+and framebuffer addresses via `GPUCMD_AddIncrementalWrites`, so they arrive in
+*extra* params landing at `reg+j`, never in `param0`; a decoder that only
+inspects `param0` will miss every address in the list.
 
 ## Hazard: never trigger IPC between `svcSendSyncRequest` and reading its response
 

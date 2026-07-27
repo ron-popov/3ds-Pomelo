@@ -71,6 +71,12 @@ LIBS	:= -lcitro2d -lcitro3d -lctru -lm
 # Usually points to a path in /opt/devkitPRO, this project must use a custom libctru
 # So LIBDIRS is defined during compilation and points to custom build
 LIBDIRS	:= $(CURDIR)/libctru/libctru
+# Same story for citro3d: pomelo needs the forked copy (vendored as the citro3d
+# submodule) for the vertex-buffer base address fix in source/buffers.c. This
+# MUST stay ahead of $(CTRULIB), which ships its own libcitro3d.a and c3d
+# headers - LIBDIRS becomes -I/-L flags in order, so first match wins and
+# devkitPro's stock copy would otherwise be picked up instead.
+LIBDIRS	+= $(CURDIR)/citro3d
 LIBDIRS	+= $(CTRULIB)
 
 
@@ -155,7 +161,7 @@ ifneq ($(ROMFS),)
 	export _3DSXFLAGS += --romfs=$(CURDIR)/$(ROMFS)
 endif
 
-.PHONY: all clean libctru cxi 3dsx project_ctr
+.PHONY: all clean libctru citro3d cxi 3dsx project_ctr
 
 #---------------------------------------------------------------------------------
 all: 3dsx cxi
@@ -165,11 +171,15 @@ libctru:
 	@echo Building custom libctru
 	@$(MAKE) -C $(CURDIR)/libctru/libctru
 
+citro3d:
+	@echo Building custom citro3d
+	@$(MAKE) -C $(CURDIR)/citro3d
+
 project_ctr:
 	CC=gcc CXX=g++ CFLAGS="" LDFLAGS="" make -C $(CURDIR)/project_ctr
 
 #---------------------------------------------------------------------------------
-3dsx: libctru project_ctr
+3dsx: libctru citro3d project_ctr
 	@mkdir -p $(BUILD) $(GFXBUILD)
 	@$(MAKE) --no-print-directory -B -C $(BUILD) -f $(CURDIR)/Makefile
 
