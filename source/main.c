@@ -480,13 +480,32 @@ int main(int argc, char *argv[]) {
 				}
 
 				
-				// // Clear screens (currently only bottom)
-				// // TODO: Fix this
-				// C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
-				// C2D_SceneBegin(bottomRenderTarget);
-				// C2D_TargetClear(bottomRenderTarget,
-				// 				rgb_to_C2D_Color32(COL_BLACK));
-				// C3D_FrameEnd(0);
+				// Clear the bottom screen via a raw GSP framebuffer write,
+				// bypassing citro3d/citro2d entirely. C2D_TargetClear()
+				// only fills the render target's own VRAM buffer
+				// (GX_MemoryFill); that buffer only actually reaches the
+				// display from inside a full C3D_FrameBegin -> C2D_SceneBegin
+				// -> C3D_FrameEnd cycle, since the display transfer + buffer
+				// swap happen in C3D_FrameEnd and are gated on
+				// C3D_FrameDrawOn (called by C2D_SceneBegin) marking the
+				// target "used" - so a bare TargetClear alone, with no
+				// matching Begin/End around it, clears memory nobody ever
+				// shows. Writing to gfxGetFramebuffer() and swapping
+				// ourselves sidesteps that lifecycle completely. Looped
+				// twice (with a swap each time) to blank both of the
+				// double-buffered framebuffers, so whichever one is
+				// scanned out next is guaranteed to already be black.
+				for (int i = 0; i < 2; i++) {
+					u16 fbWidth, fbHeight;
+					u8 *fb = gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, &fbWidth,
+											   &fbHeight);
+					unsigned bpp =
+						gspGetBytesPerPixel(gfxGetScreenFormat(GFX_BOTTOM));
+					memset(fb, 0, (size_t)fbWidth * fbHeight * bpp);
+					gfxFlushBuffers();
+					gfxSwapBuffers();
+					gspWaitForVBlank();
+				}
 
 				SetState(STATE_WAIT_TO_REGISTER);
 

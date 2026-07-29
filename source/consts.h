@@ -75,7 +75,7 @@
 #define COL_ROW_FILL            0xFFFFFF
 #define COL_TEXT                0x222222
 
-#define COL_BLACK 				0xFFFFFF
+#define COL_BLACK 				0x000000
 
 // Flat black border used on DS-style buttons/rows (see PICTOCHAT / DS
 // Download Play buttons on the real DS System Menu)
