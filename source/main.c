@@ -30,7 +30,6 @@ bool loadTitleMetadata(u64 titleId, FS_MediaType mediaType,
 	SMDH *smdh = malloc(sizeof(SMDH));
 
 	log_debug("Get name of title %#018llx (media 0x%x)", titleId, mediaType);
-	// printf("Get name of title %#018llx (media 0x%x)\n", titleId, mediaType);
 
 	const FS_ProgramInfo archiveProgramInfo = {.programId = titleId,
 											   .mediaType = mediaType};
@@ -47,7 +46,6 @@ bool loadTitleMetadata(u64 titleId, FS_MediaType mediaType,
 		goto cleanup_fail;
 	}
 
-	// printf("Ran FSUSER_OpenArchive\n");
 
 	// This is a comment from mikage
 	// a new path:
@@ -96,7 +94,6 @@ bool loadTitleMetadata(u64 titleId, FS_MediaType mediaType,
 
 	// Validate SMDH magic ("SMDH")
 	if (smdh->magic != 0x48444D53) {
-		printf("File magic does not match SMDH\n");
 		goto cleanup_fail;
 	}
 
@@ -166,7 +163,6 @@ bool loadTitlesFromMediaType(FS_MediaType mediaType, u8 maxTitleCount,
 	Result temp_res;
 
 	log_debug("Iterating over titles (media type 0x%x)", mediaType);
-	printf("Iterating over games (media type 0x%x)\n", mediaType);
 
 	// Get list of installed titles
 	u32 titles_found_count = 0;
@@ -185,7 +181,6 @@ bool loadTitlesFromMediaType(FS_MediaType mediaType, u8 maxTitleCount,
 	for (u32 i = 0; i < titles_found_count; i++) {
 
 		if (*games_counter == MAX_TITLES) {
-			printf("Finished games limit\n");
 			log_debug("Finished games limit");
 			return false;
 		}
@@ -241,21 +236,18 @@ bool loadTitles(titleGame **games, u8 *games_counter) {
 		!loadTitlesFromMediaType(MEDIATYPE_GAME_CARD, 1, games,
 								 games_counter)) {
 		log_debug("Failed iterating over GAMECARD titles, exiting");
-		printf("Failed iterating over GAMECARD titles, exiting\n");
 		goto error;
 	}
 
 	if (SHOULD_ITERATE_SDCARD &&
 		!loadTitlesFromMediaType(MEDIATYPE_SD, 128, games, games_counter)) {
 		log_debug("Failed iterating over SDCARD titles, exiting");
-		printf("Failed iterating over SDCARD titles, exiting\n");
 		goto error;
 	}
 
 	if (SHOULD_ITERATE_NAND &&
 		!loadTitlesFromMediaType(MEDIATYPE_NAND, 128, games, games_counter)) {
 		log_debug("Failed iterating over NAND titles, exiting");
-		printf("Failed iterating over NAND titles, exiting\n");
 		goto error;
 	}
 
@@ -377,20 +369,16 @@ int main(int argc, char *argv[]) {
 	consoleDebugInit(debugDevice_NULL);
 	log_debug("Starting Pomelo!");
 
-	printf("Starting Pomelo!\n\n");
 
 	log_debug("Compiled using C Version %ld", __STDC_VERSION__);
 
 	// Check if we are running on real hardware or mikage
 	bool is_mikage = isRunningInEmulator();
 	if (is_mikage) {
-		printf("Running in Mikage\n");
 		log_debug("Running in mikage");
 
-		printf("System Model : %s\n", "Emulator");
 		log_debug("System Model : %s", "Emulator");
 	} else {
-		printf("Running on Real Hardware\n");
 		log_debug("Running on Real Hardware");
 
 		temp_res = cfguInit();
@@ -409,7 +397,6 @@ int main(int argc, char *argv[]) {
 
 			log_debug("System Model Id : %x", system_model);
 
-			printf("System Model : %s\n", system_name);
 			log_debug("System Model : %s", system_name);
 		}
 
@@ -471,7 +458,6 @@ int main(int argc, char *argv[]) {
 			pomeloFont = C2D_FontLoad("sdmc:/nitrods-font.bcfnt");
 
 			log_debug("Finished iterating");
-			printf("Finished iterating\n");
 
 			SetState(STATE_FOREGROUND);
 
@@ -509,8 +495,6 @@ int main(int argc, char *argv[]) {
 				PTMSYSM_ShutdownAsync(0);
 				break;
 			case KEY_A: // Launch selected game
-				printf("Launching title id %#018llx\n",
-					   games[selected_game_index]->titleId);
 				log_debug("Launching title id %#018llx",
 						  games[selected_game_index]->titleId);
 
@@ -518,7 +502,6 @@ int main(int argc, char *argv[]) {
 				APT_IsRegistered(APPID_APPLICATION, &registered);
 				if (registered) {
 					log_debug("Previous app is still running");
-					printf("Previous app is still running\n");
 					continue;
 				}
 
@@ -548,16 +531,13 @@ int main(int argc, char *argv[]) {
 
 				// Start game using apt:startapplication
 				log_debug("Calling APT_PrepareToStartApplication");
-				printf("Calling APT_PrepareToStartApplication\n");
 				temp_res = APT_PrepareToStartApplication(
 					&selectedGameProgramInfo, 0x00);
 				if (R_FAILED(temp_res)) {
 					print_error_code_verbose("APT_PrepareToStartApplication",
 											 temp_res);
-					printf("Continuing even tho error\n");
 					// break;
 				} else {
-					printf("Successfully ran APT_PrepareToStartApplication\n");
 					log_debug("Successfully ran APT_PrepareToStartApplication");
 				}
 
@@ -577,14 +557,12 @@ int main(int argc, char *argv[]) {
 				u8 parameter[0x300] = {0};
 
 				log_debug("Calling APT_StartApplication");
-				printf("Calling APT_StartApplication\n");
 				temp_res =
 					APT_StartApplication(0x300, 0x00, true, &parameter, NULL);
 				if (R_FAILED(temp_res)) {
 					print_error_code_verbose("APT_StartApplication", temp_res);
 					break;
 				} else {
-					printf("Successfully ran APT_StartApplication\n");
 					log_debug("Successfully ran APT_StartApplication");
 				}
 
@@ -645,8 +623,6 @@ int main(int argc, char *argv[]) {
 				log_debug("Is App Registered %d", registered);
 				log_debug("Terminating GFX");
 
-				printf("Is App Registered %d\n", registered);
-				printf("Terminating GFX\n");
 
 				if (pomeloFont != NULL) {
 					C2D_FontFree(pomeloFont);
@@ -663,7 +639,6 @@ int main(int argc, char *argv[]) {
 				gfxExit();
 
 				log_debug("Waking Up Application");
-				printf("Waking Up Application\n");
 
 				// Waking up application
 				temp_res = APT_WakeupApplication();
@@ -671,8 +646,6 @@ int main(int argc, char *argv[]) {
 					print_error_code_verbose("APT_WakeupApplication", temp_res);
 				} else {
 					log_debug("Successfully ran APT_WakeupApplication");
-					printf("Successfully ran APT_WakeupApplication\n");
-
 					SetState(STATE_BACKGROUND);
 				}
 			}
