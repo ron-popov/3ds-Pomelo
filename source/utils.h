@@ -31,7 +31,7 @@ typedef struct {
     u8 large_icon_rgb565[LARGE_ICON_RGB565_CONTENT_SIZE]; // not used, only for filler purposes
 } SMDH; // struct size must be 0x36c0 - mikage doesn't allow to read partial sections
 
-typedef struct {
+typedef struct titleGame_s {
     u64 titleId;
     FS_MediaType mediaType;
     char name[MAX_TITLE_NAME];

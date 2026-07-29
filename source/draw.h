@@ -1,5 +1,11 @@
 #pragma once
 #include <3ds.h>
+#include <citro2d.h>
+
+// Forward declaration only, to avoid a circular include with utils.h (which
+// includes this header for get_red/get_green/get_blue). The full definition
+// lives in utils.h.
+typedef struct titleGame_s titleGame;
 
 bool C2D_Pomelo_DrawRectangleSingleColor(float x, float y, float w, float h, u32 clr);
 
@@ -46,3 +52,14 @@ void C2D_Pomelo_DrawSelectionCorners(float x, float y, float w, float h,
 u8 get_red(u32 color);
 u8 get_green(u32 color);
 u8 get_blue(u32 color);
+
+// Draws the DS-style grid background (fine dither plus coarse tiled grid
+// lines) covering the whole bottom screen. Must be called after
+// C2D_SceneBegin() targets the bottom screen.
+void drawBottomScreenGridBackground(void);
+
+// Draws a single game row (icon on the left, name on the right) at its
+// scroll-adjusted position, like the DS System Menu's PICTOCHAT / DS
+// Download Play buttons.
+void drawGameRow(int row, titleGame *game, bool is_selected,
+				  C2D_TextBuf textBuf, C2D_Font font);

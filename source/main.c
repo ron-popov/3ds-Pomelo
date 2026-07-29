@@ -71,16 +71,12 @@ bool loadTitleMetadata(u64 titleId, FS_MediaType mediaType,
 
 	Handle fileHandle;
 
-	// log_debug("Opening FSUSER file");
-
 	res = FSUSER_OpenFile(&fileHandle, archive, filePath, FS_OPEN_READ, 0);
 	if (R_FAILED(res)) {
 		print_error_code_verbose("FSUSER_OpenFile", res);
 		FSUSER_CloseArchive(archive);
 		goto cleanup_fail;
 	}
-
-	// log_debug("Reading FSUSER file");
 
 	// Read the SMDH data
 	u32 bytesRead;
@@ -118,23 +114,17 @@ bool loadTitleMetadata(u64 titleId, FS_MediaType mediaType,
 	remove_non_ascii(titleGameOut->name);
 	remove_non_ascii(titleGameOut->publisher);
 
-	// log_debug("Initiating tex");
-
 	// PICA200 requires power-of-two dimensions, so allocate 64x64 for a 48x48
 	// icon
 	if (!C3D_TexInit(&titleGameOut->large_icon_tex, 64, 64, GPU_RGB565))
 		goto cleanup_fail;
 
-	// log_debug("Reencoding texture");
-
-	// The icon is a 48px by 48px morton encoded icon, however, c3d can only
+ 	// The icon is a 48px by 48px morton encoded icon, however, c3d can only
 	// have powers of two texture Which means we need to convert the 48px morton
 	// icon to a 64px morton texture This function takes care of that
 	uint16_t *reencoded_texture_data = linearAlloc(64 * 64 * sizeof(uint16_t));
 	copy_icon_to_tex64(reencoded_texture_data,
 					   (uint16_t *)smdh->large_icon_rgb565);
-
-	// log_debug("Copying tex content");
 
 	// Load the data into the texture
 	C3D_TexUpload(&titleGameOut->large_icon_tex, reencoded_texture_data);
@@ -142,11 +132,9 @@ bool loadTitleMetadata(u64 titleId, FS_MediaType mediaType,
 	linearFree(reencoded_texture_data);
 
 	// Flush tex icon
-	// log_debug("Flushing tex");
 	C3D_TexFlush(&titleGameOut->large_icon_tex);
 
 	// Don't blur
-	// log_debug("Setting filter to tex");
 	C3D_TexSetFilter(&titleGameOut->large_icon_tex, GPU_NEAREST, GPU_NEAREST);
 
 	free(smdh);
@@ -257,91 +245,6 @@ bool loadTitles(titleGame **games, u8 *games_counter) {
 error:
 	amExit();
 	return false;
-}
-
-// Draws the DS-style grid background (fine dither plus coarse tiled grid
-// lines) covering the whole bottom screen. Must be called after
-// C2D_SceneBegin() targets the bottom screen.
-static void drawBottomScreenGridBackground(void) {
-	C2D_Pomelo_DrawNdsGridDither(BOTTOM_SCREEN_WIDTH, BOTTOM_SCREEN_HEIGHT,
-								 rgb_to_C2D_Color32(COL_GRID_DITHER_DARK));
-
-	// Coarse grid lines tiled at a fixed pitch across the whole screen,
-	// matching ds.css's `.ds-grid` (a repeating grid of square cells),
-	// rather than lining up with the row boxes
-	float grid_x_lines[(int)(BOTTOM_SCREEN_WIDTH / GRID_CELL_PX) + 1];
-	int grid_x_line_count = C2D_Pomelo_BuildGridLinePositions(
-		GRID_X_OFFSET, GRID_CELL_PX, BOTTOM_SCREEN_WIDTH, grid_x_lines);
-
-	float grid_y_lines[(int)(BOTTOM_SCREEN_HEIGHT / GRID_CELL_PX) + 1];
-	int grid_y_line_count = C2D_Pomelo_BuildGridLinePositions(
-		GRID_Y_OFFSET, GRID_CELL_PX, BOTTOM_SCREEN_HEIGHT, grid_y_lines);
-
-	C2D_Pomelo_DrawNdsGridLines(grid_x_lines, grid_x_line_count, grid_y_lines,
-								grid_y_line_count, BOTTOM_SCREEN_WIDTH,
-								BOTTOM_SCREEN_HEIGHT,
-								rgb_to_C2D_Color32(COL_GRID_LINE),
-								GRID_LINE_W);
-}
-
-// Draws a single game row (icon on the left, name on the right) at its
-// scroll-adjusted position, like the DS System Menu's PICTOCHAT / DS
-// Download Play buttons.
-static void drawGameRow(int row, titleGame *game, bool is_selected,
-						C2D_TextBuf textBuf, C2D_Font font) {
-	u32 fill_clr = rgb_to_C2D_Color32(COL_ROW_FILL);
-	u32 border_clr = rgb_to_C2D_Color32(COL_ROW_BORDER);
-
-	float row_start_x = LIST_MARGIN_X;
-	float row_start_y = LIST_TOP_OFFSET_Y + LIST_ROW_GAP_Y +
-						row * (LIST_ROW_GAP_Y + LIST_ROW_H);
-
-	C2D_Pomelo_DrawNdsIconCell(row_start_x, row_start_y, LIST_ROW_W,
-							   LIST_ROW_H, fill_clr, border_clr,
-							   ROW_BORDER_W, ROW_BORDER_TOP_W);
-
-	if (is_selected) {
-		C2D_Pomelo_DrawSelectionCorners(
-			row_start_x, row_start_y, LIST_ROW_W, LIST_ROW_H,
-			SELECTION_CORNER_LEN, SELECTION_CORNER_THICKNESS,
-			SELECTION_CORNER_OUTSET,
-			rgb_to_C2D_Color32(COL_SELECTION_CORNER));
-	}
-
-	float icon_x = row_start_x + LIST_ICON_PADDING;
-	float icon_y = row_start_y + LIST_ICON_PADDING;
-
-	C2D_Image image = {.tex = &game->large_icon_tex, .subtex = &icon_subtex};
-	C2D_DrawImageAt(image, icon_x, icon_y, 1.0f, NULL, 1.0f, 1.0f);
-
-	C2D_Text row_gamename;
-	C2D_TextFontParse(&row_gamename, font, textBuf, game->name);
-	C2D_TextOptimize(&row_gamename);
-
-	float text_gamename_h, text_gamename_w;
-	C2D_TextGetDimensions(&row_gamename, TEXT_ROW_SCALE_X, TEXT_ROW_SCALE_Y, &text_gamename_h,
-						  &text_gamename_w);
-
-	float text_gamename_x = icon_x + LIST_ICON_SIZE + LIST_TEXT_GAP;
-	float text_gamename_y = row_start_y + (LIST_ROW_H - text_gamename_w) / 4.f;
-	// float text_gamename_y = icon_y;
-
-	C2D_DrawText(&row_gamename, C2D_WithColor, text_gamename_x, text_gamename_y, 0, TEXT_ROW_SCALE_X,
-				TEXT_ROW_SCALE_Y, rgb_to_C2D_Color32(COL_TEXT));
-
-	C2D_Text row_publisher;
-	C2D_TextFontParse(&row_publisher, font, textBuf, game->publisher);
-	C2D_TextOptimize(&row_publisher);
-
-	float text_publisher_w, text_publisher_h;
-	C2D_TextGetDimensions(&row_publisher, TEXT_ROW_SCALE_X, TEXT_ROW_SCALE_Y,
-						  &text_publisher_w, &text_publisher_h);
-
-	float text_publisher_x = icon_x + LIST_ICON_SIZE + LIST_TEXT_GAP;
-	float text_publisher_y = icon_y + (LIST_ROW_H - text_publisher_h) / 2.f;
-
-	C2D_DrawText(&row_publisher, C2D_WithColor, text_publisher_x, text_publisher_y, 0, TEXT_ROW_SCALE_X,
-				 TEXT_ROW_SCALE_Y, rgb_to_C2D_Color32(COL_TEXT));
 }
 
 /// Main Function
