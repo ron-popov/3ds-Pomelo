@@ -1,0 +1,167 @@
+# Pomelo Custom Home Menu - RSF Blueprint Matching homemenu requirements
+BasicInfo:
+  Title: "menu"
+  CompanyCode: "01"
+  ProductCode: "CTR-N-HMME"
+  ContentType: Application
+
+# This build the title id to be 0x0004003000008F02
+TitleInfo:
+  Category: Applet
+  UniqueId: 0x008f
+  Version: 2
+
+SystemControlInfo:
+  AppType: system
+  JumpId: 0x0004003000008f02
+  RemasterVersion: 0 # Do NOT set to 0x001e (the real Home Menu's value) - confirmed to crash the loader
+  StackSize: 0x4000
+  Dependency:
+    ns: 0x0004013000008002
+    gsp: 0x0004013000001c02
+    hid: 0x0004013000001d02
+    codec: 0x0004013000001802
+    ps: 0x0004013000003102
+    gpio: 0x0004013000001b02
+    am: 0x0004013000001502
+    ir: 0x0004013000003302
+
+
+AccessControlInfo:
+  SystemMode: 64MB
+  SystemModeExt: 178MB
+  CpuSpeed: 804MHz
+  CoreVersion: 2
+  IdealProcessor: 0
+  AffinityMask: 1
+  Priority: 28 # It must be this value, or else the NS will crash when trying to load the homemenu, like honestly IDK
+  SystemSaveDataId1: 0x0002008f
+  AccessibleSaveDataIds: # Matches real Home Menu's exheader (0004003000008F02 dump)
+    - 0x8f
+    - 0x210
+    - 0x2cd
+    - 0x14d1
+    - 0x165c
+  DisableDebug: true
+  DescVersion: 2
+  SystemCallAccess:
+    ControlMemory: 1
+    QueryMemory: 2
+    ExitProcess: 3
+    GetProcessAffinityMask: 4
+    SetProcessAffinityMask: 5
+    GetProcessIdealProcessor: 6 
+    SetProcessIdealProcessor: 7
+    CreateThread: 8
+    ExitThread: 9
+    SleepThread: 10
+    GetThreadPriority: 11
+    SetThreadPriority: 12
+    GetThreadAffinityMask: 13
+    SetThreadAffinityMask: 14
+    GetProcessId: 15
+    GetThreadId: 16
+    Break: 17
+    OutputDebugString: 18
+    ControlPerformanceCounter: 19
+    CreateTimer: 20
+    SetTimer: 21
+    CancelTimer: 22
+    ClearTimer: 23
+    CreateEvent: 24
+    SignalEvent: 25
+    ClearEvent: 26
+    CreateMutex: 27
+    ReleaseMutex: 28
+    CreateSemaphore: 29
+    ReleaseSemaphore: 30
+    CreateAddressArbiter: 31
+    ArbitrateAddress: 32
+    CloseHandle: 33
+    WaitSynchronization1: 34
+    WaitSynchronizationN: 35
+    SignalAndWait: 36
+    DuplicateHandle: 37
+    GetSystemTick: 38
+    HandleSRVNotification: 39
+    GetResourceLimit: 40
+    GetResourceLimitLimitValues: 41
+    GetResourceLimitCurrentValues: 42
+    GetProcessInfo: 43
+    GetThreadInfo: 44
+    ConnectToPort: 45
+    SendSyncRequest1: 46
+    SendSyncRequest2: 47
+    SendSyncRequest3: 48
+    SendSyncRequest4: 49
+    SendSyncRequest: 50
+    OpenProcess: 51
+    OpenThread: 52
+    GetProcessList: 53
+    GetThreadList: 54
+    CommandAndResult: 55
+    GetControlNotifyEvent: 56
+    CreateReportMemoryBlock: 57
+    MapReportMemoryBlock: 58
+    UnmapReportMemoryBlock: 59
+    CreatePort: 60
+    CreateSessionToPort: 61
+    CreateSession: 62
+    AcceptSession: 63
+    ReplyAndReceive1: 64
+    ReplyAndReceive2: 65
+    ReplyAndReceive3: 66
+    ReplyAndReceive4: 67
+    ReplyAndReceive: 68
+    BindInterrupt: 69
+    UnbindInterrupt: 70
+    InvalidateProcessDataCache: 71
+  ServiceAccessControl:
+    - $hioFIO
+    - $hostio0
+    - $hostio1
+    - fs:USER
+    - gsp::Gpu
+    - hid:USER
+    - ndm:u
+    - pxi:dev
+    - APT:S
+    - APT:U
+    - ac:u
+    - act:u
+    - am:sys
+    - boss:P
+    - cam:u
+    - cecd:s
+    - dsp::DSP
+    - frd:a
+    - gsp::Lcd
+    - hid:SPVR
+    - ir:rst
+    - mic:u
+    - news:s
+    - nim:aoc
+    - nim:u
+    - ns:s
+    - nwm::EXT
+    - ptm:gets
+    - ptm:sysm
+    - y2r:u
+    - cfg:s
+  FileSystemAccess:
+    - DirectSdmc
+    - SwitchCleanup
+    - CategoryHomeMenu
+    - SeedDB
+  HandleTableSize: 0x200
+  MemoryType: System
+  IORegisterMapping:
+    - 0x1FF00000-0x1FF7FFFF
+    - 0x1EC00000-0x1EFFFFFF
+  MemoryMapping:
+    - 0x1F000000-0x1F5FFFFF:r
+  ResourceLimitCategory: sysapplet
+  EnableL2Cache: false
+
+Option:
+  UseOnSD: false

@@ -161,10 +161,10 @@ ifneq ($(ROMFS),)
 	export _3DSXFLAGS += --romfs=$(CURDIR)/$(ROMFS)
 endif
 
-.PHONY: all clean libctru citro3d cxi 3dsx project_ctr
+.PHONY: all clean libctru citro3d cxi_o3ds cxi_n3ds 3dsx project_ctr
 
 #---------------------------------------------------------------------------------
-all: 3dsx cxi
+all: 3dsx cxi_o3ds cxi_n3ds
 
 #---------------------------------------------------------------------------------
 libctru:
@@ -184,12 +184,17 @@ project_ctr:
 	@$(MAKE) --no-print-directory -B -C $(BUILD) -f $(CURDIR)/Makefile
 
 #---------------------------------------------------------------------------------
-cxi: 3dsx
-	$(CURDIR)/project_ctr/makerom/bin/makerom -f cxi -o pomelo.cxi -rsf source/template.rsf -elf pomelo.elf
+# Old 3DS build: used by install_mikage
+cxi_o3ds: 3dsx
+	$(CURDIR)/project_ctr/makerom/bin/makerom -f cxi -o pomelo_o3ds.cxi -rsf source/template_o3ds.rsf -elf pomelo.elf
+
+# New 3DS build: used by install_sdcard
+cxi_n3ds: 3dsx
+	$(CURDIR)/project_ctr/makerom/bin/makerom -f cxi -o pomelo_n3ds.cxi -rsf source/template_n3ds.rsf -elf pomelo.elf
 
 #---------------------------------------------------------------------------------
-code.bin: cxi
-	$(CURDIR)/project_ctr/ctrtool/bin/ctrtool --exheader pomelo.exheader.bin --exefsdir=. pomelo.cxi
+code.bin: cxi_n3ds
+	$(CURDIR)/project_ctr/ctrtool/bin/ctrtool --exheader pomelo_n3ds.exheader.bin --exefsdir=. pomelo_n3ds.cxi
 	mv code.bin pomelo.code.bin
 
 #---------------------------------------------------------------------------------
@@ -201,20 +206,22 @@ clean:
 
 #---------------------------------------------------------------------------------
 # Install the CXI as the mikage launchmenu, instead of the real one
-install_mikage: cxi
+# Mikage runs as an Old 3DS, so this uses the old-3DS build
+install_mikage: cxi_o3ds
 # EU systems
 	# rm -v ~/.local/share/mikage/data/00040030/00009802/content/*.cxi
-	# cp -v -f pomelo.cxi ~/.local/share/mikage/data/00040030/00009802/content/00000000.cxi
+	# cp -v -f pomelo_o3ds.cxi ~/.local/share/mikage/data/00040030/00009802/content/00000000.cxi
 # US Systems
 	-rm -v ~/.local/share/mikage/data/title/00040030/00008f02/content/*.cxi
-	cp -v -f pomelo.cxi ~/.local/share/mikage/data/title/00040030/00008f02/content/00000000.cxi
+	cp -v -f pomelo_o3ds.cxi ~/.local/share/mikage/data/title/00040030/00008f02/content/00000000.cxi
 
+# Real hardware target is a New 3DS, so this uses the new-3DS build
 install_sdcard: code.bin
 	-sudo mkdir -p /media/ron/disk
 	sudo mount -o uid=1000 /dev/sdb1 /media/ron/disk
 	-rm /media/ron/disk/pomelo_debug.log
 	cp -v -f pomelo.code.bin /media/ron/disk/luma/titles/0004003000008F02/code.bin
-	cp -v -f pomelo.exheader.bin /media/ron/disk/luma/titles/0004003000008F02/exheader.bin
+	cp -v -f pomelo_n3ds.exheader.bin /media/ron/disk/luma/titles/0004003000008F02/exheader.bin
 	sudo umount /media/ron/disk
 
 #---------------------------------------------------------------------------------
