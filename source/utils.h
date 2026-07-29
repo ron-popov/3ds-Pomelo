@@ -31,6 +31,24 @@ typedef struct {
     u8 large_icon_rgb565[LARGE_ICON_RGB565_CONTENT_SIZE]; // not used, only for filler purposes
 } SMDH; // struct size must be 0x36c0 - mikage doesn't allow to read partial sections
 
+typedef struct {
+    u32 magic;                          // 0x444d4243 = "CBMD"
+    u32 zero;
+    u32 cgfx_offset_common;
+	// u32 cgfs_offset_regional[13];
+    // u8 padding[0x44];
+    // u32 bcwav_offset;
+} CBMD;
+
+typedef struct {
+    u32 magic; // "CGFX"
+    u16 byte_order; //0xFFFE = little endian, 0xFEFF = big endian
+    u16 header_size;
+    u32 revision;
+    u32 file_size;
+    u32 num_entries;
+} CGFX_HEADER;
+
 typedef struct titleGame_s {
     u64 titleId;
     FS_MediaType mediaType;

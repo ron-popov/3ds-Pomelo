@@ -23,37 +23,8 @@ u32 __ctru_linear_heap_size = 0xb64000;
 static aptHookCookie homemenuAptHookCookie;
 static PrintConsole topScreen;
 
-// Get the name of a title, from the "icon" file in the ExeFS section of the
-// title
-bool loadTitleMetadata(u64 titleId, FS_MediaType mediaType,
-					   titleGame *titleGameOut) {
-	SMDH *smdh = malloc(sizeof(SMDH));
-
-	log_debug("Get name of title %#018llx (media 0x%x)", titleId, mediaType);
-
-	const FS_ProgramInfo archiveProgramInfo = {.programId = titleId,
-											   .mediaType = mediaType};
-	FS_Path archivePath = {PATH_BINARY, sizeof(archiveProgramInfo),
-						   (void *)&archiveProgramInfo};
-
-	// log_debug("Opening FSUSER archive");
-
-	FS_Archive archive;
-	Result res =
-		FSUSER_OpenArchive(&archive, ARCHIVE_SAVEDATA_AND_CONTENT, archivePath);
-	if (R_FAILED(res)) {
-		print_error_code_verbose("FSUSER_OpenArchive", res);
-		goto cleanup_fail;
-	}
-
-
-	// This is a comment from mikage
-	// a new path:
-	// * Word 0: NCCH (0) or save data (1)
-	// * Word 1: TMD content index or NCSD partition index
-	// * Word 2: 0 for romfs (and for save data), 1 for exefs code section, 2
-	// for exefs non-code section
-	// * Words 3+4: ExeFS section name
+bool loadSMDHContent(FS_Archive exefsArchive, SMDH *p_smdh, titleGame *titleGameOut) {
+	Result res;
 
 	// Open the SMDH (stored as exefs:/icon)
 	// Build the file path (file that inside the archive)
@@ -67,58 +38,26 @@ bool loadTitleMetadata(u64 titleId, FS_MediaType mediaType,
 		0x6e6f6369; // name of the section to read (this spells "icon")
 	filePathData[4] = 0x00000000; // name of the section to read (part2)
 
+	Handle smdhFileHandle;
+
 	FS_Path filePath = {PATH_BINARY, sizeof(filePathData), filePathData};
 
-	Handle fileHandle;
-
-	res = FSUSER_OpenFile(&fileHandle, archive, filePath, FS_OPEN_READ, 0);
+	res = FSUSER_OpenFile(&smdhFileHandle, exefsArchive, filePath, FS_OPEN_READ,
+						  0);
 	if (R_FAILED(res)) {
 		print_error_code_verbose("FSUSER_OpenFile", res);
-		FSUSER_CloseArchive(archive);
-		goto cleanup_fail;
+		FSUSER_CloseArchive(exefsArchive);
+		return false;
 	}
 
 	// Read the SMDH data
-	u32 bytesRead;
-	res = FSFILE_Read(fileHandle, &bytesRead, 0, smdh, sizeof(SMDH));
-	FSFILE_Close(fileHandle);
-
-	// Check if we have a banner for this title
-	{
-		u32 bannerFilePathData[5] = {0};
-		bannerFilePathData[0] = 0x00; // is_save_data
-		bannerFilePathData[1] =
-			0x00; // content_id (in mikage), also known as NCSDPartitionId
-		bannerFilePathData[2] =
-			0x02; // sub_file_type, used by the function NCCHOpenExeFSSection
-		bannerFilePathData[3] =
-			0x6e6f6369; // name of the section to read (this spells "icon")
-		bannerFilePathData[4] = 0x00000000; // name of the section to read (part2)
-
-		FS_Path bannerFilePath = {PATH_BINARY, sizeof(bannerFilePathData),
-							bannerFilePathData};
-
-		Handle bannerFileHandle;
-		res = FSUSER_OpenFile(&bannerFileHandle, archive, bannerFilePath,
-							  FS_OPEN_READ, 0);
-		if (R_FAILED(res)) {
-			log_debug("Failed opening banner file for title id %#018llx", titleId);
-			print_error_code_verbose("FSUSER_OpenFile Banner File", res);
-		} else {
-			log_debug("Found banner file for title id %#018llx",
-					  titleId);
-		}
-	}
-
-	FSUSER_CloseArchive(archive);
-
-	if (R_FAILED(res)) {
-		goto cleanup_fail;
-	}
+	u32 smdhBytesRead = 0;
+	res = FSFILE_Read(smdhFileHandle, &smdhBytesRead, 0, p_smdh, sizeof(SMDH));
+	FSFILE_Close(smdhFileHandle);
 
 	// Validate SMDH magic ("SMDH")
-	if (smdh->magic != 0x48444D53) {
-		goto cleanup_fail;
+	if (p_smdh->magic != 0x48444D53) {
+		return false;
 	}
 
 	// Pick language (use English = 1, or CFG_LANGUAGE_EN)
@@ -131,11 +70,11 @@ bool loadTitleMetadata(u64 titleId, FS_MediaType mediaType,
 	// The short description is a UTF-16 string (0x40 u16 chars)
 	// Convert to UTF-8 for easier use
 	utf16_to_utf8((uint8_t *)titleGameOut->name,
-				  smdh->titles[lang].shortDescription, MAX_TITLE_NAME - 1);
+				  p_smdh->titles[lang].shortDescription, MAX_TITLE_NAME - 1);
 	titleGameOut->name[MAX_TITLE_NAME - 1] = '\0';
 
 	utf16_to_utf8((uint8_t *)titleGameOut->publisher,
-				  smdh->titles[lang].publisher, MAX_TITLE_NAME - 1);
+				  p_smdh->titles[lang].publisher, MAX_TITLE_NAME - 1);
 	titleGameOut->publisher[MAX_TITLE_NAME - 1] = '\0';
 
 	// Remove non ascii chars
@@ -145,14 +84,14 @@ bool loadTitleMetadata(u64 titleId, FS_MediaType mediaType,
 	// PICA200 requires power-of-two dimensions, so allocate 64x64 for a 48x48
 	// icon
 	if (!C3D_TexInit(&titleGameOut->large_icon_tex, 64, 64, GPU_RGB565))
-		goto cleanup_fail;
+		return false;
 
- 	// The icon is a 48px by 48px morton encoded icon, however, c3d can only
+	// The icon is a 48px by 48px morton encoded icon, however, c3d can only
 	// have powers of two texture Which means we need to convert the 48px morton
 	// icon to a 64px morton texture This function takes care of that
 	uint16_t *reencoded_texture_data = linearAlloc(64 * 64 * sizeof(uint16_t));
 	copy_icon_to_tex64(reencoded_texture_data,
-					   (uint16_t *)smdh->large_icon_rgb565);
+					   (uint16_t *)p_smdh->large_icon_rgb565);
 
 	// Load the data into the texture
 	C3D_TexUpload(&titleGameOut->large_icon_tex, reencoded_texture_data);
@@ -164,6 +103,98 @@ bool loadTitleMetadata(u64 titleId, FS_MediaType mediaType,
 
 	// Don't blur
 	C3D_TexSetFilter(&titleGameOut->large_icon_tex, GPU_NEAREST, GPU_NEAREST);
+
+	return true;
+}
+
+bool loadBannerContent(FS_Archive exefsArchive, titleGame *titleGameOut) {
+	Result res;
+	CBMD cbmd;
+	CGFX_HEADER cgfx_header;
+
+	u32 bannerFilePathData[5] = {0};
+	bannerFilePathData[0] = 0x00; // is_save_data
+	bannerFilePathData[1] =
+		0x00; // content_id (in mikage), also known as NCSDPartitionId
+	bannerFilePathData[2] =
+		0x02; // sub_file_type, used by the function NCCHOpenExeFSSection
+	bannerFilePathData[3] = 0x6e6e6162; // name of the section to read (this
+										// spells "banner")
+	bannerFilePathData[4] = 0x00007265; // name of the section to read (part2)
+
+	FS_Path bannerFilePath = {PATH_BINARY, sizeof(bannerFilePathData),
+							  bannerFilePathData};
+
+	Handle bannerFileHandle;
+	res = FSUSER_OpenFile(&bannerFileHandle, exefsArchive, bannerFilePath,
+						  FS_OPEN_READ, 0);
+	if (R_FAILED(res)) {
+		log_debug("Failed opening banner file for title id %#018llx", titleGameOut->titleId);
+		print_error_code_verbose("FSUSER_OpenFile Banner File", res);
+		return false;
+	} else {
+		log_debug("Found banner file for title id %#018llx", titleGameOut->titleId);
+	}
+
+	u32 cbmdBytesRead = 0;
+	res = FSFILE_Read(bannerFileHandle, &cbmdBytesRead, 0, &cbmd, sizeof(CBMD));
+	log_debug("Read 0x%lx bytes from cbmd file, res 0x%lx", cbmdBytesRead, res);
+	log_debug("CBMD Magic 0x%lx, Common CGFX in 0x%lx", cbmd.magic,
+			  cbmd.cgfx_offset_common);
+
+	if (cbmd.magic != 0x444d4243) {
+		log_debug("CBMD file is invalid");
+		FSFILE_Close(bannerFileHandle);
+		return false;
+	}
+
+	res = FSFILE_Read(bannerFileHandle, &cbmdBytesRead,
+						  cbmd.cgfx_offset_common, &cgfx_header,
+						  sizeof(CGFX_HEADER));
+	log_debug("Read 0x%lx bytes from cbmd file (cgfx_header), res 0x%lx",
+			  cbmdBytesRead, res);
+	log_debug("CGFX Magic 0x%lx, CGFX size 0x%lx", cgfx_header.magic,
+			  cgfx_header.file_size);
+
+	FSFILE_Close(bannerFileHandle);
+}
+
+// Get the name of a title, from the "icon" file in the ExeFS section of the
+// title
+bool loadTitleMetadata(u64 titleId, FS_MediaType mediaType,
+					   titleGame *titleGameOut) {
+	SMDH *smdh = malloc(sizeof(SMDH));
+	CBMD cbmd;
+	CGFX_HEADER cgfx_header;
+
+	log_debug("Get name of title %#018llx (media 0x%x)", titleId, mediaType);
+
+	const FS_ProgramInfo archiveProgramInfo = {.programId = titleId,
+											   .mediaType = mediaType};
+	FS_Path archivePath = {PATH_BINARY, sizeof(archiveProgramInfo),
+						   (void *)&archiveProgramInfo};
+
+	// log_debug("Opening FSUSER archive");
+
+	FS_Archive exefsArchive;
+	Result res =
+		FSUSER_OpenArchive(&exefsArchive, ARCHIVE_SAVEDATA_AND_CONTENT, archivePath);
+	if (R_FAILED(res)) {
+		print_error_code_verbose("FSUSER_OpenArchive", res);
+		goto cleanup_fail;
+	}
+
+	// Load content from the smdh file - game icon + name + publisher
+	bool load_smdh_res = loadSMDHContent(exefsArchive, smdh, titleGameOut);
+
+	// Load content from banner file - 3d model for top screen
+	bool load_banner_res = loadBannerContent();
+
+	FSUSER_CloseArchive(exefsArchive);
+
+	if (R_FAILED(res)) {
+		goto cleanup_fail;
+	}
 
 	free(smdh);
 	return true;
