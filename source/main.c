@@ -110,7 +110,6 @@ bool loadSMDHContent(FS_Archive exefsArchive, SMDH *p_smdh, titleGame *titleGame
 bool loadBannerContent(FS_Archive exefsArchive, titleGame *titleGameOut) {
 	Result res;
 	CBMD cbmd;
-	CGFX_HEADER cgfx_header;
 
 	u32 bannerFilePathData[5] = {0};
 	bannerFilePathData[0] = 0x00; // is_save_data
@@ -125,8 +124,8 @@ bool loadBannerContent(FS_Archive exefsArchive, titleGame *titleGameOut) {
 	FS_Path bannerFilePath = {PATH_BINARY, sizeof(bannerFilePathData),
 							  bannerFilePathData};
 
-	Handle bannerFileHandle;
-	res = FSUSER_OpenFile(&bannerFileHandle, exefsArchive, bannerFilePath,
+	Handle cmbdFileHandle;
+	res = FSUSER_OpenFile(&cmbdFileHandle, exefsArchive, bannerFilePath,
 						  FS_OPEN_READ, 0);
 	if (R_FAILED(res)) {
 		log_debug("Failed opening banner file for title id %#018llx", titleGameOut->titleId);
@@ -137,36 +136,64 @@ bool loadBannerContent(FS_Archive exefsArchive, titleGame *titleGameOut) {
 	}
 
 	u32 cbmdBytesRead = 0;
-	res = FSFILE_Read(bannerFileHandle, &cbmdBytesRead, 0, &cbmd, sizeof(CBMD));
+	res = FSFILE_Read(cmbdFileHandle, &cbmdBytesRead, 0, &cbmd, sizeof(CBMD));
 	log_debug("Read 0x%lx bytes from cbmd file, res 0x%lx", cbmdBytesRead, res);
 	log_debug("CBMD Magic 0x%lx, Common CGFX in 0x%lx", cbmd.magic,
 			  cbmd.cgfx_offset_common);
 
 	if (cbmd.magic != 0x444d4243) {
 		log_debug("CBMD file is invalid");
-		FSFILE_Close(bannerFileHandle);
+		FSFILE_Close(cmbdFileHandle);
 		return false;
 	}
 
-	res = FSFILE_Read(bannerFileHandle, &cbmdBytesRead,
-						  cbmd.cgfx_offset_common, &cgfx_header,
-						  sizeof(CGFX_HEADER));
-	log_debug("Read 0x%lx bytes from cbmd file (cgfx_header), res 0x%lx",
-			  cbmdBytesRead, res);
-	log_debug("CGFX Magic 0x%lx, CGFX size 0x%lx", cgfx_header.magic,
-			  cgfx_header.file_size);
+	// We need to find the size of the common cgfx file
+	// We will do that by first checking if there is another regional cgfx file in the same cbmd file
+	// If there is one, we want to find the lowest offset one
+	u32 next_cgfx_offset = 0;
+	for (int cgfx_index = 0; cgfx_index < REGIONAL_CGFX_COUNT; cgfx_index++) {
+		u32 regional_cgfx_offset = cbmd.cgfx_offset_regional[cgfx_index];
+		if (regional_cgfx_offset != 0) {
+			next_cgfx_offset = MIN(next_cgfx_offset, regional_cgfx_offset);
+		}
+	}
 
-	FSFILE_Close(bannerFileHandle);
+	u32 common_cgfx_size = 0;
+	if (next_cgfx_offset != 0) {
+		// If we have another cgfx file in the same cbmd, the size of the common
+		// Is the offset of the regional cgfx file with the smallest offset, minus the offset of the common one
+		common_cgfx_size = next_cgfx_offset - cbmd.cgfx_offset_common;
+		log_debug("Calculated common cgfx size using regional offset calc - "
+				  "0x%lx bytes",
+				  common_cgfx_size);
+	} else {
+		// It meanst the common cgfx is the only one
+		// The size of the common cgfx file is the size of the file, minus the offset of the common one
+		u64 cbmd_file_size = 0;
+		res = FSFILE_GetSize(cmbdFileHandle, &cbmd_file_size);
+		if (R_FAILED(res)) {
+			log_debug("Couldn't get size of cbmd file for cgfx calc");
+			FSFILE_Close(cmbdFileHandle);
+			return false;
+		}
+
+		log_debug("CBMD File Size - 0x%llx", cbmd_file_size);
+
+		common_cgfx_size = cbmd_file_size - cbmd.cgfx_offset_common;
+		log_debug("Calculated common cgfx size using cmbd file size calc - "
+				  "0x%lx bytes",
+				  common_cgfx_size);
+	}
+
+	FSFILE_Close(cmbdFileHandle);
+
+	return true;
 }
 
 // Get the name of a title, from the "icon" file in the ExeFS section of the
 // title
 bool loadTitleMetadata(u64 titleId, FS_MediaType mediaType,
 					   titleGame *titleGameOut) {
-	SMDH *smdh = malloc(sizeof(SMDH));
-	CBMD cbmd;
-	CGFX_HEADER cgfx_header;
-
 	log_debug("Get name of title %#018llx (media 0x%x)", titleId, mediaType);
 
 	const FS_ProgramInfo archiveProgramInfo = {.programId = titleId,
@@ -174,35 +201,42 @@ bool loadTitleMetadata(u64 titleId, FS_MediaType mediaType,
 	FS_Path archivePath = {PATH_BINARY, sizeof(archiveProgramInfo),
 						   (void *)&archiveProgramInfo};
 
-	// log_debug("Opening FSUSER archive");
 
 	FS_Archive exefsArchive;
 	Result res =
 		FSUSER_OpenArchive(&exefsArchive, ARCHIVE_SAVEDATA_AND_CONTENT, archivePath);
 	if (R_FAILED(res)) {
-		print_error_code_verbose("FSUSER_OpenArchive", res);
-		goto cleanup_fail;
+		print_error_code_verbose("FSUSER_OpenArchive ExeFS", res);
+		return false;
 	}
 
 	// Load content from the smdh file - game icon + name + publisher
+	SMDH *smdh = malloc(sizeof(SMDH));
 	bool load_smdh_res = loadSMDHContent(exefsArchive, smdh, titleGameOut);
+	free(smdh);
+
+	if (!load_smdh_res) {
+		log_debug("failed getting smdh content for title %#018llx", titleId);
+		FSUSER_CloseArchive(exefsArchive);
+		return false;
+	}
 
 	// Load content from banner file - 3d model for top screen
-	bool load_banner_res = loadBannerContent();
+	bool load_banner_res = loadBannerContent(exefsArchive, titleGameOut);
+
+	if (!load_banner_res) {
+		log_debug("failed getting banner content for title %#018llx", titleId);
+		FSUSER_CloseArchive(exefsArchive);
+		return false;
+	}
 
 	FSUSER_CloseArchive(exefsArchive);
 
 	if (R_FAILED(res)) {
-		goto cleanup_fail;
+		return false;
 	}
 
-	free(smdh);
 	return true;
-
-cleanup_fail:
-	log_debug("Something failed during getTitleName");
-	free(smdh);
-	return false;
 }
 
 bool loadTitlesFromMediaType(FS_MediaType mediaType, u8 maxTitleCount,

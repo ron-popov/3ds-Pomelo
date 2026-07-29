@@ -31,12 +31,14 @@ typedef struct {
     u8 large_icon_rgb565[LARGE_ICON_RGB565_CONTENT_SIZE]; // not used, only for filler purposes
 } SMDH; // struct size must be 0x36c0 - mikage doesn't allow to read partial sections
 
+#define REGIONAL_CGFX_COUNT 13
+
 typedef struct {
     u32 magic;                          // 0x444d4243 = "CBMD"
     u32 zero;
     u32 cgfx_offset_common;
-	// u32 cgfs_offset_regional[13];
-    // u8 padding[0x44];
+	u32 cgfx_offset_regional[REGIONAL_CGFX_COUNT];
+	// u8 padding[0x44];
     // u32 bcwav_offset;
 } CBMD;
 
