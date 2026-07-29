@@ -82,6 +82,34 @@ bool loadTitleMetadata(u64 titleId, FS_MediaType mediaType,
 	u32 bytesRead;
 	res = FSFILE_Read(fileHandle, &bytesRead, 0, smdh, sizeof(SMDH));
 	FSFILE_Close(fileHandle);
+
+	// Check if we have a banner for this title
+	{
+		u32 bannerFilePathData[5] = {0};
+		bannerFilePathData[0] = 0x00; // is_save_data
+		bannerFilePathData[1] =
+			0x00; // content_id (in mikage), also known as NCSDPartitionId
+		bannerFilePathData[2] =
+			0x02; // sub_file_type, used by the function NCCHOpenExeFSSection
+		bannerFilePathData[3] =
+			0x6e6f6369; // name of the section to read (this spells "icon")
+		bannerFilePathData[4] = 0x00000000; // name of the section to read (part2)
+
+		FS_Path bannerFilePath = {PATH_BINARY, sizeof(bannerFilePathData),
+							bannerFilePathData};
+
+		Handle bannerFileHandle;
+		res = FSUSER_OpenFile(&bannerFileHandle, archive, bannerFilePath,
+							  FS_OPEN_READ, 0);
+		if (R_FAILED(res)) {
+			log_debug("Failed opening banner file for title id %#018llx", titleId);
+			print_error_code_verbose("FSUSER_OpenFile Banner File", res);
+		} else {
+			log_debug("Found banner file for title id %#018llx",
+					  titleId);
+		}
+	}
+
 	FSUSER_CloseArchive(archive);
 
 	if (R_FAILED(res)) {
@@ -408,24 +436,6 @@ int main(int argc, char *argv[]) {
 					continue;
 				}
 
-				u64 programId;
-				u8 mediaType;
-				bool pRegistered, pLoadState;
-				APT_AppletAttr pAttributes;
-
-				temp_res =
-					APT_GetAppletInfo(APPID_APPLICATION, &programId, &mediaType,
-									  &pRegistered, &pLoadState, &pAttributes);
-				if (R_FAILED(temp_res)) {
-					print_error_code_verbose("APT_GetAppletInfo failed\n",
-											 temp_res);
-				} else {
-					log_debug("GetAppletInfo (APP) - 0x%llx\n0x%x | 0x%x | "
-							  "0x%x | 0x%x\n",
-							  programId, mediaType, pRegistered, pLoadState,
-							  pAttributes);
-				}
-
 				titleGame *selectedTitleGame = games[selected_game_index];
 
 				FS_ProgramInfo selectedGameProgramInfo = {
@@ -469,15 +479,20 @@ int main(int argc, char *argv[]) {
 					log_debug("Successfully ran APT_StartApplication");
 				}
 
+				
+				// // Clear screens (currently only bottom)
+				// // TODO: Fix this
+				// C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+				// C2D_SceneBegin(bottomRenderTarget);
+				// C2D_TargetClear(bottomRenderTarget,
+				// 				rgb_to_C2D_Color32(COL_BLACK));
+				// C3D_FrameEnd(0);
+
 				SetState(STATE_WAIT_TO_REGISTER);
 
 				is_first_run = true;
 
-				// I used to have aptWaitForWakeUp(TR_ENABLE) over here, which
-				// kinda helped the shutdown to work while pomelo is in the
-				// background, I didn't see it get triggered, instead the
-				// regular flow just worked Maybe the aptWaitForWakeUp caused
-				// the regular flow to work while in the background
+				continue;
 			}
 
 			// Auto-scroll to keep selection visible
