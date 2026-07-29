@@ -393,6 +393,8 @@ int main(int argc, char *argv[]) {
 			SetState(STATE_FOREGROUND);
 
 		} else if (state == STATE_FOREGROUND) {
+			bool should_render_screen = true;
+
 			gspWaitForVBlank();
 			hidScanInput();
 			u32 kDown = hidKeysDown();
@@ -480,21 +482,8 @@ int main(int argc, char *argv[]) {
 				}
 
 				
-				// Clear the bottom screen via a raw GSP framebuffer write,
-				// bypassing citro3d/citro2d entirely. C2D_TargetClear()
-				// only fills the render target's own VRAM buffer
-				// (GX_MemoryFill); that buffer only actually reaches the
-				// display from inside a full C3D_FrameBegin -> C2D_SceneBegin
-				// -> C3D_FrameEnd cycle, since the display transfer + buffer
-				// swap happen in C3D_FrameEnd and are gated on
-				// C3D_FrameDrawOn (called by C2D_SceneBegin) marking the
-				// target "used" - so a bare TargetClear alone, with no
-				// matching Begin/End around it, clears memory nobody ever
-				// shows. Writing to gfxGetFramebuffer() and swapping
-				// ourselves sidesteps that lifecycle completely. Looped
-				// twice (with a swap each time) to blank both of the
-				// double-buffered framebuffers, so whichever one is
-				// scanned out next is guaranteed to already be black.
+				// Clear the bottom screen via a raw GSP framebuffer write
+				// I tried using citro3d but it didn't really work :(
 				for (int i = 0; i < 2; i++) {
 					u16 fbWidth, fbHeight;
 					u8 *fb = gfxGetFramebuffer(GFX_BOTTOM, GFX_LEFT, &fbWidth,
@@ -510,44 +499,46 @@ int main(int argc, char *argv[]) {
 				SetState(STATE_WAIT_TO_REGISTER);
 
 				is_first_run = true;
-
-				continue;
+				should_render_screen = false;
 			}
 
-			// Auto-scroll to keep selection visible
-			if (selected_game_index < scroll_offset)
-				scroll_offset = selected_game_index;
-			if (selected_game_index >= scroll_offset + LIST_VISIBLE_ROWS)
-				scroll_offset = selected_game_index - LIST_VISIBLE_ROWS + 1;
-
-			// Render UI using citro2d
-			// Render the scene
-			C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
-			C2D_TargetClear(bottomRenderTarget,
-							rgb_to_C2D_Color32(COL_GRID_DITHER_LIGHT));
-			C2D_SceneBegin(bottomRenderTarget);
-			drawBottomScreenGridBackground();
-
-			// Reset the glyph buffer every frame: up to LIST_VISIBLE_ROWS
-			// texts get parsed below, and they'd otherwise keep
-			// accumulating in the buffer frame after frame
-			C2D_TextBufClear(titleNameTextBuf);
-
-			// Draw each visible game as a full-width row: icon on the
-			// left, name on the right, like the DS System Menu's
-			// PICTOCHAT / DS Download Play buttons
-			for (int row = 0; row < LIST_VISIBLE_ROWS; row++) {
-				int game_index = row + scroll_offset;
-
-				if (game_index >= games_counter)
-					break;
-
-				drawGameRow(row, games[game_index],
-						   game_index == selected_game_index,
-						   titleNameTextBuf, pomeloFont);
+			if (should_render_screen) {
+				// Auto-scroll to keep selection visible
+				if (selected_game_index < scroll_offset)
+					scroll_offset = selected_game_index;
+				if (selected_game_index >= scroll_offset + LIST_VISIBLE_ROWS)
+					scroll_offset = selected_game_index - LIST_VISIBLE_ROWS + 1;
+	
+				// Render UI using citro2d
+				// Render the scene
+				C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+				C2D_TargetClear(bottomRenderTarget,
+								rgb_to_C2D_Color32(COL_GRID_DITHER_LIGHT));
+				C2D_SceneBegin(bottomRenderTarget);
+				drawBottomScreenGridBackground();
+	
+				// Reset the glyph buffer every frame: up to LIST_VISIBLE_ROWS
+				// texts get parsed below, and they'd otherwise keep
+				// accumulating in the buffer frame after frame
+				C2D_TextBufClear(titleNameTextBuf);
+	
+				// Draw each visible game as a full-width row: icon on the
+				// left, name on the right, like the DS System Menu's
+				// PICTOCHAT / DS Download Play buttons
+				for (int row = 0; row < LIST_VISIBLE_ROWS; row++) {
+					int game_index = row + scroll_offset;
+	
+					if (game_index >= games_counter)
+						break;
+	
+					drawGameRow(row, games[game_index],
+							   game_index == selected_game_index,
+							   titleNameTextBuf, pomeloFont);
+				}
+	
+				C3D_FrameEnd(0);
 			}
-
-			C3D_FrameEnd(0);
+			
 
 		} else if (state == STATE_WAIT_TO_REGISTER) { // Wait for the launched
 													  // app to wakeup
