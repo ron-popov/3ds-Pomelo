@@ -111,6 +111,7 @@ bool loadBannerContent(FS_Archive exefsArchive, titleGame *titleGameOut) {
 	Result res;
 	CBMD cbmd;
 
+	// Open CBMD (Banner) file in exefs
 	u32 bannerFilePathData[5] = {0};
 	bannerFilePathData[0] = 0x00; // is_save_data
 	bannerFilePathData[1] =
@@ -135,6 +136,8 @@ bool loadBannerContent(FS_Archive exefsArchive, titleGame *titleGameOut) {
 		log_debug("Found banner file for title id %#018llx", titleGameOut->titleId);
 	}
 
+
+	// Read CBMD file header
 	u32 cbmdBytesRead = 0;
 	res = FSFILE_Read(cmbdFileHandle, &cbmdBytesRead, 0, &cbmd, sizeof(CBMD));
 	log_debug("Read 0x%lx bytes from cbmd file, res 0x%lx", cbmdBytesRead, res);
@@ -172,7 +175,8 @@ bool loadBannerContent(FS_Archive exefsArchive, titleGame *titleGameOut) {
 		u64 cbmd_file_size = 0;
 		res = FSFILE_GetSize(cmbdFileHandle, &cbmd_file_size);
 		if (R_FAILED(res)) {
-			log_debug("Couldn't get size of cbmd file for cgfx calc");
+			log_debug(
+				"Couldn't get size of cbmd file for cgfx calc, res 0x%lx", res);
 			FSFILE_Close(cmbdFileHandle);
 			return false;
 		}
@@ -185,6 +189,24 @@ bool loadBannerContent(FS_Archive exefsArchive, titleGame *titleGameOut) {
 				  common_cgfx_size);
 	}
 
+	// Read compresses common cgfx file
+	cbmdBytesRead = 0;
+	u8 *compresses_common_cgfx_buffer = malloc(common_cgfx_size);
+	res = FSFILE_Read(cmbdFileHandle, &cbmdBytesRead, cbmd.cgfx_offset_common,
+					  compresses_common_cgfx_buffer, common_cgfx_size);
+
+	if (R_FAILED(res)) {
+		log_debug("Couldn't read common cgfx file from cbmd, res 0x%lx", res);
+		FSFILE_Close(cmbdFileHandle);
+		return false;
+	}
+
+	log_debug("Read 0x%lx bytes from cbmd file for cgfx common", cbmdBytesRead);
+
+
+
+
+	// Cleanup
 	FSFILE_Close(cmbdFileHandle);
 
 	return true;
