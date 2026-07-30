@@ -198,13 +198,37 @@ bool loadBannerContent(FS_Archive exefsArchive, titleGame *titleGameOut) {
 	if (R_FAILED(res)) {
 		log_debug("Couldn't read common cgfx file from cbmd, res 0x%lx", res);
 		FSFILE_Close(cmbdFileHandle);
+		free(compresses_common_cgfx_buffer);
 		return false;
 	}
 
 	log_debug("Read 0x%lx bytes from cbmd file for cgfx common", cbmdBytesRead);
 
 
+	// Uncompress common cgfx file - it's compresses using LZ11
+	// We don't know the size of the uncompresses file, according to 3dbrew, it's no more than 0x80000
+	// https: // www.3dbrew.org/wiki/CBMD
+	u8 *common_cgfx_buffer = malloc(CGFX_DECOMPRESSES_MAX_FILE);
+	if (!decompress(common_cgfx_buffer, CGFX_DECOMPRESSES_MAX_FILE, NULL, compresses_common_cgfx_buffer, common_cgfx_size)) {
+		log_debug("Decompression of common cgfx file failed");
+		free(common_cgfx_buffer);
+		free(compresses_common_cgfx_buffer);
+		FSFILE_Close(cmbdFileHandle);
+		return false;
+	}
+	free(compresses_common_cgfx_buffer);
 
+
+	// Check the header value
+	CGFX_HEADER *cgfx_header = (CGFX_HEADER*)common_cgfx_buffer;
+	log_debug("Uncompresses cgfx header magic - 0x%lx", cgfx_header->magic);
+
+	if (cgfx_header->magic != 0x58464743) {
+		log_debug("Invalid CGFX header magic");
+	} else {
+		log_debug("VALID CGFX header magic!");
+	}
+	
 
 	// Cleanup
 	FSFILE_Close(cmbdFileHandle);

@@ -105,3 +105,5 @@
 // Max length (incl. null terminator) of a title's display name, as stored
 // in titleGame::name
 #define MAX_TITLE_NAME 255
+
+#define CGFX_DECOMPRESSES_MAX_FILE 0x80000
