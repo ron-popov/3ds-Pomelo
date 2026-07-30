@@ -208,8 +208,8 @@ bool loadBannerContent(FS_Archive exefsArchive, titleGame *titleGameOut) {
 	// Uncompress common cgfx file - it's compresses using LZ11
 	// We don't know the size of the uncompresses file, according to 3dbrew, it's no more than 0x80000
 	// https: // www.3dbrew.org/wiki/CBMD
-	u8 *common_cgfx_buffer = malloc(CGFX_DECOMPRESSES_MAX_FILE);
-	if (!decompress(common_cgfx_buffer, CGFX_DECOMPRESSES_MAX_FILE, NULL, compresses_common_cgfx_buffer, common_cgfx_size)) {
+	u8 *common_cgfx_buffer = malloc(CGFX_DECOMPRESSES_MAX_SIZE);
+	if (!decompress(common_cgfx_buffer, CGFX_DECOMPRESSES_MAX_SIZE, NULL, compresses_common_cgfx_buffer, common_cgfx_size)) {
 		log_debug("Decompression of common cgfx file failed");
 		free(common_cgfx_buffer);
 		free(compresses_common_cgfx_buffer);
@@ -231,6 +231,7 @@ bool loadBannerContent(FS_Archive exefsArchive, titleGame *titleGameOut) {
 	
 
 	// Cleanup
+	free(common_cgfx_buffer);
 	FSFILE_Close(cmbdFileHandle);
 
 	return true;
