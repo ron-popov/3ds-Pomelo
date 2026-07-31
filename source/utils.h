@@ -51,6 +51,17 @@ typedef struct {
     u32 num_entries;
 } CGFX_HEADER;
 
+typedef struct {
+    u32 num_entries;
+    u32 offset;
+} DICT_ENTRY;
+
+typedef struct {
+	u32 magic;		// "DATA"
+	u32 data_size;
+	DICT_ENTRY dict_entries[DICT_MAX_NUM_ENTRIES];
+} DATA_HEADER;
+
 typedef struct titleGame_s {
     u64 titleId;
     FS_MediaType mediaType;
@@ -58,6 +69,7 @@ typedef struct titleGame_s {
 	char publisher[MAX_TITLE_NAME];
 	C3D_Tex small_icon_tex;
     C3D_Tex large_icon_tex;
+    u8 *cgfx_buffer;
 } titleGame;
 
 

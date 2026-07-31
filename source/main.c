@@ -9,6 +9,7 @@
 #include <wchar.h>
 
 #include "apt_callbacks.h"
+#include "c3d/renderqueue.h"
 #include "consts.h"
 #include "draw.h"
 #include "log.h"
@@ -218,6 +219,8 @@ bool loadBannerContent(FS_Archive exefsArchive, titleGame *titleGameOut) {
 	}
 	free(compresses_common_cgfx_buffer);
 
+	// Save the uncompresses buffer to titleGame
+	titleGameOut->cgfx_buffer = common_cgfx_buffer;
 
 	// Check the header value
 	CGFX_HEADER *cgfx_header = (CGFX_HEADER*)common_cgfx_buffer;
@@ -228,12 +231,34 @@ bool loadBannerContent(FS_Archive exefsArchive, titleGame *titleGameOut) {
 	} else {
 		log_debug("VALID CGFX header magic!");
 	}
-	
+
+	log_debug("CGFX Entries count - 0x%lx", cgfx_header->num_entries);
+
+
+	// Parse data section, usually the first section after the cgfx headers
+	DATA_HEADER *data_header = (DATA_HEADER *)(common_cgfx_buffer + sizeof(CGFX_HEADER));
+	log_debug("Data Header magic - 0x%lx", data_header->magic);
+
+	if (data_header->magic != 0x41544144) {
+		log_debug("Invalid data header magic - 0x%lx", data_header->magic);
+		FSFILE_Close(cmbdFileHandle);
+		return false;
+	}
+
+	log_debug("Validated DATA header magic!");
+
+	log_debug("Number of model entries - 0x%lx", data_header->dict_entries[0].num_entries);
+	log_debug("Offset of model entries - 0x%lx",
+			  data_header->dict_entries[0].offset);
 
 	// Cleanup
-	free(common_cgfx_buffer);
 	FSFILE_Close(cmbdFileHandle);
 
+	return true;
+}
+
+bool renderTitleBanner(titleGame *titleGame, C3D_RenderTarget *renderTarget) {
+	log_debug("Rendering banner for title id %#018llx", titleGame->titleId);
 	return true;
 }
 
@@ -322,8 +347,10 @@ bool loadTitlesFromMediaType(FS_MediaType mediaType, u8 maxTitleCount,
 
 		loadedTitleGame->titleId = title_ids[i];
 		loadedTitleGame->mediaType = mediaType;
+		loadedTitleGame->cgfx_buffer = NULL;
 		strncpy(loadedTitleGame->name, "", MAX_TITLE_NAME);
 		strncpy(loadedTitleGame->publisher, "", MAX_TITLE_NAME);
+
 
 		temp_res = loadTitleMetadata(title_ids[i], mediaType, loadedTitleGame);
 		if (temp_res) {
@@ -405,9 +432,6 @@ int main(int argc, char *argv[]) {
 	C2D_Init(C2D_DEFAULT_MAX_OBJECTS);
 	C2D_Prepare();
 
-	consoleInit(GFX_TOP, &topScreen);
-	consoleSelect(&topScreen);
-
 	// Setup debug logging stuff
 	consoleDebugInit(debugDevice_NULL);
 	log_debug("Starting Pomelo!");
@@ -461,6 +485,7 @@ int main(int argc, char *argv[]) {
 	int scroll_offset = 0;
 
 	C3D_RenderTarget *bottomRenderTarget = NULL;
+	C3D_RenderTarget *topRenderTarget = NULL;
 	C2D_TextBuf titleNameTextBuf = NULL;
 	C2D_Font pomeloFont = NULL;
 
@@ -486,6 +511,13 @@ int main(int argc, char *argv[]) {
 			bottomRenderTarget = C2D_CreateScreenTarget(GFX_BOTTOM, GFX_LEFT);
 			if (bottomRenderTarget == NULL) {
 				log_debug("Failed initializing bottom screen for rendering!");
+				return 0;
+			}
+
+			// Init render target
+			topRenderTarget = C2D_CreateScreenTarget(GFX_TOP, GFX_LEFT);
+			if (topRenderTarget == NULL) {
+				log_debug("Failed initializing top screen for rendering!");
 				return 0;
 			}
 
@@ -615,15 +647,23 @@ int main(int argc, char *argv[]) {
 			}
 
 			if (should_render_screen) {
+				C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
+
+				// --- Render top screen
+				C3D_FrameDrawOn(topRenderTarget);
+
+				renderTitleBanner(games[selected_game_index], topRenderTarget);
+
+				// --- Render bottom screen
+
 				// Auto-scroll to keep selection visible
-				if (selected_game_index < scroll_offset)
-					scroll_offset = selected_game_index;
+				if (selected_game_index < scroll_offset) scroll_offset =
+					selected_game_index;
 				if (selected_game_index >= scroll_offset + LIST_VISIBLE_ROWS)
 					scroll_offset = selected_game_index - LIST_VISIBLE_ROWS + 1;
 	
 				// Render UI using citro2d
 				// Render the scene
-				C3D_FrameBegin(C3D_FRAME_SYNCDRAW);
 				C2D_TargetClear(bottomRenderTarget,
 								rgb_to_C2D_Color32(COL_GRID_DITHER_LIGHT));
 				C2D_SceneBegin(bottomRenderTarget);
@@ -647,7 +687,7 @@ int main(int argc, char *argv[]) {
 							   game_index == selected_game_index,
 							   titleNameTextBuf, pomeloFont);
 				}
-	
+
 				C3D_FrameEnd(0);
 			}
 			
